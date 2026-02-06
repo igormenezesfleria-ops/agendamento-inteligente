@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format, addHours, isAfter, parseISO } from 'date-fns';
+import { addHours, isAfter, parseISO } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,21 +35,34 @@ export default function MyAppointments() {
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      // FIX: Use delete instead of update for pending appointments (RLS allows DELETE for pending)
+      // Also try update first, fall back to delete if RLS blocks update
+      const { error: updateError } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
         .eq('id', id)
         .eq('student_id', user?.id);
 
-      if (error) throw error;
+      if (updateError) {
+        // If update fails due to RLS, try delete (RLS allows delete for pending)
+        const { error: deleteError } = await supabase
+          .from('appointments')
+          .delete()
+          .eq('id', id)
+          .eq('student_id', user?.id);
+
+        if (deleteError) throw deleteError;
+      }
     },
     onSuccess: () => {
       toast.success('Agendamento cancelado com sucesso');
       queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
+      queryClient.invalidateQueries({ queryKey: ['slotCounts'] });
       setCancellingId(null);
     },
-    onError: () => {
-      toast.error('Erro ao cancelar agendamento');
+    onError: (error: any) => {
+      console.error('Cancel error:', error);
+      toast.error('Erro ao cancelar agendamento. Verifique se ainda está dentro do prazo.');
       setCancellingId(null);
     },
   });
@@ -61,8 +74,8 @@ export default function MyAppointments() {
 
   const canCancel = (date: string, timeSlot: string) => {
     const [hours] = timeSlot.split(':').map(Number);
-    const appointmentDateTime = parseISO(date);
-    appointmentDateTime.setHours(hours, 0, 0, 0);
+    // FIX: Parse date correctly to avoid timezone shift
+    const appointmentDateTime = parseISO(date + 'T' + timeSlot + ':00');
 
     const deadline = addHours(new Date(), CANCELLATION_DEADLINE_HOURS);
     return isAfter(appointmentDateTime, deadline);

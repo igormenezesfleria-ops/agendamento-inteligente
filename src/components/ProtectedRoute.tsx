@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, profile, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -22,8 +23,18 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/login" replace />;
   }
 
+  // If allowedRoles is specified, check if user has the required role
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
-    return <Navigate to="/dashboard" replace />;
+    // Redirect to the correct role-based dashboard
+    const role = profile.role;
+    switch (role) {
+      case 'admin':
+        return <Navigate to="/dashboard/admin" replace />;
+      case 'collaborator':
+        return <Navigate to="/dashboard/collaborator" replace />;
+      default:
+        return <Navigate to="/dashboard/student" replace />;
+    }
   }
 
   return <>{children}</>;
