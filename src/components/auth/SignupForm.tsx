@@ -37,8 +37,18 @@ export function SignupForm() {
       const { error } = await signUp(data.email, data.password, data.name);
       
       if (error) {
-        if (error.message.includes('already registered')) {
-          toast.error('Este email já está cadastrado');
+        // Handle specific Supabase Auth errors for duplicate emails
+        if (
+          error.message.includes('already registered') ||
+          error.message.includes('User already registered') ||
+          error.message.includes('already exists') ||
+          error.message.toLowerCase().includes('duplicate')
+        ) {
+          toast.error('Este email já está cadastrado. Tente fazer login ou use outro email.');
+        } else if (error.message.includes('Password')) {
+          toast.error('A senha não atende aos requisitos mínimos.');
+        } else if (error.message.includes('email')) {
+          toast.error('Email inválido. Verifique e tente novamente.');
         } else {
           toast.error('Erro ao criar conta. Tente novamente.');
         }

@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,12 @@ export function AppointmentCard({
   onCancel,
 }: AppointmentCardProps) {
   const slot = TIME_SLOTS.find((s) => s.id === timeSlot);
-  const formattedDate = format(new Date(date), "EEEE, d 'de' MMMM", { locale: ptBR });
+  
+  // FIX: Parse the date string correctly without timezone shift
+  // The date comes as 'YYYY-MM-DD' from the database, so we parse it directly
+  // and add time to ensure it's treated as local time
+  const dateObj = parseISO(date + 'T12:00:00');
+  const formattedDate = format(dateObj, "EEEE, d 'de' MMMM", { locale: ptBR });
 
   return (
     <Card className="card-hover">
@@ -46,7 +51,7 @@ export function AppointmentCard({
             </Badge>
           </div>
 
-          {canCancel && status === 'pending' && (
+          {canCancel && (status === 'pending' || status === 'confirmed') && (
             <Button
               variant="outline"
               size="sm"

@@ -35,7 +35,7 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/cadastro" element={<Signup />} />
 
-            {/* Protected routes - All authenticated users */}
+            {/* Protected routes - Redirect based on role */}
             <Route
               path="/dashboard"
               element={
@@ -44,6 +44,33 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
+            {/* Role-specific dashboard routes */}
+            <Route
+              path="/dashboard/student"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/collaborator"
+              element={
+                <ProtectedRoute allowedRoles={['collaborator']}>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            
             <Route
               path="/dashboard/perfil"
               element={

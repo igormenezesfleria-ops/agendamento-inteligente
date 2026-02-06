@@ -151,14 +151,14 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
 function getNavItems(role: string) {
   const studentItems = [
-    { href: '/dashboard', label: 'Início', icon: Home },
+    { href: '/dashboard/student', label: 'Início', icon: Home },
     { href: '/dashboard/agendar', label: 'Agendar Treino', icon: Calendar },
     { href: '/dashboard/meus-agendamentos', label: 'Meus Agendamentos', icon: ClipboardList },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
 
   const adminItems = [
-    { href: '/dashboard', label: 'Início', icon: Home },
+    { href: '/dashboard/admin', label: 'Início', icon: Home },
     { href: '/dashboard/solicitacoes', label: 'Solicitações', icon: Bell },
     { href: '/dashboard/agenda', label: 'Agenda Completa', icon: Calendar },
     { href: '/dashboard/equipe', label: 'Equipe', icon: Users },
@@ -168,7 +168,7 @@ function getNavItems(role: string) {
   ];
 
   const collaboratorItems = [
-    { href: '/dashboard', label: 'Início', icon: Home },
+    { href: '/dashboard/collaborator', label: 'Início', icon: Home },
     { href: '/dashboard/minhas-tarefas', label: 'Minhas Tarefas', icon: ClipboardList },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -42,8 +43,32 @@ export function LoginForm() {
         return;
       }
 
-      toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+      // Fetch user profile to determine role-based redirect
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        toast.success('Login realizado com sucesso!');
+
+        // Redirect based on role
+        const role = profile?.role || 'student';
+        switch (role) {
+          case 'admin':
+            navigate('/dashboard/admin');
+            break;
+          case 'collaborator':
+            navigate('/dashboard/collaborator');
+            break;
+          default:
+            navigate('/dashboard/student');
+        }
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       toast.error('Erro inesperado. Tente novamente.');
     } finally {
