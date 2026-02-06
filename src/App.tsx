@@ -16,6 +16,7 @@ import MyAppointments from "./pages/MyAppointments";
 import Profile from "./pages/Profile";
 import AdminRequests from "./pages/AdminRequests";
 import TeamManagement from "./pages/TeamManagement";
+import LockSlots from "./pages/LockSlots";
 import CollaboratorTasks from "./pages/CollaboratorTasks";
 import NotFound from "./pages/NotFound";
 
@@ -84,6 +85,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <TeamManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/trancamentos"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <LockSlots />
                 </ProtectedRoute>
               }
             />
