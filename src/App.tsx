@@ -15,6 +15,7 @@ import Booking from "./pages/Booking";
 import MyAppointments from "./pages/MyAppointments";
 import Profile from "./pages/Profile";
 import AdminRequests from "./pages/AdminRequests";
+import TeamManagement from "./pages/TeamManagement";
 import CollaboratorTasks from "./pages/CollaboratorTasks";
 import NotFound from "./pages/NotFound";
 
@@ -75,6 +76,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/equipe"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <TeamManagement />
                 </ProtectedRoute>
               }
             />
