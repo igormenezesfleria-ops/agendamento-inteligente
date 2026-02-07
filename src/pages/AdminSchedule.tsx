@@ -20,18 +20,28 @@ export default function AdminSchedule() {
   const { data: appointments, isLoading } = useQuery({
     queryKey: ['admin-schedule', dateStr],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: appts, error: appError } = await supabase
         .from('appointments')
-        .select(`
-          id, date, time_slot, status, student_id, instructor_id,
-          profiles!appointments_student_id_fkey(name)
-        `)
+        .select('id, date, time_slot, status, student_id, instructor_id')
         .eq('date', dateStr)
         .in('status', ['pending', 'confirmed', 'delegated'])
         .order('time_slot', { ascending: true });
 
-      if (error) throw error;
-      return data || [];
+      if (appError) throw appError;
+      if (!appts || appts.length === 0) return [];
+
+      const studentIds = [...new Set(appts.map((a) => a.student_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', studentIds);
+
+      const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+      return appts.map((a) => ({
+        ...a,
+        studentName: profileMap.get(a.student_id)?.name || 'Aluno',
+      }));
     },
   });
 
@@ -106,7 +116,7 @@ export default function AdminSchedule() {
                               <div key={appt.id} className="flex items-center gap-3">
                                 <User className="w-4 h-4 text-muted-foreground" />
                                 <span className="text-sm text-foreground">
-                                  {appt.profiles?.name || 'Aluno'}
+                                  {appt.studentName}
                                 </span>
                                 <Badge variant={statusVariant(appt.status) as any}>
                                   {STATUS_LABELS[appt.status] || appt.status}

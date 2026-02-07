@@ -12,18 +12,28 @@ export default function AdminHistory() {
   const { data: history, isLoading } = useQuery({
     queryKey: ['admin-history'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select(`
-          id, date, time_slot, status, student_id, instructor_id, completed_at,
-          profiles!appointments_student_id_fkey(name)
-        `)
+        .select('id, date, time_slot, status, student_id, instructor_id, completed_at')
         .in('status', ['completed', 'cancelled', 'rejected'])
         .order('date', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
-      return data || [];
+      if (appError) throw appError;
+      if (!appointments || appointments.length === 0) return [];
+
+      const studentIds = [...new Set(appointments.map((a) => a.student_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', studentIds);
+
+      const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+      return appointments.map((a) => ({
+        ...a,
+        studentName: profileMap.get(a.student_id)?.name || 'Aluno',
+      }));
     },
   });
 
@@ -76,7 +86,7 @@ export default function AdminHistory() {
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-accent" />
                           <span className="font-semibold text-foreground">
-                            {item.profiles?.name || 'Aluno'}
+                            {item.studentName}
                           </span>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
