@@ -17,6 +17,7 @@ import {
   ClipboardList,
   Lock,
   History,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -164,6 +165,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/equipe', label: 'Equipe', icon: Users },
     { href: '/dashboard/trancamentos', label: 'Trancamentos', icon: Lock },
     { href: '/dashboard/historico', label: 'Histórico', icon: History },
+    { href: '/dashboard/comunicados', label: 'Comunicados', icon: MessageSquare },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
 

@@ -15,6 +15,9 @@ import Booking from "./pages/Booking";
 import MyAppointments from "./pages/MyAppointments";
 import Profile from "./pages/Profile";
 import AdminRequests from "./pages/AdminRequests";
+import AdminSchedule from "./pages/AdminSchedule";
+import AdminHistory from "./pages/AdminHistory";
+import AdminAnnouncements from "./pages/AdminAnnouncements";
 import TeamManagement from "./pages/TeamManagement";
 import LockSlots from "./pages/LockSlots";
 import CollaboratorTasks from "./pages/CollaboratorTasks";
@@ -120,6 +123,30 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <LockSlots />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/agenda"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminSchedule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/historico"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminHistory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/comunicados"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminAnnouncements />
                 </ProtectedRoute>
               }
             />
