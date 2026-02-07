@@ -1,15 +1,67 @@
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Bell, Calendar, Users, Lock, History, ArrowRight, MessageSquare } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Bell, Calendar, Users, Lock, History, ArrowRight, MessageSquare, Loader2 } from 'lucide-react';
+import { format } from 'date-fns';
 
 export function AdminDashboard() {
-  const { profile } = useAuth();
+  const today = format(new Date(), 'yyyy-MM-dd');
+
+  const { data: pendingCount = 0, isLoading: loadingPending } = useQuery({
+    queryKey: ['admin-stat-pending'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const { data: todayCount = 0, isLoading: loadingToday } = useQuery({
+    queryKey: ['admin-stat-today'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('date', today)
+        .eq('status', 'confirmed');
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const { data: collabCount = 0, isLoading: loadingCollab } = useQuery({
+    queryKey: ['admin-stat-collaborators'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'collaborator');
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const { data: lockedCount = 0, isLoading: loadingLocked } = useQuery({
+    queryKey: ['admin-stat-locked'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('locked_slots')
+        .select('*', { count: 'exact', head: true })
+        .gte('date', today);
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
+  const isLoading = loadingPending || loadingToday || loadingCollab || loadingLocked;
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Welcome section */}
       <div className="space-y-2">
         <h1 className="font-display text-3xl text-foreground">
           Painel Administrativo
@@ -19,12 +71,12 @@ export function AdminDashboard() {
         </p>
       </div>
 
-      {/* Stats overview - placeholder */}
+      {/* Stats overview */}
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard title="Solicitações Pendentes" value="--" icon={Bell} />
-        <StatCard title="Treinos Hoje" value="--" icon={Calendar} />
-        <StatCard title="Colaboradores" value="--" icon={Users} />
-        <StatCard title="Horários Trancados" value="--" icon={Lock} />
+        <StatCard title="Solicitações Pendentes" value={isLoading ? '...' : String(pendingCount)} icon={Bell} />
+        <StatCard title="Treinos Hoje" value={isLoading ? '...' : String(todayCount)} icon={Calendar} />
+        <StatCard title="Colaboradores" value={isLoading ? '...' : String(collabCount)} icon={Users} />
+        <StatCard title="Horários Trancados" value={isLoading ? '...' : String(lockedCount)} icon={Lock} />
       </div>
 
       {/* Quick actions */}
