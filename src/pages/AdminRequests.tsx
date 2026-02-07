@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { RequestCard } from '@/components/admin/RequestCard';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Loader2, Inbox } from 'lucide-react';
 import {
@@ -17,31 +18,46 @@ import { Label } from '@/components/ui/label';
 
 export default function AdminRequests() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [delegateDialogOpen, setDelegateDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [selectedCollaborator, setSelectedCollaborator] = useState<string | null>(null);
 
-  // Fetch pending requests
+  // Fetch pending requests (ALL pending, not filtered by student)
   const { data: requests, isLoading } = useQuery({
     queryKey: ['pendingRequests'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1. Fetch all pending appointments
+      const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select(`
-          id,
-          date,
-          time_slot,
-          status,
-          student_id,
-          profiles!appointments_student_id_fkey(name)
-        `)
+        .select('id, date, time_slot, status, student_id')
         .eq('status', 'pending')
         .order('date', { ascending: true })
         .order('time_slot', { ascending: true });
 
-      if (error) throw error;
-      return data || [];
+      if (appError) throw appError;
+      if (!appointments || appointments.length === 0) return [];
+
+      // 2. Batch-fetch student profiles
+      const studentIds = [...new Set(appointments.map((a) => a.student_id))];
+      const { data: profiles, error: profError } = await supabase
+        .from('profiles')
+        .select('id, name, photo_url')
+        .in('id', studentIds);
+
+      if (profError) throw profError;
+
+      const profileMap = new Map(
+        (profiles || []).map((p) => [p.id, p])
+      );
+
+      // 3. Merge
+      return appointments.map((a) => ({
+        ...a,
+        studentName: profileMap.get(a.student_id)?.name || 'Aluno',
+        studentPhoto: profileMap.get(a.student_id)?.photo_url || null,
+      }));
     },
   });
 
@@ -59,18 +75,21 @@ export default function AdminRequests() {
     },
   });
 
-  // Confirm mutation
+  // Confirm mutation — self-assign as instructor
   const confirmMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('appointments')
-        .update({ status: 'confirmed' })
+        .update({
+          status: 'confirmed',
+          instructor_id: user?.id,
+        })
         .eq('id', id);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Agendamento confirmado!');
+      toast.success('Agendamento confirmado! Você é o instrutor.');
       queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
       setLoadingId(null);
     },
@@ -85,7 +104,7 @@ export default function AdminRequests() {
     mutationFn: async ({ id, instructorId }: { id: string; instructorId: string }) => {
       const { error } = await supabase
         .from('appointments')
-        .update({ 
+        .update({
           status: 'delegated',
           instructor_id: instructorId,
         })
@@ -94,7 +113,7 @@ export default function AdminRequests() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Agendamento delegado!');
+      toast.success('Agendamento delegado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
       setDelegateDialogOpen(false);
       setSelectedAppointment(null);
@@ -120,7 +139,10 @@ export default function AdminRequests() {
   const handleDelegateSubmit = () => {
     if (!selectedAppointment || !selectedCollaborator) return;
     setLoadingId(selectedAppointment);
-    delegateMutation.mutate({ id: selectedAppointment, instructorId: selectedCollaborator });
+    delegateMutation.mutate({
+      id: selectedAppointment,
+      instructorId: selectedCollaborator,
+    });
   };
 
   return (
@@ -141,11 +163,12 @@ export default function AdminRequests() {
           <EmptyState />
         ) : (
           <div className="space-y-4">
-            {requests?.map((request: any) => (
+            {requests?.map((request) => (
               <RequestCard
                 key={request.id}
                 id={request.id}
-                studentName={request.profiles?.name || 'Aluno'}
+                studentName={request.studentName}
+                studentPhoto={request.studentPhoto}
                 date={request.date}
                 timeSlot={request.time_slot}
                 status={request.status}

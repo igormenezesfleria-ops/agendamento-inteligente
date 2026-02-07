@@ -1,14 +1,15 @@
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, User, Check, UserPlus, Loader2 } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Calendar, Clock, Check, UserPlus, Loader2 } from 'lucide-react';
 import { TIME_SLOTS } from '@/lib/constants';
 
 interface RequestCardProps {
   id: string;
   studentName: string;
+  studentPhoto: string | null;
   date: string;
   timeSlot: string;
   status: string;
@@ -20,6 +21,7 @@ interface RequestCardProps {
 export function RequestCard({
   id,
   studentName,
+  studentPhoto,
   date,
   timeSlot,
   status,
@@ -28,25 +30,39 @@ export function RequestCard({
   onDelegate,
 }: RequestCardProps) {
   const slot = TIME_SLOTS.find((s) => s.id === timeSlot);
-  const formattedDate = format(new Date(date), "EEEE, d 'de' MMMM", { locale: ptBR });
+  const parsedDate = parseISO(date + 'T12:00:00');
+  const formattedDate = format(parsedDate, "EEEE, d 'de' MMMM", { locale: ptBR });
+
+  const initials = studentName
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <Card className="card-hover">
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-accent" />
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              {studentPhoto && <AvatarImage src={studentPhoto} alt={studentName} />}
+              <AvatarFallback className="bg-accent/10 text-accent text-sm font-semibold">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="space-y-1">
               <span className="font-semibold text-foreground">{studentName}</span>
-            </div>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Calendar className="w-4 h-4" />
-                <span className="capitalize">{formattedDate}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-                <span>{slot?.label || timeSlot}</span>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <span className="capitalize">{formattedDate}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  <span>{slot?.label || timeSlot}</span>
+                </div>
               </div>
             </div>
           </div>
