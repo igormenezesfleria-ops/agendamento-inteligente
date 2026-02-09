@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, ClipboardList, User, ArrowRight } from 'lucide-react';
+import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 
 export function StudentDashboard() {
   const { profile } = useAuth();
@@ -41,6 +42,9 @@ export function StudentDashboard() {
           href="/dashboard/perfil"
         />
       </div>
+
+      {/* Announcements */}
+      <AnnouncementsFeed />
 
       {/* Info cards */}
       <div className="grid gap-6 md:grid-cols-2">
