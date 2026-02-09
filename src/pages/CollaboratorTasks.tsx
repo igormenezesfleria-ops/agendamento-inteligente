@@ -22,23 +22,36 @@ export default function CollaboratorTasks() {
     queryFn: async () => {
       if (!user?.id) return [];
 
-      const { data, error } = await supabase
+      // 1. Fetch appointments assigned to this collaborator
+      const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select(`
-          id,
-          date,
-          time_slot,
-          status,
-          student_id,
-          profiles!appointments_student_id_fkey(name)
-        `)
+        .select('id, date, time_slot, status, student_id')
         .eq('instructor_id', user.id)
         .in('status', ['delegated', 'confirmed', 'completed'])
         .order('date', { ascending: true })
         .order('time_slot', { ascending: true });
 
-      if (error) throw error;
-      return data || [];
+      if (appError) throw appError;
+      if (!appointments || appointments.length === 0) return [];
+
+      // 2. Batch-fetch student profiles
+      const studentIds = [...new Set(appointments.map((a) => a.student_id))];
+      const { data: profiles, error: profError } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', studentIds);
+
+      if (profError) throw profError;
+
+      const profileMap = new Map(
+        (profiles || []).map((p) => [p.id, p])
+      );
+
+      // 3. Merge
+      return appointments.map((a) => ({
+        ...a,
+        profiles: { name: profileMap.get(a.student_id)?.name || 'Aluno' },
+      }));
     },
     enabled: !!user?.id,
   });
