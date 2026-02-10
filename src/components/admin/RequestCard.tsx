@@ -3,8 +3,10 @@ import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, Clock, Check, UserPlus, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, Clock, Check, UserPlus, Loader2, AlertTriangle } from 'lucide-react';
 import { TIME_SLOTS } from '@/lib/constants';
+import { isWithinDeadline } from '@/lib/deadline';
 
 interface RequestCardProps {
   id: string;
@@ -32,6 +34,8 @@ export function RequestCard({
   const slot = TIME_SLOTS.find((s) => s.id === timeSlot);
   const parsedDate = parseISO(date + 'T12:00:00');
   const formattedDate = format(parsedDate, "EEEE, d 'de' MMMM", { locale: ptBR });
+
+  const canAct = isWithinDeadline(date, timeSlot, 12);
 
   const initials = studentName
     .split(' ')
@@ -68,30 +72,39 @@ export function RequestCard({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="success"
-              size="sm"
-              onClick={() => onConfirm(id)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <Check className="w-4 h-4 mr-1" />
-                  Confirmar
-                </>
-              )}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onDelegate(id)}
-              disabled={isLoading}
-            >
-              <UserPlus className="w-4 h-4 mr-1" />
-              Delegar
-            </Button>
+            {canAct ? (
+              <>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={() => onConfirm(id)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-1" />
+                      Confirmar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onDelegate(id)}
+                  disabled={isLoading}
+                >
+                  <UserPlus className="w-4 h-4 mr-1" />
+                  Delegar
+                </Button>
+              </>
+            ) : (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                Prazo de 12h expirado
+              </Badge>
+            )}
           </div>
         </div>
       </CardContent>

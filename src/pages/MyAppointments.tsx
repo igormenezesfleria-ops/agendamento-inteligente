@@ -28,15 +28,37 @@ export default function MyAppointments() {
         .order('time_slot', { ascending: true });
 
       if (error) throw error;
-      return data || [];
+      if (!data || data.length === 0) return [];
+
+      // Fetch instructor names for confirmed/completed appointments
+      const instructorIds = [
+        ...new Set(
+          data
+            .filter((a) => a.instructor_id && (a.status === 'confirmed' || a.status === 'completed'))
+            .map((a) => a.instructor_id!)
+        ),
+      ];
+
+      let instructorMap = new Map<string, string>();
+      if (instructorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', instructorIds);
+
+        instructorMap = new Map((profiles || []).map((p) => [p.id, p.name || 'Instrutor']));
+      }
+
+      return data.map((a) => ({
+        ...a,
+        instructorName: a.instructor_id ? instructorMap.get(a.instructor_id) || null : null,
+      }));
     },
     enabled: !!user?.id,
   });
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
-      // FIX: Use delete instead of update for pending appointments (RLS allows DELETE for pending)
-      // Also try update first, fall back to delete if RLS blocks update
       const { error: updateError } = await supabase
         .from('appointments')
         .update({ status: 'cancelled' })
@@ -44,7 +66,6 @@ export default function MyAppointments() {
         .eq('student_id', user?.id);
 
       if (updateError) {
-        // If update fails due to RLS, try delete (RLS allows delete for pending)
         const { error: deleteError } = await supabase
           .from('appointments')
           .delete()
@@ -73,10 +94,7 @@ export default function MyAppointments() {
   };
 
   const canCancel = (date: string, timeSlot: string) => {
-    const [hours] = timeSlot.split(':').map(Number);
-    // FIX: Parse date correctly to avoid timezone shift
     const appointmentDateTime = parseISO(date + 'T' + timeSlot + ':00');
-
     const deadline = addHours(new Date(), CANCELLATION_DEADLINE_HOURS);
     return isAfter(appointmentDateTime, deadline);
   };
@@ -84,7 +102,7 @@ export default function MyAppointments() {
   const upcomingAppointments = appointments?.filter(
     (apt) => apt.status !== 'cancelled' && apt.status !== 'completed'
   );
-  
+
   const pastAppointments = appointments?.filter(
     (apt) => apt.status === 'completed' || apt.status === 'cancelled'
   );
@@ -125,6 +143,7 @@ export default function MyAppointments() {
                     date={apt.date}
                     timeSlot={apt.time_slot}
                     status={apt.status}
+                    instructorName={apt.instructorName}
                     canCancel={canCancel(apt.date, apt.time_slot)}
                     isCancelling={cancellingId === apt.id}
                     onCancel={handleCancel}
@@ -146,6 +165,7 @@ export default function MyAppointments() {
                     date={apt.date}
                     timeSlot={apt.time_slot}
                     status={apt.status}
+                    instructorName={apt.instructorName}
                     canCancel={false}
                     isCancelling={false}
                     onCancel={() => {}}

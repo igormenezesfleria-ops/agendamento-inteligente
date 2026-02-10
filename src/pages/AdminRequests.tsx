@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isWithinDeadline } from '@/lib/deadline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -127,6 +128,11 @@ export default function AdminRequests() {
   });
 
   const handleConfirm = (id: string) => {
+    const request = requests?.find((r) => r.id === id);
+    if (request && !isWithinDeadline(request.date, request.time_slot, 12)) {
+      toast.error('Prazo de 12h para confirmação expirado.');
+      return;
+    }
     setLoadingId(id);
     confirmMutation.mutate(id);
   };

@@ -7,7 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { TaskCard } from '@/components/collaborator/TaskCard';
 import { RejectConfirmDialog } from '@/components/collaborator/RejectConfirmDialog';
 import { toast } from 'sonner';
-import { Loader2, ClipboardList } from 'lucide-react';
+import { Loader2, ClipboardList, History } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CollaboratorHistory } from '@/components/collaborator/CollaboratorHistory';
 
 export default function CollaboratorTasks() {
   const { user } = useAuth();
@@ -16,25 +18,23 @@ export default function CollaboratorTasks() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [pendingRejectId, setPendingRejectId] = useState<string | null>(null);
 
-  // Fetch tasks assigned to this collaborator
+  // Fetch active tasks assigned to this collaborator
   const { data: tasks, isLoading } = useQuery({
     queryKey: ['myTasks', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
-      // 1. Fetch appointments assigned to this collaborator
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
         .select('id, date, time_slot, status, student_id')
         .eq('instructor_id', user.id)
-        .in('status', ['delegated', 'confirmed', 'completed'])
+        .in('status', ['delegated', 'confirmed'])
         .order('date', { ascending: true })
         .order('time_slot', { ascending: true });
 
       if (appError) throw appError;
       if (!appointments || appointments.length === 0) return [];
 
-      // 2. Batch-fetch student profiles
       const studentIds = [...new Set(appointments.map((a) => a.student_id))];
       const { data: profiles, error: profError } = await supabase
         .from('profiles')
@@ -47,7 +47,6 @@ export default function CollaboratorTasks() {
         (profiles || []).map((p) => [p.id, p])
       );
 
-      // 3. Merge
       return appointments.map((a) => ({
         ...a,
         profiles: { name: profileMap.get(a.student_id)?.name || 'Aluno' },
@@ -56,14 +55,12 @@ export default function CollaboratorTasks() {
     enabled: !!user?.id,
   });
 
-  // Accept task
   const acceptMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('appointments')
         .update({ status: 'confirmed' })
         .eq('id', id);
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -77,14 +74,12 @@ export default function CollaboratorTasks() {
     },
   });
 
-  // Reject task — sends back to admin queue
   const rejectMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('appointments')
         .update({ status: 'pending', instructor_id: null })
         .eq('id', id);
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -98,7 +93,6 @@ export default function CollaboratorTasks() {
     },
   });
 
-  // Complete training
   const completeMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -108,12 +102,12 @@ export default function CollaboratorTasks() {
           completed_at: new Date().toISOString(),
         })
         .eq('id', id);
-
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success('Treino finalizado!');
       queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myHistory'] });
       setLoadingId(null);
     },
     onError: () => {
@@ -147,7 +141,6 @@ export default function CollaboratorTasks() {
 
   const pendingTasks = tasks?.filter((t: any) => t.status === 'delegated');
   const confirmedTasks = tasks?.filter((t: any) => t.status === 'confirmed');
-  const completedTasks = tasks?.filter((t: any) => t.status === 'completed');
 
   return (
     <DashboardLayout>
@@ -159,65 +152,67 @@ export default function CollaboratorTasks() {
           </p>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
-          </div>
-        ) : tasks?.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="space-y-8">
-            {pendingTasks && pendingTasks.length > 0 && (
-              <Section title="Aguardando Aceite" count={pendingTasks.length}>
-                {pendingTasks.map((task: any) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    type="pending"
-                    isLoading={loadingId === task.id}
-                    onAccept={handleAccept}
-                    onReject={handleRejectRequest}
-                    onComplete={handleComplete}
-                  />
-                ))}
-              </Section>
-            )}
+        <Tabs defaultValue="tasks" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="tasks">
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Tarefas Ativas
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <History className="w-4 h-4 mr-2" />
+              Meus Treinos
+            </TabsTrigger>
+          </TabsList>
 
-            {confirmedTasks && confirmedTasks.length > 0 && (
-              <Section title="Confirmados" count={confirmedTasks.length}>
-                {confirmedTasks.map((task: any) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    type="confirmed"
-                    isLoading={loadingId === task.id}
-                    onAccept={handleAccept}
-                    onReject={handleRejectRequest}
-                    onComplete={handleComplete}
-                  />
-                ))}
-              </Section>
-            )}
+          <TabsContent value="tasks">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-accent" />
+              </div>
+            ) : tasks?.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div className="space-y-8">
+                {pendingTasks && pendingTasks.length > 0 && (
+                  <Section title="Aguardando Aceite" count={pendingTasks.length}>
+                    {pendingTasks.map((task: any) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        type="pending"
+                        isLoading={loadingId === task.id}
+                        onAccept={handleAccept}
+                        onReject={handleRejectRequest}
+                        onComplete={handleComplete}
+                      />
+                    ))}
+                  </Section>
+                )}
 
-            {completedTasks && completedTasks.length > 0 && (
-              <Section title="Concluídos" count={completedTasks.length}>
-                {completedTasks.map((task: any) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    type="completed"
-                    isLoading={false}
-                    onAccept={handleAccept}
-                    onReject={handleRejectRequest}
-                    onComplete={handleComplete}
-                  />
-                ))}
-              </Section>
+                {confirmedTasks && confirmedTasks.length > 0 && (
+                  <Section title="Confirmados" count={confirmedTasks.length}>
+                    {confirmedTasks.map((task: any) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        type="confirmed"
+                        isLoading={loadingId === task.id}
+                        onAccept={handleAccept}
+                        onReject={handleRejectRequest}
+                        onComplete={handleComplete}
+                      />
+                    ))}
+                  </Section>
+                )}
+              </div>
             )}
-          </div>
-        )}
+          </TabsContent>
 
-        {/* Confirmation dialog for rejecting */}
+          <TabsContent value="history">
+            <CollaboratorHistory />
+          </TabsContent>
+        </Tabs>
+
         <RejectConfirmDialog
           open={rejectDialogOpen}
           onOpenChange={setRejectDialogOpen}
