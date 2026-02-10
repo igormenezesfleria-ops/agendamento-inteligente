@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { TIME_SLOTS, STATUS_LABELS } from '@/lib/constants';
-import { Loader2, Calendar, Clock, User, Check, X, CheckCircle2 } from 'lucide-react';
+import { isWithinDeadline } from '@/lib/deadline';
+import { Loader2, Calendar, Clock, User, Check, X, CheckCircle2, AlertTriangle } from 'lucide-react';
 
 export interface TaskCardProps {
   task: {
@@ -23,9 +24,11 @@ export interface TaskCardProps {
 
 export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete }: TaskCardProps) {
   const slot = TIME_SLOTS.find((s) => s.id === task.time_slot);
-  const taskDate = parseISO(task.date);
-  const isTodayTask = isToday(taskDate);
-  const formattedDate = format(taskDate, "EEEE, d 'de' MMMM", { locale: ptBR });
+  const parsedDate = parseISO(task.date + 'T12:00:00');
+  const isTodayTask = isToday(parsedDate);
+  const formattedDate = format(parsedDate, "EEEE, d 'de' MMMM", { locale: ptBR });
+
+  const canAct = isWithinDeadline(task.date, task.time_slot, 12);
 
   return (
     <Card className="card-hover">
@@ -57,31 +60,40 @@ export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete
           <div className="flex items-center gap-2">
             {type === 'pending' && (
               <>
-                <Button
-                  variant="success"
-                  size="sm"
-                  onClick={() => onAccept(task.id)}
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Check className="w-4 h-4 mr-1" />
-                      Aceitar
-                    </>
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                  onClick={() => onReject(task.id)}
-                  disabled={isLoading}
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Recusar
-                </Button>
+                {canAct ? (
+                  <>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={() => onAccept(task.id)}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <Check className="w-4 h-4 mr-1" />
+                          Aceitar
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => onReject(task.id)}
+                      disabled={isLoading}
+                    >
+                      <X className="w-4 h-4 mr-1" />
+                      Recusar
+                    </Button>
+                  </>
+                ) : (
+                  <Badge variant="destructive" className="flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Prazo de 12h expirado
+                  </Badge>
+                )}
               </>
             )}
 

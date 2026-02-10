@@ -3,7 +3,7 @@ import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, X, Loader2 } from 'lucide-react';
+import { Calendar, Clock, X, Loader2, User } from 'lucide-react';
 import { STATUS_LABELS, TIME_SLOTS } from '@/lib/constants';
 
 interface AppointmentCardProps {
@@ -11,6 +11,7 @@ interface AppointmentCardProps {
   date: string;
   timeSlot: string;
   status: string;
+  instructorName?: string | null;
   canCancel: boolean;
   isCancelling: boolean;
   onCancel: (id: string) => void;
@@ -21,17 +22,16 @@ export function AppointmentCard({
   date,
   timeSlot,
   status,
+  instructorName,
   canCancel,
   isCancelling,
   onCancel,
 }: AppointmentCardProps) {
   const slot = TIME_SLOTS.find((s) => s.id === timeSlot);
-  
-  // FIX: Parse the date string correctly without timezone shift
-  // The date comes as 'YYYY-MM-DD' from the database, so we parse it directly
-  // and add time to ensure it's treated as local time
   const dateObj = parseISO(date + 'T12:00:00');
   const formattedDate = format(dateObj, "EEEE, d 'de' MMMM", { locale: ptBR });
+
+  const showInstructor = (status === 'confirmed' || status === 'completed') && instructorName;
 
   return (
     <Card className="card-hover">
@@ -46,6 +46,12 @@ export function AppointmentCard({
               <Clock className="w-4 h-4" />
               <span>{slot?.label || timeSlot}</span>
             </div>
+            {showInstructor && (
+              <div className="flex items-center gap-2 text-sm text-accent">
+                <User className="w-4 h-4" />
+                <span>Instrutor: {instructorName}</span>
+              </div>
+            )}
             <Badge variant={status as any}>
               {STATUS_LABELS[status] || status}
             </Badge>
