@@ -76,10 +76,9 @@ export default function CollaboratorTasks() {
 
   const rejectMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'pending', instructor_id: null })
-        .eq('id', id);
+      const { error } = await supabase.rpc('decline_appointment', {
+        appointment_id: id,
+      });
       if (error) throw error;
     },
     onSuccess: () => {

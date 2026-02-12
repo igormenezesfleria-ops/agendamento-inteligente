@@ -169,6 +169,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      decline_appointment: {
+        Args: { appointment_id: string }
+        Returns: undefined
+      }
       get_slot_count: {
         Args: { slot_date: string; slot_time: string }
         Returns: number
