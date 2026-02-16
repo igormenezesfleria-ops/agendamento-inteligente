@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, User } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Dumbbell, GraduationCap } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres').max(100, 'Nome muito longo'),
@@ -21,9 +22,11 @@ const signupSchema = z.object({
 });
 
 type SignupFormData = z.infer<typeof signupSchema>;
+type SelectedRole = 'admin' | 'student';
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<SelectedRole | null>(null);
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -32,12 +35,16 @@ export function SignupForm() {
   });
 
   const onSubmit = async (data: SignupFormData) => {
+    if (!selectedRole) {
+      toast.error('Selecione seu perfil antes de continuar.');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      const { error } = await signUp(data.email, data.password, data.name);
+      const { error } = await signUp(data.email, data.password, data.name, selectedRole);
       
       if (error) {
-        // Handle specific Supabase Auth errors for duplicate emails
         if (
           error.message.includes('already registered') ||
           error.message.includes('User already registered') ||
@@ -66,6 +73,66 @@ export function SignupForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Role Selection */}
+      <div className="space-y-3">
+        <Label className="text-base font-semibold">Qual é o seu perfil?</Label>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => setSelectedRole('admin')}
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200',
+              selectedRole === 'admin'
+                ? 'border-accent bg-accent/10 shadow-md'
+                : 'border-border bg-card hover:border-accent/50 hover:bg-accent/5'
+            )}
+          >
+            <div className={cn(
+              'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
+              selectedRole === 'admin' ? 'accent-gradient' : 'bg-muted'
+            )}>
+              <Dumbbell className={cn(
+                'w-6 h-6',
+                selectedRole === 'admin' ? 'text-accent-foreground' : 'text-muted-foreground'
+              )} />
+            </div>
+            <span className={cn(
+              'font-semibold text-sm',
+              selectedRole === 'admin' ? 'text-accent' : 'text-foreground'
+            )}>
+              Sou Personal / Studio
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedRole('student')}
+            className={cn(
+              'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200',
+              selectedRole === 'student'
+                ? 'border-accent bg-accent/10 shadow-md'
+                : 'border-border bg-card hover:border-accent/50 hover:bg-accent/5'
+            )}
+          >
+            <div className={cn(
+              'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
+              selectedRole === 'student' ? 'accent-gradient' : 'bg-muted'
+            )}>
+              <GraduationCap className={cn(
+                'w-6 h-6',
+                selectedRole === 'student' ? 'text-accent-foreground' : 'text-muted-foreground'
+              )} />
+            </div>
+            <span className={cn(
+              'font-semibold text-sm',
+              selectedRole === 'student' ? 'text-accent' : 'text-foreground'
+            )}>
+              Sou Aluno
+            </span>
+          </button>
+        </div>
+      </div>
+
       <div className="space-y-2">
         <Label htmlFor="name">Nome Completo</Label>
         <div className="relative">
@@ -134,7 +201,7 @@ export function SignupForm() {
         )}
       </div>
 
-      <Button type="submit" variant="accent" size="lg" className="w-full" disabled={isLoading}>
+      <Button type="submit" variant="accent" size="lg" className="w-full" disabled={isLoading || !selectedRole}>
         {isLoading ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />

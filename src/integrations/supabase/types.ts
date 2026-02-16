@@ -53,6 +53,47 @@ export type Database = {
         }
         Relationships: []
       }
+      class_schedules: {
+        Row: {
+          capacity: number
+          class_name: string
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          instructor_id: string
+          start_time: string
+        }
+        Insert: {
+          capacity?: number
+          class_name?: string
+          created_at?: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          instructor_id: string
+          start_time: string
+        }
+        Update: {
+          capacity?: number
+          class_name?: string
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          instructor_id?: string
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_schedules_instructor_id_fkey"
+            columns: ["instructor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       locked_slots: {
         Row: {
           created_at: string
@@ -112,30 +153,42 @@ export type Database = {
       }
       profiles: {
         Row: {
+          collaborator_rate: number | null
           cpf: string | null
           created_at: string
           date_of_birth: string | null
+          default_capacity: number
+          hourly_rate: number | null
           id: string
+          is_onboarded: boolean
           name: string | null
           photo_url: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
         }
         Insert: {
+          collaborator_rate?: number | null
           cpf?: string | null
           created_at?: string
           date_of_birth?: string | null
+          default_capacity?: number
+          hourly_rate?: number | null
           id: string
+          is_onboarded?: boolean
           name?: string | null
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
         }
         Update: {
+          collaborator_rate?: number | null
           cpf?: string | null
           created_at?: string
           date_of_birth?: string | null
+          default_capacity?: number
+          hourly_rate?: number | null
           id?: string
+          is_onboarded?: boolean
           name?: string | null
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]

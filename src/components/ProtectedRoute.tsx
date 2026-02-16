@@ -23,9 +23,18 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/login" replace />;
   }
 
+  // Redirect admin users who haven't completed onboarding
+  if (
+    profile &&
+    profile.role === 'admin' &&
+    !profile.is_onboarded &&
+    location.pathname !== '/onboarding'
+  ) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   // If allowedRoles is specified, check if user has the required role
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
-    // Redirect to the correct role-based dashboard
     const role = profile.role;
     switch (role) {
       case 'admin':
