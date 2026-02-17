@@ -14,19 +14,16 @@ interface CreateCollaboratorRequest {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Get authorization header to verify admin
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("Não autorizado");
     }
 
-    // Create Supabase client with service role for admin operations
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -48,7 +45,6 @@ serve(async (req) => {
       throw new Error("Não autorizado");
     }
 
-    // Check if user is admin
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("role")
@@ -65,10 +61,51 @@ serve(async (req) => {
       throw new Error("Todos os campos são obrigatórios");
     }
 
-    // Get admin's business_owner_id (admins own themselves, so their id IS the business_owner_id)
     const adminId = userData.user.id;
 
-    // Create the user with admin client
+    // Check if email already exists
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find((u: any) => u.email === email);
+
+    if (existingUser) {
+      // User exists — check if already a collaborator for this admin
+      const { data: existingProfile } = await supabaseAdmin
+        .from("profiles")
+        .select("role, business_owner_id")
+        .eq("id", existingUser.id)
+        .single();
+
+      if (existingProfile?.role === "collaborator" && existingProfile?.business_owner_id === adminId) {
+        throw new Error("Este colaborador já está vinculado ao seu studio");
+      }
+
+      // Update existing user to collaborator role linked to this admin
+      const { error: profileError } = await supabaseAdmin
+        .from("profiles")
+        .update({ role: "collaborator", name, business_owner_id: adminId })
+        .eq("id", existingUser.id);
+
+      if (profileError) {
+        console.error("Error updating profile:", profileError);
+        throw new Error("Erro ao configurar perfil do colaborador");
+      }
+
+      const { error: roleError } = await supabaseAdmin
+        .from("user_roles")
+        .update({ role: "collaborator" })
+        .eq("user_id", existingUser.id);
+
+      if (roleError) {
+        console.error("Error updating user_roles:", roleError);
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, userId: existingUser.id }),
+        { headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Create new user
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,

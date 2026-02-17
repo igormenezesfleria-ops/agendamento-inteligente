@@ -71,9 +71,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="px-4 py-4 mt-16 lg:mt-0">
             <div className="bg-sidebar-accent rounded-xl p-4">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-sidebar-primary/20 flex items-center justify-center">
-                  <User className="w-5 h-5 text-sidebar-primary" />
-                </div>
+                {profile?.photo_url ? (
+                  <img src={profile.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-sidebar-primary/20 flex items-center justify-center">
+                    <User className="w-5 h-5 text-sidebar-primary" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sidebar-foreground truncate">
                     {profile?.name || 'Usuário'}

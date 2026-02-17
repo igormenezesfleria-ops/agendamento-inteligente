@@ -100,11 +100,11 @@ export default function MyAppointments() {
   };
 
   const upcomingAppointments = appointments?.filter(
-    (apt) => apt.status !== 'cancelled' && apt.status !== 'completed'
+    (apt) => apt.status !== 'cancelled' && apt.status !== 'completed' && apt.attendance !== 'present'
   );
 
   const pastAppointments = appointments?.filter(
-    (apt) => apt.status === 'completed' || apt.status === 'cancelled'
+    (apt) => apt.status === 'completed' || apt.status === 'cancelled' || apt.attendance === 'present'
   );
 
   return (

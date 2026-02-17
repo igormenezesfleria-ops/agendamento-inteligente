@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
@@ -22,6 +23,7 @@ export default function AdminScheduleManager() {
   const [endTime, setEndTime] = useState('10:00');
   const [capacity, setCapacity] = useState('10');
   const [className, setClassName] = useState('Musculação');
+  const [requiresApproval, setRequiresApproval] = useState(true);
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ['admin-class-schedules', user?.id],
@@ -47,6 +49,7 @@ export default function AdminScheduleManager() {
         end_time: endTime,
         capacity: parseInt(capacity) || 10,
         class_name: className || 'Musculação',
+        requires_approval: requiresApproval,
       });
       if (error) throw error;
     },
@@ -57,6 +60,7 @@ export default function AdminScheduleManager() {
       setStartTime('09:00');
       setEndTime('10:00');
       setCapacity('10');
+      setRequiresApproval(true);
     },
     onError: () => toast.error('Erro ao adicionar horário.'),
   });
@@ -73,7 +77,6 @@ export default function AdminScheduleManager() {
     onError: () => toast.error('Erro ao remover horário.'),
   });
 
-  // Group by day
   const grouped = (schedules || []).reduce<Record<number, typeof schedules>>((acc, s) => {
     if (!acc[s.day_of_week]) acc[s.day_of_week] = [];
     acc[s.day_of_week]!.push(s);
@@ -90,22 +93,11 @@ export default function AdminScheduleManager() {
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button variant="accent">
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Horário
-              </Button>
+              <Button variant="accent"><Plus className="w-4 h-4 mr-2" />Novo Horário</Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Horário</DialogTitle>
-              </DialogHeader>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  addMutation.mutate();
-                }}
-                className="space-y-4"
-              >
+              <DialogHeader><DialogTitle>Adicionar Horário</DialogTitle></DialogHeader>
+              <form onSubmit={(e) => { e.preventDefault(); addMutation.mutate(); }} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Dia da Semana</Label>
                   <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
@@ -133,12 +125,14 @@ export default function AdminScheduleManager() {
                 </div>
                 <div className="space-y-2">
                   <Label>Capacidade</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={capacity}
-                    onChange={(e) => setCapacity(e.target.value)}
-                  />
+                  <Input type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <Label>Exige Aprovação?</Label>
+                    <p className="text-xs text-muted-foreground">Se desativado, agendamentos são confirmados automaticamente.</p>
+                  </div>
+                  <Switch checked={requiresApproval} onCheckedChange={setRequiresApproval} />
                 </div>
                 <Button type="submit" variant="accent" className="w-full" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
@@ -150,9 +144,7 @@ export default function AdminScheduleManager() {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
-          </div>
+          <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-accent" /></div>
         ) : Object.keys(grouped).length === 0 ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
@@ -166,9 +158,7 @@ export default function AdminScheduleManager() {
               .sort(([a], [b]) => Number(a) - Number(b))
               .map(([day, slots]) => (
                 <div key={day}>
-                  <h3 className="font-display text-lg text-foreground mb-3">
-                    {DAYS_OF_WEEK[Number(day)]}
-                  </h3>
+                  <h3 className="font-display text-lg text-foreground mb-3">{DAYS_OF_WEEK[Number(day)]}</h3>
                   <div className="space-y-2">
                     {slots!.map((slot: any) => (
                       <Card key={slot.id}>
@@ -180,13 +170,11 @@ export default function AdminScheduleManager() {
                             </span>
                             <span className="text-sm text-muted-foreground">{slot.class_name}</span>
                             <span className="text-xs text-muted-foreground">({slot.capacity} vagas)</span>
+                            {!slot.requires_approval && (
+                              <span className="text-xs text-accent font-medium">Auto-confirma</span>
+                            )}
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => deleteMutation.mutate(slot.id)}
-                            disabled={deleteMutation.isPending}
-                          >
+                          <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(slot.id)} disabled={deleteMutation.isPending}>
                             <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         </CardContent>

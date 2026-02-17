@@ -92,16 +92,27 @@ export default function Booking() {
   const bookMutation = useMutation({
     mutationFn: async (timeSlot: string) => {
       if (!user?.id || !formattedDate) throw new Error('Missing data');
-      const { error } = await supabase.from('appointments').insert({
+      
+      // Check if the slot auto-confirms
+      const matchingSlot = classSlots?.find(s => s.start_time?.slice(0, 5) === timeSlot);
+      const autoConfirm = matchingSlot && !matchingSlot.requires_approval;
+      
+      const insertData: any = {
         student_id: user.id,
         date: formattedDate,
         time_slot: timeSlot,
-        status: 'pending',
-      });
+        status: autoConfirm ? 'confirmed' : 'pending',
+      };
+      
+      if (autoConfirm && trainerId) {
+        insertData.instructor_id = trainerId;
+      }
+      
+      const { error } = await supabase.from('appointments').insert(insertData);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Solicitação de agendamento enviada!');
+      toast.success('Agendamento realizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['slotCounts'] });
       queryClient.invalidateQueries({ queryKey: ['userBookings'] });
       setBookingSlot(null);

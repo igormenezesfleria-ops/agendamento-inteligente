@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,17 +14,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS } from '@/lib/constants';
 import { toast } from 'sonner';
-import { Loader2, User, Save, Trash2, Copy, Check } from 'lucide-react';
+import { Loader2, User, Save, Trash2, Copy, Check, Camera } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 
 const profileSchema = z.object({
@@ -41,6 +35,8 @@ export default function Profile() {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -56,21 +52,12 @@ export default function Profile() {
       if (!user?.id) throw new Error('Not authenticated');
       const { error } = await supabase
         .from('profiles')
-        .update({
-          name: data.name,
-          cpf: data.cpf || null,
-          date_of_birth: data.date_of_birth || null,
-        })
+        .update({ name: data.name, cpf: data.cpf || null, date_of_birth: data.date_of_birth || null })
         .eq('id', user.id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success('Perfil atualizado com sucesso!');
-      refreshProfile();
-    },
-    onError: () => {
-      toast.error('Erro ao atualizar perfil. Tente novamente.');
-    },
+    onSuccess: () => { toast.success('Perfil atualizado com sucesso!'); refreshProfile(); },
+    onError: () => { toast.error('Erro ao atualizar perfil. Tente novamente.'); },
   });
 
   const onSubmit = async (data: ProfileFormData) => {
@@ -79,18 +66,56 @@ export default function Profile() {
     setIsLoading(false);
   };
 
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user?.id) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 5MB.');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ photo_url: urlData.publicUrl })
+        .eq('id', user.id);
+      if (updateError) throw updateError;
+
+      toast.success('Foto atualizada!');
+      refreshProfile();
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao enviar foto.');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error('No session');
-
       const response = await supabase.functions.invoke('delete-user', {
         headers: { Authorization: `Bearer ${session.access_token}` },
       });
-
       if (response.error) throw response.error;
-
       toast.success('Conta excluída com sucesso.');
       await signOut();
       navigate('/', { replace: true });
@@ -119,6 +144,8 @@ export default function Profile() {
     return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
   };
 
+  const initials = profile?.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'U';
+
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in max-w-2xl">
@@ -130,8 +157,30 @@ export default function Profile() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
-                <User className="w-8 h-8 text-accent" />
+              <div className="relative group">
+                <Avatar className="w-16 h-16">
+                  {profile?.photo_url && <AvatarImage src={profile.photo_url} alt={profile.name || 'Avatar'} />}
+                  <AvatarFallback className="bg-accent/10 text-accent text-lg font-bold">{initials}</AvatarFallback>
+                </Avatar>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                >
+                  {isUploadingPhoto ? (
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  ) : (
+                    <Camera className="w-5 h-5 text-white" />
+                  )}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoUpload}
+                />
               </div>
               <div>
                 <CardTitle>{profile?.name || 'Usuário'}</CardTitle>
@@ -143,7 +192,6 @@ export default function Profile() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-              {/* Studio Code for admins */}
               {profile?.role === 'admin' && profile.studio_code && (
                 <div className="space-y-2">
                   <Label>Código do Studio</Label>
@@ -167,13 +215,7 @@ export default function Profile() {
 
               <div className="space-y-2">
                 <Label htmlFor="cpf">CPF</Label>
-                <Input
-                  id="cpf"
-                  placeholder="000.000.000-00"
-                  {...register('cpf')}
-                  onChange={(e) => { e.target.value = formatCPF(e.target.value); }}
-                  maxLength={14}
-                />
+                <Input id="cpf" placeholder="000.000.000-00" {...register('cpf')} onChange={(e) => { e.target.value = formatCPF(e.target.value); }} maxLength={14} />
                 {errors.cpf && <p className="text-sm text-destructive">{errors.cpf.message}</p>}
               </div>
 
@@ -189,50 +231,29 @@ export default function Profile() {
               </div>
 
               <Button type="submit" variant="accent" disabled={isLoading}>
-                {isLoading ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</>
-                ) : (
-                  <><Save className="w-4 h-4" /> Salvar Alterações</>
-                )}
+                {isLoading ? (<><Loader2 className="w-4 h-4 animate-spin" /> Salvando...</>) : (<><Save className="w-4 h-4" /> Salvar Alterações</>)}
               </Button>
             </form>
           </CardContent>
         </Card>
 
-        {/* Delete Account */}
         <Card className="border-destructive/30">
-          <CardHeader>
-            <CardTitle className="text-destructive text-lg">Zona de Perigo</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-destructive text-lg">Zona de Perigo</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">
-              Ao excluir sua conta, todos os seus dados serão removidos permanentemente. Esta ação não pode ser desfeita.
-            </p>
+            <p className="text-sm text-muted-foreground mb-4">Ao excluir sua conta, todos os seus dados serão removidos permanentemente.</p>
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2 className="w-4 h-4 mr-2" /> Deletar Minha Conta
-                </Button>
+                <Button variant="destructive"><Trash2 className="w-4 h-4 mr-2" /> Deletar Minha Conta</Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Esta ação é irreversível. Todos os seus dados, agendamentos e configurações serão excluídos permanentemente.
-                  </AlertDialogDescription>
+                  <AlertDialogDescription>Esta ação é irreversível. Todos os seus dados serão excluídos permanentemente.</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleDeleteAccount}
-                    disabled={isDeleting}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {isDeleting ? (
-                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Excluindo...</>
-                    ) : (
-                      'Sim, excluir minha conta'
-                    )}
+                  <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    {isDeleting ? (<><Loader2 className="w-4 h-4 animate-spin mr-2" /> Excluindo...</>) : 'Sim, excluir minha conta'}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
