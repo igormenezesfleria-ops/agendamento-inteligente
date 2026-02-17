@@ -22,7 +22,7 @@ export default function MyAppointments() {
 
       const { data, error } = await supabase
         .from('appointments')
-        .select('*')
+        .select('id, date, time_slot, status, student_id, instructor_id, attendance')
         .eq('student_id', user.id)
         .order('date', { ascending: true })
         .order('time_slot', { ascending: true });
@@ -144,6 +144,7 @@ export default function MyAppointments() {
                     timeSlot={apt.time_slot}
                     status={apt.status}
                     instructorName={apt.instructorName}
+                    attendance={apt.attendance}
                     canCancel={canCancel(apt.date, apt.time_slot)}
                     isCancelling={cancellingId === apt.id}
                     onCancel={handleCancel}
@@ -166,6 +167,7 @@ export default function MyAppointments() {
                     timeSlot={apt.time_slot}
                     status={apt.status}
                     instructorName={apt.instructorName}
+                    attendance={apt.attendance}
                     canCancel={false}
                     isCancelling={false}
                     onCancel={() => {}}

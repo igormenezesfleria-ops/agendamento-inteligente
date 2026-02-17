@@ -12,6 +12,7 @@ interface AppointmentCardProps {
   timeSlot: string;
   status: string;
   instructorName?: string | null;
+  attendance?: string | null;
   canCancel: boolean;
   isCancelling: boolean;
   onCancel: (id: string) => void;
@@ -23,6 +24,7 @@ export function AppointmentCard({
   timeSlot,
   status,
   instructorName,
+  attendance,
   canCancel,
   isCancelling,
   onCancel,
@@ -52,9 +54,17 @@ export function AppointmentCard({
                 <span>Instrutor: {instructorName}</span>
               </div>
             )}
-            <Badge variant={status as any}>
-              {STATUS_LABELS[status] || status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={status as any}>
+                {STATUS_LABELS[status] || status}
+              </Badge>
+              {attendance === 'present' && (
+                <Badge variant="confirmed">Presente</Badge>
+              )}
+              {attendance === 'absent' && (
+                <Badge variant="destructive">Faltou</Badge>
+              )}
+            </div>
           </div>
 
           {canCancel && (status === 'pending' || status === 'confirmed') && (

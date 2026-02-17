@@ -1,4 +1,4 @@
-import { format, addDays, isWeekend, isBefore, startOfDay } from 'date-fns';
+import { format, addDays, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { BOOKING_WINDOW_DAYS } from '@/lib/constants';
@@ -11,15 +11,10 @@ interface DateSelectorProps {
 export function DateSelector({ selectedDate, onSelectDate }: DateSelectorProps) {
   const today = startOfDay(new Date());
   
-  // Generate available dates (next 31 days, excluding weekends)
+  // Generate next BOOKING_WINDOW_DAYS calendar days (all 7 days of week)
   const availableDates: Date[] = [];
-  let currentDate = today;
-  
-  while (availableDates.length < BOOKING_WINDOW_DAYS) {
-    if (!isWeekend(currentDate)) {
-      availableDates.push(currentDate);
-    }
-    currentDate = addDays(currentDate, 1);
+  for (let i = 0; i < BOOKING_WINDOW_DAYS; i++) {
+    availableDates.push(addDays(today, i));
   }
 
   return (

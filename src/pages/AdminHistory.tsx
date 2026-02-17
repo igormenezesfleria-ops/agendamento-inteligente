@@ -14,7 +14,7 @@ export default function AdminHistory() {
     queryFn: async () => {
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select('id, date, time_slot, status, student_id, instructor_id, completed_at')
+        .select('id, date, time_slot, status, student_id, instructor_id, completed_at, attendance')
         .in('status', ['completed', 'cancelled', 'rejected'])
         .order('date', { ascending: false })
         .limit(100);
@@ -100,9 +100,13 @@ export default function AdminHistory() {
                           </div>
                         </div>
                       </div>
-                      <Badge variant={statusVariant(item.status) as any}>
-                        {STATUS_LABELS[item.status] || item.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        {item.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
+                        {item.attendance === 'absent' && <Badge variant="destructive">Faltou</Badge>}
+                        <Badge variant={statusVariant(item.status) as any}>
+                          {STATUS_LABELS[item.status] || item.status}
+                        </Badge>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

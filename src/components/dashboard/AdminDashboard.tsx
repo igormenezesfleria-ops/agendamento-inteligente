@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bell, Calendar, Users, Lock, History, ArrowRight, MessageSquare, Loader2, Settings, CalendarCheck } from 'lucide-react';
+import { Bell, Calendar, Users, Lock, History, ArrowRight, MessageSquare, Loader2, Settings, CalendarCheck, GraduationCap } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function AdminDashboard() {
@@ -111,6 +111,12 @@ export function AdminDashboard() {
           title="Gerenciar Equipe"
           description="Adicionar ou remover colaboradores"
           href="/dashboard/equipe"
+        />
+        <QuickActionCard
+          icon={GraduationCap}
+          title="Meus Alunos"
+          description="Gerencie e acompanhe seus alunos"
+          href="/dashboard/meus-alunos"
         />
         <QuickActionCard
           icon={Lock}

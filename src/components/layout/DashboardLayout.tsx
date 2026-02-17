@@ -5,21 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS } from '@/lib/constants';
 import {
-  Dumbbell,
-  Calendar,
-  User,
-  LogOut,
-  Menu,
-  X,
-  Home,
-  Users,
-  Bell,
-  ClipboardList,
-  Lock,
-  History,
-  MessageSquare,
-  Settings,
-  CalendarCheck,
+  Dumbbell, Calendar, User, LogOut, Menu, X, Home, Users, Bell,
+  ClipboardList, Lock, History, MessageSquare, Settings, CalendarCheck, GraduationCap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -167,6 +154,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/agenda', label: 'Agenda Completa', icon: Calendar },
     { href: '/dashboard/configurar-horarios', label: 'Configurar Horários', icon: Settings },
     { href: '/dashboard/equipe', label: 'Equipe', icon: Users },
+    { href: '/dashboard/meus-alunos', label: 'Meus Alunos', icon: GraduationCap },
     { href: '/dashboard/trancamentos', label: 'Trancamentos', icon: Lock },
     { href: '/dashboard/historico', label: 'Histórico', icon: History },
     { href: '/dashboard/comunicados', label: 'Comunicados', icon: MessageSquare },

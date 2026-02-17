@@ -20,6 +20,7 @@ import AdminScheduleManager from "./pages/AdminScheduleManager";
 import AdminHistory from "./pages/AdminHistory";
 import AdminAnnouncements from "./pages/AdminAnnouncements";
 import TeamManagement from "./pages/TeamManagement";
+import MyStudents from "./pages/MyStudents";
 import LockSlots from "./pages/LockSlots";
 import CollaboratorTasks from "./pages/CollaboratorTasks";
 import MySchedule from "./pages/MySchedule";
@@ -126,6 +127,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <TeamManagement />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/meus-alunos"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <MyStudents />
                 </ProtectedRoute>
               }
             />
