@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bell, Calendar, Users, Lock, History, ArrowRight, MessageSquare, Loader2 } from 'lucide-react';
+import { Bell, Calendar, Users, Lock, History, ArrowRight, MessageSquare, Loader2, Settings, CalendarCheck } from 'lucide-react';
 import { format } from 'date-fns';
 
 export function AdminDashboard() {
@@ -89,10 +89,22 @@ export function AdminDashboard() {
           accent
         />
         <QuickActionCard
+          icon={CalendarCheck}
+          title="Minha Agenda"
+          description="Seus treinos confirmados"
+          href="/dashboard/minha-agenda"
+        />
+        <QuickActionCard
           icon={Calendar}
           title="Agenda Completa"
           description="Visualize todos os agendamentos"
           href="/dashboard/agenda"
+        />
+        <QuickActionCard
+          icon={Settings}
+          title="Configurar Horários"
+          description="Defina seus horários semanais"
+          href="/dashboard/configurar-horarios"
         />
         <QuickActionCard
           icon={Users}

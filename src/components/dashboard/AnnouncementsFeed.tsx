@@ -1,24 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, MessageSquare, Megaphone } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function AnnouncementsFeed() {
+  const { profile } = useAuth();
+
   const { data: announcements, isLoading } = useQuery({
-    queryKey: ['student-announcements'],
+    queryKey: ['student-announcements', profile?.business_owner_id],
     queryFn: async () => {
+      if (!profile?.business_owner_id) return [];
+
       const { data, error } = await supabase
         .from('notifications')
         .select('id, title, message, created_at')
         .eq('is_broadcast', true)
+        .eq('creator_id', profile.business_owner_id)
         .order('created_at', { ascending: false })
         .limit(5);
 
       if (error) throw error;
       return data || [];
     },
+    enabled: !!profile?.business_owner_id,
   });
 
   if (isLoading) {

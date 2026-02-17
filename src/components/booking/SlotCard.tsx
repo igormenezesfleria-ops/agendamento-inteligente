@@ -12,6 +12,7 @@ interface SlotCardProps {
   canBook: boolean;
   isLoading: boolean;
   onBook: () => void;
+  maxCapacity?: number;
 }
 
 export function SlotCard({
@@ -23,8 +24,10 @@ export function SlotCard({
   canBook,
   isLoading,
   onBook,
+  maxCapacity,
 }: SlotCardProps) {
-  const remaining = MAX_STUDENTS_PER_SLOT - count;
+  const cap = maxCapacity ?? MAX_STUDENTS_PER_SLOT;
+  const remaining = cap - count;
   const isFull = remaining <= 0;
 
   const getAvailabilityVariant = () => {

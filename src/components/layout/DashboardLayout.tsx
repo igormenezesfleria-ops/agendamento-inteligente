@@ -18,6 +18,8 @@ import {
   Lock,
   History,
   MessageSquare,
+  Settings,
+  CalendarCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -161,7 +163,9 @@ function getNavItems(role: string) {
   const adminItems = [
     { href: '/dashboard/admin', label: 'Início', icon: Home },
     { href: '/dashboard/solicitacoes', label: 'Solicitações', icon: Bell },
+    { href: '/dashboard/minha-agenda', label: 'Minha Agenda', icon: CalendarCheck },
     { href: '/dashboard/agenda', label: 'Agenda Completa', icon: Calendar },
+    { href: '/dashboard/configurar-horarios', label: 'Configurar Horários', icon: Settings },
     { href: '/dashboard/equipe', label: 'Equipe', icon: Users },
     { href: '/dashboard/trancamentos', label: 'Trancamentos', icon: Lock },
     { href: '/dashboard/historico', label: 'Histórico', icon: History },
@@ -171,6 +175,7 @@ function getNavItems(role: string) {
 
   const collaboratorItems = [
     { href: '/dashboard/collaborator', label: 'Início', icon: Home },
+    { href: '/dashboard/meus-treinos', label: 'Meus Treinos', icon: CalendarCheck },
     { href: '/dashboard/minhas-tarefas', label: 'Minhas Tarefas', icon: ClipboardList },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
