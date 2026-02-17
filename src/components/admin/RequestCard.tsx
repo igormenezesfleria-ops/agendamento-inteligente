@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Check, UserPlus, Loader2, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, Check, UserPlus, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import { TIME_SLOTS } from '@/lib/constants';
 import { isWithinDeadline } from '@/lib/deadline';
+import { isPast, parseISO as parseISODate } from 'date-fns';
 
 interface RequestCardProps {
   id: string;
@@ -18,6 +19,7 @@ interface RequestCardProps {
   isLoading: boolean;
   onConfirm: (id: string) => void;
   onDelegate: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export function RequestCard({
@@ -30,12 +32,15 @@ export function RequestCard({
   isLoading,
   onConfirm,
   onDelegate,
+  onDelete,
 }: RequestCardProps) {
   const slot = TIME_SLOTS.find((s) => s.id === timeSlot);
   const parsedDate = parseISO(date + 'T12:00:00');
   const formattedDate = format(parsedDate, "EEEE, d 'de' MMMM", { locale: ptBR });
 
   const canAct = isWithinDeadline(date, timeSlot, 12);
+  const appointmentDt = parseISODate(date + 'T' + timeSlot + ':00');
+  const isExpired = isPast(appointmentDt);
 
   const initials = studentName
     .split(' ')
@@ -72,7 +77,28 @@ export function RequestCard({
           </div>
 
           <div className="flex items-center gap-2">
-            {canAct ? (
+            {isExpired ? (
+              <>
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Expirado
+                </Badge>
+                {onDelete && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => onDelete(id)}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                )}
+              </>
+            ) : canAct ? (
               <>
                 <Button
                   variant="success"

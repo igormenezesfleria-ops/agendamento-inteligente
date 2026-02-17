@@ -77,10 +77,9 @@ export default function MyStudents() {
 
   const unlinkMutation = useMutation({
     mutationFn: async (studentId: string) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ business_owner_id: null })
-        .eq('id', studentId);
+      const { error } = await supabase.rpc('unlink_student', {
+        target_student_id: studentId,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
