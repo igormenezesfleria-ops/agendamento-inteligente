@@ -103,17 +103,13 @@ export default function AdminRequests() {
     },
   });
 
-  // Delegate mutation
+  // Delegate mutation via RPC
   const delegateMutation = useMutation({
     mutationFn: async ({ id, instructorId }: { id: string; instructorId: string }) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          status: 'delegated',
-          instructor_id: instructorId,
-        })
-        .eq('id', id);
-
+      const { error } = await supabase.rpc('delegate_appointment', {
+        appt_id: id,
+        target_instructor_id: instructorId,
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -143,6 +139,27 @@ export default function AdminRequests() {
   const handleDelegate = (id: string) => {
     setSelectedAppointment(id);
     setDelegateDialogOpen(true);
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('appointments').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Solicitação expirada removida.');
+      queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
+      setLoadingId(null);
+    },
+    onError: () => {
+      toast.error('Erro ao remover solicitação');
+      setLoadingId(null);
+    },
+  });
+
+  const handleDelete = (id: string) => {
+    setLoadingId(id);
+    deleteMutation.mutate(id);
   };
 
   const handleDelegateSubmit = () => {
@@ -184,6 +201,7 @@ export default function AdminRequests() {
                 isLoading={loadingId === request.id}
                 onConfirm={handleConfirm}
                 onDelegate={handleDelegate}
+                onDelete={handleDelete}
               />
             ))}
           </div>

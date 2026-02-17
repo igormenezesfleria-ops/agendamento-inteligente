@@ -252,6 +252,10 @@ export type Database = {
         Args: { appointment_id: string }
         Returns: undefined
       }
+      delegate_appointment: {
+        Args: { appt_id: string; target_instructor_id: string }
+        Returns: undefined
+      }
       get_business_owner_id: { Args: { _user_id: string }; Returns: string }
       get_slot_count: {
         Args: { slot_date: string; slot_time: string }
@@ -271,6 +275,10 @@ export type Database = {
       link_student_to_trainer: {
         Args: { p_studio_code: string }
         Returns: Json
+      }
+      unlink_student: {
+        Args: { target_student_id: string }
+        Returns: undefined
       }
     }
     Enums: {
