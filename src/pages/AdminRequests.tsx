@@ -66,10 +66,13 @@ export default function AdminRequests() {
   const { data: collaborators } = useQuery({
     queryKey: ['collaborators'],
     queryFn: async () => {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return [];
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name')
-        .eq('role', 'collaborator');
+        .eq('role', 'collaborator')
+        .eq('business_owner_id', currentUser.id);
 
       if (error) throw error;
       return data || [];

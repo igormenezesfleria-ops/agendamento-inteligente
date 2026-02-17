@@ -54,10 +54,23 @@ export default function MyStudents() {
         .from('appointments')
         .select('id, date, time_slot, status, attendance, completed_at')
         .eq('student_id', selectedStudent!.id)
+        .in('status', ['completed'])
         .order('date', { ascending: false })
         .limit(50);
       if (error) throw error;
-      return data;
+      // Also include confirmed+present
+      const { data: presentData, error: presentErr } = await supabase
+        .from('appointments')
+        .select('id, date, time_slot, status, attendance, completed_at')
+        .eq('student_id', selectedStudent!.id)
+        .eq('status', 'confirmed')
+        .eq('attendance', 'present')
+        .order('date', { ascending: false })
+        .limit(50);
+      if (presentErr) throw presentErr;
+      const combined = [...(data || []), ...(presentData || [])];
+      combined.sort((a, b) => b.date.localeCompare(a.date));
+      return combined;
     },
     enabled: !!selectedStudent?.id && historyOpen,
   });

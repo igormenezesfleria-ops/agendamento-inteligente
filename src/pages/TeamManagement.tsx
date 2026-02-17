@@ -49,10 +49,13 @@ export default function TeamManagement() {
   const { data: collaborators, isLoading } = useQuery({
     queryKey: ['collaborators'],
     queryFn: async () => {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return [];
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, created_at')
         .eq('role', 'collaborator')
+        .eq('business_owner_id', currentUser.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

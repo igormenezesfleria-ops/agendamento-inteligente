@@ -68,6 +68,7 @@ export type Database = {
           end_time: string
           id: string
           instructor_id: string
+          requires_approval: boolean
           start_time: string
         }
         Insert: {
@@ -78,6 +79,7 @@ export type Database = {
           end_time: string
           id?: string
           instructor_id: string
+          requires_approval?: boolean
           start_time: string
         }
         Update: {
@@ -88,6 +90,7 @@ export type Database = {
           end_time?: string
           id?: string
           instructor_id?: string
+          requires_approval?: boolean
           start_time?: string
         }
         Relationships: [
