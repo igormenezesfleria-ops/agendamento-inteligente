@@ -16,36 +16,42 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          attendance: string | null
           completed_at: string | null
           created_at: string
           date: string
           id: string
           instructor_id: string | null
           notes: string | null
+          private_notes: string | null
           status: Database["public"]["Enums"]["appointment_status"]
           student_id: string
           time_slot: string
           updated_at: string
         }
         Insert: {
+          attendance?: string | null
           completed_at?: string | null
           created_at?: string
           date: string
           id?: string
           instructor_id?: string | null
           notes?: string | null
+          private_notes?: string | null
           status?: Database["public"]["Enums"]["appointment_status"]
           student_id: string
           time_slot: string
           updated_at?: string
         }
         Update: {
+          attendance?: string | null
           completed_at?: string | null
           created_at?: string
           date?: string
           id?: string
           instructor_id?: string | null
           notes?: string | null
+          private_notes?: string | null
           status?: Database["public"]["Enums"]["appointment_status"]
           student_id?: string
           time_slot?: string

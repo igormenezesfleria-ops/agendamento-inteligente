@@ -65,11 +65,14 @@ serve(async (req) => {
       throw new Error("Todos os campos são obrigatórios");
     }
 
+    // Get admin's business_owner_id (admins own themselves, so their id IS the business_owner_id)
+    const adminId = userData.user.id;
+
     // Create the user with admin client
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: true, // Auto-confirm email for collaborators
+      email_confirm: true,
       user_metadata: { name },
     });
 
@@ -78,15 +81,14 @@ serve(async (req) => {
       throw new Error(createError.message);
     }
 
-    // Update profile to collaborator role
+    // Update profile to collaborator role and link to admin's studio
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
-      .update({ role: "collaborator", name })
+      .update({ role: "collaborator", name, business_owner_id: adminId })
       .eq("id", newUser.user.id);
 
     if (profileError) {
       console.error("Error updating profile:", profileError);
-      // Try to clean up created user
       await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
       throw new Error("Erro ao configurar perfil do colaborador");
     }
