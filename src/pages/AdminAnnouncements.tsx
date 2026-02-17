@@ -34,12 +34,16 @@ export default function AdminAnnouncements() {
 
   const sendMutation = useMutation({
     mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const { error } = await supabase
         .from('notifications')
         .insert({
           title,
           message,
           is_broadcast: true,
+          creator_id: user.id,
         });
 
       if (error) throw error;

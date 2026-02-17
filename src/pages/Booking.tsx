@@ -1,37 +1,53 @@
 import { useState } from 'react';
-import { format, isAfter, addHours, startOfDay } from 'date-fns';
+import { format, isAfter, addHours, getDay } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DateSelector } from '@/components/booking/DateSelector';
 import { SlotCard } from '@/components/booking/SlotCard';
-import { TIME_SLOTS, BOOKING_DEADLINE_HOURS } from '@/lib/constants';
+import { BOOKING_DEADLINE_HOURS } from '@/lib/constants';
 import { toast } from 'sonner';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Inbox } from 'lucide-react';
 
 export default function Booking() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [bookingSlot, setBookingSlot] = useState<string | null>(null);
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
+  const dayOfWeek = selectedDate ? getDay(selectedDate) : null;
+  const trainerId = profile?.business_owner_id;
+
+  // Fetch class_schedules for the trainer matching the selected day
+  const { data: classSlots, isLoading: isLoadingSlots } = useQuery({
+    queryKey: ['class-slots', trainerId, dayOfWeek],
+    queryFn: async () => {
+      if (!trainerId || dayOfWeek === null) return [];
+      const { data, error } = await supabase
+        .from('class_schedules')
+        .select('*')
+        .eq('instructor_id', trainerId)
+        .eq('day_of_week', dayOfWeek)
+        .order('start_time');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!trainerId && dayOfWeek !== null,
+  });
 
   // Fetch slot counts for selected date
   const { data: slotCounts, isLoading: isLoadingCounts } = useQuery({
     queryKey: ['slotCounts', formattedDate],
     queryFn: async () => {
       if (!formattedDate) return {};
-      
       const { data, error } = await supabase
         .from('appointments')
         .select('time_slot')
         .eq('date', formattedDate)
         .in('status', ['pending', 'confirmed', 'delegated']);
-
       if (error) throw error;
-
       const counts: Record<string, number> = {};
       data?.forEach((apt) => {
         counts[apt.time_slot] = (counts[apt.time_slot] || 0) + 1;
@@ -46,12 +62,10 @@ export default function Booking() {
     queryKey: ['lockedSlots', formattedDate],
     queryFn: async () => {
       if (!formattedDate) return [];
-      
       const { data, error } = await supabase
         .from('locked_slots')
         .select('time_slot')
         .eq('date', formattedDate);
-
       if (error) throw error;
       return data?.map((s) => s.time_slot) || [];
     },
@@ -63,32 +77,27 @@ export default function Booking() {
     queryKey: ['userBookings', formattedDate, user?.id],
     queryFn: async () => {
       if (!formattedDate || !user?.id) return [];
-      
       const { data, error } = await supabase
         .from('appointments')
         .select('time_slot')
         .eq('student_id', user.id)
         .eq('date', formattedDate)
         .neq('status', 'cancelled');
-
       if (error) throw error;
       return data?.map((s) => s.time_slot) || [];
     },
     enabled: !!formattedDate && !!user?.id,
   });
 
-  // Create booking mutation
   const bookMutation = useMutation({
     mutationFn: async (timeSlot: string) => {
       if (!user?.id || !formattedDate) throw new Error('Missing data');
-
       const { error } = await supabase.from('appointments').insert({
         student_id: user.id,
         date: formattedDate,
         time_slot: timeSlot,
         status: 'pending',
       });
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -112,18 +121,16 @@ export default function Booking() {
     bookMutation.mutate(timeSlot);
   };
 
-  const canBookSlot = (timeSlot: string) => {
+  const canBookSlot = (startTime: string) => {
     if (!selectedDate) return false;
-    
-    // Parse time slot
-    const [hours] = timeSlot.split(':').map(Number);
+    const [hours, mins] = startTime.split(':').map(Number);
     const slotDateTime = new Date(selectedDate);
-    slotDateTime.setHours(hours, 0, 0, 0);
-    
-    // Check if booking deadline has passed (2 hours before)
+    slotDateTime.setHours(hours, mins || 0, 0, 0);
     const deadline = addHours(new Date(), BOOKING_DEADLINE_HOURS);
     return isAfter(slotDateTime, deadline);
   };
+
+  const isLoading = isLoadingSlots || isLoadingCounts;
 
   return (
     <DashboardLayout>
@@ -143,56 +150,39 @@ export default function Booking() {
               Horários Disponíveis - {format(selectedDate, "d 'de' MMMM")}
             </h3>
 
-            {isLoadingCounts ? (
+            {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-8 h-8 animate-spin text-accent" />
               </div>
+            ) : !classSlots || classSlots.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
+                  <Inbox className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground text-sm">
+                  Nenhum horário disponível neste dia.
+                </p>
+              </div>
             ) : (
-              <>
-                {/* Morning slots */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    Manhã
-                  </h4>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {TIME_SLOTS.filter((s) => s.period === 'morning').map((slot) => (
-                      <SlotCard
-                        key={slot.id}
-                        timeSlot={slot.id}
-                        label={slot.label}
-                        count={slotCounts?.[slot.id] || 0}
-                        isLocked={lockedSlots?.includes(slot.id) || false}
-                        isBooked={userBookings?.includes(slot.id) || false}
-                        canBook={canBookSlot(slot.id)}
-                        isLoading={bookingSlot === slot.id}
-                        onBook={() => handleBook(slot.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Afternoon/Evening slots */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                    Tarde / Noite
-                  </h4>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {TIME_SLOTS.filter((s) => s.period !== 'morning').map((slot) => (
-                      <SlotCard
-                        key={slot.id}
-                        timeSlot={slot.id}
-                        label={slot.label}
-                        count={slotCounts?.[slot.id] || 0}
-                        isLocked={lockedSlots?.includes(slot.id) || false}
-                        isBooked={userBookings?.includes(slot.id) || false}
-                        canBook={canBookSlot(slot.id)}
-                        isLoading={bookingSlot === slot.id}
-                        onBook={() => handleBook(slot.id)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {classSlots.map((slot) => {
+                  const slotKey = slot.start_time?.slice(0, 5) || '';
+                  return (
+                    <SlotCard
+                      key={slot.id}
+                      timeSlot={slotKey}
+                      label={`${slotKey} - ${slot.end_time?.slice(0, 5)}`}
+                      count={slotCounts?.[slotKey] || 0}
+                      isLocked={lockedSlots?.includes(slotKey) || false}
+                      isBooked={userBookings?.includes(slotKey) || false}
+                      canBook={canBookSlot(slotKey)}
+                      isLoading={bookingSlot === slotKey}
+                      onBook={() => handleBook(slotKey)}
+                      maxCapacity={slot.capacity}
+                    />
+                  );
+                })}
+              </div>
             )}
           </div>
         )}

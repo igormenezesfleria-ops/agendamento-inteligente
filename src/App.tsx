@@ -16,11 +16,13 @@ import MyAppointments from "./pages/MyAppointments";
 import Profile from "./pages/Profile";
 import AdminRequests from "./pages/AdminRequests";
 import AdminSchedule from "./pages/AdminSchedule";
+import AdminScheduleManager from "./pages/AdminScheduleManager";
 import AdminHistory from "./pages/AdminHistory";
 import AdminAnnouncements from "./pages/AdminAnnouncements";
 import TeamManagement from "./pages/TeamManagement";
 import LockSlots from "./pages/LockSlots";
 import CollaboratorTasks from "./pages/CollaboratorTasks";
+import MySchedule from "./pages/MySchedule";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
@@ -159,6 +161,22 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/dashboard/configurar-horarios"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminScheduleManager />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/minha-agenda"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <MySchedule />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Collaborator routes */}
             <Route
@@ -166,6 +184,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['collaborator']}>
                   <CollaboratorTasks />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/meus-treinos"
+              element={
+                <ProtectedRoute allowedRoles={['collaborator']}>
+                  <MySchedule />
                 </ProtectedRoute>
               }
             />

@@ -1,21 +1,40 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Calendar as CalendarIcon, Clock, User } from 'lucide-react';
-import { format, addDays } from 'date-fns';
+import { Loader2, Calendar as CalendarIcon, Clock, User, Inbox } from 'lucide-react';
+import { format, addDays, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { TIME_SLOTS, STATUS_LABELS } from '@/lib/constants';
+import { STATUS_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
 export default function AdminSchedule() {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const dateStr = format(selectedDate, 'yyyy-MM-dd');
+  const dayOfWeek = getDay(selectedDate);
+
+  // Fetch class_schedules for this day
+  const { data: classSlots } = useQuery({
+    queryKey: ['admin-class-slots', user?.id, dayOfWeek],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('class_schedules')
+        .select('*')
+        .eq('instructor_id', user!.id)
+        .eq('day_of_week', dayOfWeek)
+        .order('start_time');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
 
   const { data: appointments, isLoading } = useQuery({
     queryKey: ['admin-schedule', dateStr],
@@ -47,9 +66,9 @@ export default function AdminSchedule() {
 
   const statusVariant = (status: string) => {
     switch (status) {
-      case 'confirmed': return 'success';
-      case 'pending': return 'warning';
-      case 'delegated': return 'secondary';
+      case 'confirmed': return 'confirmed';
+      case 'pending': return 'pending';
+      case 'delegated': return 'delegated';
       default: return 'outline';
     }
   };
@@ -92,11 +111,19 @@ export default function AdminSchedule() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
+        ) : !classSlots || classSlots.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
+              <Inbox className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground">Nenhum horário configurado para este dia.</p>
+          </div>
         ) : (
           <div className="space-y-3">
-            {TIME_SLOTS.map((slot) => {
+            {classSlots.map((slot) => {
+              const slotKey = slot.start_time?.slice(0, 5) || '';
               const slotAppointments = appointments?.filter(
-                (a: any) => a.time_slot === slot.id
+                (a: any) => a.time_slot === slotKey
               ) || [];
 
               return (
@@ -105,7 +132,9 @@ export default function AdminSchedule() {
                     <div className="flex items-start gap-4">
                       <div className="flex items-center gap-2 min-w-[120px]">
                         <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium text-foreground">{slot.label}</span>
+                        <span className="font-medium text-foreground">
+                          {slotKey} - {slot.end_time?.slice(0, 5)}
+                        </span>
                       </div>
                       <div className="flex-1">
                         {slotAppointments.length === 0 ? (
@@ -127,7 +156,7 @@ export default function AdminSchedule() {
                         )}
                       </div>
                       <Badge variant="outline" className="text-xs">
-                        {slotAppointments.length}/4
+                        {slotAppointments.length}/{slot.capacity}
                       </Badge>
                     </div>
                   </CardContent>
