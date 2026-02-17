@@ -153,6 +153,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          business_owner_id: string | null
           collaborator_rate: number | null
           cpf: string | null
           created_at: string
@@ -164,9 +165,11 @@ export type Database = {
           name: string | null
           photo_url: string | null
           role: Database["public"]["Enums"]["app_role"]
+          studio_code: string | null
           updated_at: string
         }
         Insert: {
+          business_owner_id?: string | null
           collaborator_rate?: number | null
           cpf?: string | null
           created_at?: string
@@ -178,9 +181,11 @@ export type Database = {
           name?: string | null
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          studio_code?: string | null
           updated_at?: string
         }
         Update: {
+          business_owner_id?: string | null
           collaborator_rate?: number | null
           cpf?: string | null
           created_at?: string
@@ -192,9 +197,18 @@ export type Database = {
           name?: string | null
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
+          studio_code?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_business_owner_id_fkey"
+            columns: ["business_owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -226,6 +240,7 @@ export type Database = {
         Args: { appointment_id: string }
         Returns: undefined
       }
+      get_business_owner_id: { Args: { _user_id: string }; Returns: string }
       get_slot_count: {
         Args: { slot_date: string; slot_time: string }
         Returns: number
@@ -240,6 +255,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      link_student_to_trainer: {
+        Args: { p_studio_code: string }
+        Returns: Json
       }
     }
     Enums: {

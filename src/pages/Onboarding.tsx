@@ -39,6 +39,12 @@ export default function Onboarding() {
   const [collaboratorRate, setCollaboratorRate] = useState('');
   const [defaultClassName, setDefaultClassName] = useState('Musculação');
   const [defaultCapacity, setDefaultCapacity] = useState('10');
+  const [studioCode] = useState(() => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = 'FIT-';
+    for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+  });
 
   // Step 2 state
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
@@ -78,6 +84,7 @@ export default function Onboarding() {
           hourly_rate: hourlyRate ? parseFloat(hourlyRate) : null,
           collaborator_rate: collaboratorRate ? parseFloat(collaboratorRate) : null,
           default_capacity: parseInt(defaultCapacity) || 10,
+          studio_code: studioCode,
           is_onboarded: true,
         })
         .eq('id', user.id);
@@ -146,6 +153,14 @@ export default function Onboarding() {
             </div>
 
             <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Código do seu Studio</Label>
+                <div className="bg-accent/10 border border-accent/30 rounded-xl p-4 flex items-center justify-between">
+                  <span className="font-mono text-2xl font-bold text-accent tracking-widest">{studioCode}</span>
+                  <span className="text-xs text-muted-foreground">Compartilhe com seus alunos</span>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="hourlyRate">Preço por Hora/Aula (R$) — Opcional</Label>
                 <Input
@@ -256,8 +271,8 @@ export default function Onboarding() {
                   <Input
                     type="number"
                     min="1"
-                    value={newSlot.capacity}
-                    onChange={e => setNewSlot(prev => ({ ...prev, capacity: parseInt(e.target.value) || 1 }))}
+                    value={newSlot.capacity === 0 ? '' : newSlot.capacity}
+                    onChange={e => setNewSlot(prev => ({ ...prev, capacity: e.target.value === '' ? 0 : (parseInt(e.target.value) || 0) }))}
                   />
                 </div>
               </div>
