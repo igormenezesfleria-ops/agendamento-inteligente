@@ -4,9 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, ClipboardList, User, ArrowRight } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
+import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 
 export function StudentDashboard() {
   const { profile } = useAuth();
+
+  // If student is not linked to a trainer, show linking flow
+  if (profile && !profile.business_owner_id) {
+    return <StudioLinkCard />;
+  }
 
   return (
     <div className="space-y-8 animate-fade-in">

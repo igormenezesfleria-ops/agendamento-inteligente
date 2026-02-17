@@ -15,6 +15,8 @@ interface Profile {
   hourly_rate: number | null;
   collaborator_rate: number | null;
   default_capacity: number;
+  studio_code: string | null;
+  business_owner_id: string | null;
 }
 
 interface AuthContextType {
