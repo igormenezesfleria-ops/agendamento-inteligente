@@ -17,6 +17,10 @@ interface Profile {
   default_capacity: number;
   studio_code: string | null;
   business_owner_id: string | null;
+  subscription_status: string;
+  subscription_plan: string | null;
+  subscription_expires_at: string | null;
+  vip_code_used: boolean;
 }
 
 interface AuthContextType {
