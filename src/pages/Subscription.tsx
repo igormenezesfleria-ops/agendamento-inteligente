@@ -12,34 +12,42 @@ import { Crown, Sparkles, Shield, Zap } from 'lucide-react';
 const PLANS = [
   {
     id: 'monthly',
-    name: 'Passe Mensal',
+    name: 'Mensal',
     days: 30,
     price: 'R$ 34,90',
-    priceNum: 34.9,
-    description: '30 dias de acesso completo',
+    subtitle: 'Cobrado a cada 30 dias',
+    helperText: null,
     icon: Zap,
-    href: '#',
+    badge: 'Sem fidelidade',
+    badgeVariant: 'secondary' as const,
+    highlight: false,
+    href: 'https://buy.stripe.com/test_4gM7sEgcGaeEb887BbaEE00',
   },
   {
     id: 'semiannual',
-    name: 'Passe Semestral',
+    name: 'Semestral',
     days: 180,
-    price: 'R$ 179,90',
-    priceNum: 179.9,
-    description: '180 dias de acesso completo',
+    price: 'R$ 189,90',
+    subtitle: 'Pagamento único',
+    helperText: 'Equivalente a R$ 31,65/mês',
     icon: Shield,
-    popular: true,
-    href: '#',
+    badge: '10% OFF',
+    badgeVariant: 'confirmed' as const,
+    highlight: false,
+    href: 'https://buy.stripe.com/test_9B67sE5y2cmM6RS9JjaEE02',
   },
   {
     id: 'annual',
-    name: 'Passe Anual',
+    name: 'Anual Profissional',
     days: 365,
     price: 'R$ 349,90',
-    priceNum: 349.9,
-    description: '365 dias de acesso completo',
+    subtitle: 'Pagamento único',
+    helperText: 'Equivalente a R$ 29,15/mês',
     icon: Crown,
-    href: '#',
+    badge: '16% OFF',
+    badgeVariant: 'default' as const,
+    highlight: true,
+    href: 'https://buy.stripe.com/test_5kQ6oAgcG4Ukdgg2gRaEE03',
   },
 ];
 
@@ -96,27 +104,30 @@ export default function Subscription() {
           {PLANS.map((plan) => (
             <Card
               key={plan.id}
-              className={`relative flex flex-col ${plan.popular ? 'border-primary shadow-lg ring-2 ring-primary/20' : ''}`}
+              className={`relative flex flex-col ${plan.highlight ? 'border-accent shadow-lg ring-2 ring-accent/30 scale-[1.02]' : ''}`}
             >
-              {plan.popular && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground">
-                  Mais popular
-                </Badge>
-              )}
+              <Badge
+                variant={plan.badgeVariant}
+                className={`absolute -top-3 left-1/2 -translate-x-1/2 ${plan.highlight ? 'bg-accent text-accent-foreground' : ''}`}
+              >
+                {plan.badge}
+              </Badge>
               <CardHeader className="text-center pb-2">
-                <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
-                  <plan.icon className="w-6 h-6 text-primary" />
+                <div className={`mx-auto w-12 h-12 rounded-xl flex items-center justify-center mb-2 ${plan.highlight ? 'bg-accent/15' : 'bg-primary/10'}`}>
+                  <plan.icon className={`w-6 h-6 ${plan.highlight ? 'text-accent' : 'text-primary'}`} />
                 </div>
                 <CardTitle className="text-lg">{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
+                <CardDescription>{plan.subtitle}</CardDescription>
               </CardHeader>
               <CardContent className="text-center flex-1">
                 <p className="text-3xl font-bold text-foreground">{plan.price}</p>
-                <p className="text-xs text-muted-foreground mt-1">pagamento único</p>
+                {plan.helperText && (
+                  <p className="text-xs text-muted-foreground mt-1">{plan.helperText}</p>
+                )}
               </CardContent>
               <CardFooter>
-                <Button asChild className="w-full" variant={plan.popular ? 'default' : 'outline'}>
-                  <a href={plan.href}>Escolher Plano</a>
+                <Button asChild className="w-full" variant={plan.highlight ? 'accent' : 'outline'}>
+                  <a href={plan.href} target="_blank" rel="noopener noreferrer">Escolher Plano</a>
                 </Button>
               </CardFooter>
             </Card>
