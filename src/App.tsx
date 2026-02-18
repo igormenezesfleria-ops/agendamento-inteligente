@@ -25,6 +25,8 @@ import LockSlots from "./pages/LockSlots";
 import CollaboratorTasks from "./pages/CollaboratorTasks";
 import MySchedule from "./pages/MySchedule";
 import Onboarding from "./pages/Onboarding";
+import Subscription from "./pages/Subscription";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,22 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Onboarding />
+              </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/subscription"
+              element={
+                <ProtectedRoute>
+                  <Subscription />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/payment-success"
+              element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
                 </ProtectedRoute>
               }
             />

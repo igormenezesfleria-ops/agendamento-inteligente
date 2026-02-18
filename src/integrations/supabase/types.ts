@@ -178,7 +178,11 @@ export type Database = {
           photo_url: string | null
           role: Database["public"]["Enums"]["app_role"]
           studio_code: string | null
+          subscription_expires_at: string | null
+          subscription_plan: string | null
+          subscription_status: string
           updated_at: string
+          vip_code_used: boolean
         }
         Insert: {
           business_owner_id?: string | null
@@ -194,7 +198,11 @@ export type Database = {
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           studio_code?: string | null
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string
           updated_at?: string
+          vip_code_used?: boolean
         }
         Update: {
           business_owner_id?: string | null
@@ -210,7 +218,11 @@ export type Database = {
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           studio_code?: string | null
+          subscription_expires_at?: string | null
+          subscription_plan?: string | null
+          subscription_status?: string
           updated_at?: string
+          vip_code_used?: boolean
         }
         Relationships: [
           {

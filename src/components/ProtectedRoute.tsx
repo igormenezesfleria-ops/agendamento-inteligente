@@ -33,6 +33,27 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/onboarding" replace />;
   }
 
+  // Subscription guard for admin users
+  if (
+    profile &&
+    profile.role === 'admin' &&
+    profile.is_onboarded &&
+    location.pathname !== '/subscription' &&
+    location.pathname !== '/payment-success'
+  ) {
+    const status = profile.subscription_status;
+    if (status === 'vip') {
+      // Always allowed
+    } else if (status === 'active' && profile.subscription_expires_at) {
+      const expiresAt = new Date(profile.subscription_expires_at);
+      if (expiresAt <= new Date()) {
+        return <Navigate to="/subscription" replace />;
+      }
+    } else {
+      return <Navigate to="/subscription" replace />;
+    }
+  }
+
   // If allowedRoles is specified, check if user has the required role
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
     const role = profile.role;
