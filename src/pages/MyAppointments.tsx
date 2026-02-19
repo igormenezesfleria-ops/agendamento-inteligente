@@ -59,26 +59,19 @@ export default function MyAppointments() {
 
   const cancelMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error: updateError } = await supabase
+      const { error } = await supabase
         .from('appointments')
-        .update({ status: 'cancelled' })
+        .delete()
         .eq('id', id)
         .eq('student_id', user?.id);
 
-      if (updateError) {
-        const { error: deleteError } = await supabase
-          .from('appointments')
-          .delete()
-          .eq('id', id)
-          .eq('student_id', user?.id);
-
-        if (deleteError) throw deleteError;
-      }
+      if (error) throw error;
     },
     onSuccess: () => {
       toast.success('Agendamento cancelado com sucesso');
       queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
       queryClient.invalidateQueries({ queryKey: ['slotCounts'] });
+      queryClient.invalidateQueries({ queryKey: ['userBookings'] });
       setCancellingId(null);
     },
     onError: (error: any) => {

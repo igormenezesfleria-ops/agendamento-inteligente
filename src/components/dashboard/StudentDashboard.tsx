@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, ClipboardList, User, ArrowRight } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
+import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
 
 export function StudentDashboard() {
   const { profile } = useAuth();
@@ -48,6 +49,9 @@ export function StudentDashboard() {
           href="/dashboard/perfil"
         />
       </div>
+
+      {/* Workout History */}
+      <StudentWorkoutHistory />
 
       {/* Announcements */}
       <AnnouncementsFeed />

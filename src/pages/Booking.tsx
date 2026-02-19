@@ -37,20 +37,22 @@ export default function Booking() {
     enabled: !!trainerId && dayOfWeek !== null,
   });
 
-  // Fetch slot counts for selected date
+  // Fetch slot counts for selected date, grouped by class_schedule_id
   const { data: slotCounts, isLoading: isLoadingCounts } = useQuery({
     queryKey: ['slotCounts', formattedDate],
     queryFn: async () => {
       if (!formattedDate) return {};
       const { data, error } = await supabase
         .from('appointments')
-        .select('time_slot')
+        .select('time_slot, class_schedule_id')
         .eq('date', formattedDate)
         .in('status', ['pending', 'confirmed', 'delegated']);
       if (error) throw error;
       const counts: Record<string, number> = {};
       data?.forEach((apt) => {
-        counts[apt.time_slot] = (counts[apt.time_slot] || 0) + 1;
+        // Count per class_schedule_id when available, fallback to time_slot
+        const key = apt.class_schedule_id || apt.time_slot;
+        counts[key] = (counts[key] || 0) + 1;
       });
       return counts;
     },
@@ -72,35 +74,36 @@ export default function Booking() {
     enabled: !!formattedDate,
   });
 
-  // Fetch user's existing bookings
+  // Fetch user's existing bookings per class_schedule_id
   const { data: userBookings } = useQuery({
     queryKey: ['userBookings', formattedDate, user?.id],
     queryFn: async () => {
       if (!formattedDate || !user?.id) return [];
       const { data, error } = await supabase
         .from('appointments')
-        .select('time_slot')
+        .select('time_slot, class_schedule_id')
         .eq('student_id', user.id)
         .eq('date', formattedDate)
         .neq('status', 'cancelled');
       if (error) throw error;
-      return data?.map((s) => s.time_slot) || [];
+      // Return class_schedule_ids the user has booked
+      return data?.map((s) => s.class_schedule_id || s.time_slot) || [];
     },
     enabled: !!formattedDate && !!user?.id,
   });
 
   const bookMutation = useMutation({
-    mutationFn: async (timeSlot: string) => {
+    mutationFn: async ({ timeSlot, classScheduleId }: { timeSlot: string; classScheduleId: string }) => {
       if (!user?.id || !formattedDate) throw new Error('Missing data');
       
-      // Check if the slot auto-confirms
-      const matchingSlot = classSlots?.find(s => s.start_time?.slice(0, 5) === timeSlot);
+      const matchingSlot = classSlots?.find(s => s.id === classScheduleId);
       const autoConfirm = matchingSlot && !matchingSlot.requires_approval;
       
       const insertData: any = {
         student_id: user.id,
         date: formattedDate,
         time_slot: timeSlot,
+        class_schedule_id: classScheduleId,
         status: autoConfirm ? 'confirmed' : 'pending',
       };
       
@@ -115,6 +118,7 @@ export default function Booking() {
       toast.success('Agendamento realizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['slotCounts'] });
       queryClient.invalidateQueries({ queryKey: ['userBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
       setBookingSlot(null);
     },
     onError: (error: any) => {
@@ -127,9 +131,9 @@ export default function Booking() {
     },
   });
 
-  const handleBook = (timeSlot: string) => {
-    setBookingSlot(timeSlot);
-    bookMutation.mutate(timeSlot);
+  const handleBook = (timeSlot: string, classScheduleId: string) => {
+    setBookingSlot(classScheduleId);
+    bookMutation.mutate({ timeSlot, classScheduleId });
   };
 
   const canBookSlot = (startTime: string) => {
@@ -178,17 +182,18 @@ export default function Booking() {
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {classSlots.map((slot) => {
                   const slotKey = slot.start_time?.slice(0, 5) || '';
+                  const classId = slot.id;
                   return (
                     <SlotCard
                       key={slot.id}
                       timeSlot={slotKey}
-                      label={`${slotKey} - ${slot.end_time?.slice(0, 5)}`}
-                      count={slotCounts?.[slotKey] || 0}
+                      label={`${slot.class_name} · ${slotKey} - ${slot.end_time?.slice(0, 5)}`}
+                      count={slotCounts?.[classId] || 0}
                       isLocked={lockedSlots?.includes(slotKey) || false}
-                      isBooked={userBookings?.includes(slotKey) || false}
+                      isBooked={userBookings?.includes(classId) || false}
                       canBook={canBookSlot(slotKey)}
-                      isLoading={bookingSlot === slotKey}
-                      onBook={() => handleBook(slotKey)}
+                      isLoading={bookingSlot === classId}
+                      onBook={() => handleBook(slotKey, classId)}
                       maxCapacity={slot.capacity}
                     />
                   );

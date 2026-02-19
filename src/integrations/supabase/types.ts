@@ -17,6 +17,7 @@ export type Database = {
       appointments: {
         Row: {
           attendance: string | null
+          class_schedule_id: string | null
           completed_at: string | null
           created_at: string
           date: string
@@ -31,6 +32,7 @@ export type Database = {
         }
         Insert: {
           attendance?: string | null
+          class_schedule_id?: string | null
           completed_at?: string | null
           created_at?: string
           date: string
@@ -45,6 +47,7 @@ export type Database = {
         }
         Update: {
           attendance?: string | null
+          class_schedule_id?: string | null
           completed_at?: string | null
           created_at?: string
           date?: string
@@ -57,7 +60,15 @@ export type Database = {
           time_slot?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "appointments_class_schedule_id_fkey"
+            columns: ["class_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       class_schedules: {
         Row: {
