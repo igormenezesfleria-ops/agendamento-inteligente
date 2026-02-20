@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, Clock, Inbox } from 'lucide-react';
+import { Loader2, Plus, Trash2, Clock, Inbox, UserCheck } from 'lucide-react';
 import { DAYS_OF_WEEK } from '@/lib/constants';
 
 export default function AdminScheduleManager() {
@@ -24,6 +24,8 @@ export default function AdminScheduleManager() {
   const [capacity, setCapacity] = useState('10');
   const [className, setClassName] = useState('Musculação');
   const [requiresApproval, setRequiresApproval] = useState(true);
+  const [actionWindowHours, setActionWindowHours] = useState('2');
+  const [defaultCollaboratorId, setDefaultCollaboratorId] = useState<string>('none');
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ['admin-class-schedules', user?.id],
@@ -40,9 +42,24 @@ export default function AdminScheduleManager() {
     enabled: !!user?.id,
   });
 
+  // Fetch collaborators for fixed collaborator select
+  const { data: collaborators } = useQuery({
+    queryKey: ['collaborators-for-schedule'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .eq('role', 'collaborator')
+        .eq('business_owner_id', user!.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
   const addMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from('class_schedules').insert({
+      const insertData: any = {
         instructor_id: user!.id,
         day_of_week: parseInt(dayOfWeek),
         start_time: startTime,
@@ -50,7 +67,12 @@ export default function AdminScheduleManager() {
         capacity: parseInt(capacity) || 10,
         class_name: className || 'Musculação',
         requires_approval: requiresApproval,
-      });
+        action_window_hours: parseInt(actionWindowHours) || 2,
+      };
+      if (defaultCollaboratorId && defaultCollaboratorId !== 'none') {
+        insertData.default_collaborator_id = defaultCollaboratorId;
+      }
+      const { error } = await supabase.from('class_schedules').insert(insertData);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -61,6 +83,8 @@ export default function AdminScheduleManager() {
       setEndTime('10:00');
       setCapacity('10');
       setRequiresApproval(true);
+      setActionWindowHours('2');
+      setDefaultCollaboratorId('none');
     },
     onError: () => toast.error('Erro ao adicionar horário.'),
   });
@@ -76,6 +100,9 @@ export default function AdminScheduleManager() {
     },
     onError: () => toast.error('Erro ao remover horário.'),
   });
+
+  // Build collaborator name map for display
+  const collabMap = new Map((collaborators || []).map(c => [c.id, c.name || 'Colaborador']));
 
   const grouped = (schedules || []).reduce<Record<number, typeof schedules>>((acc, s) => {
     if (!acc[s.day_of_week]) acc[s.day_of_week] = [];
@@ -95,7 +122,7 @@ export default function AdminScheduleManager() {
             <DialogTrigger asChild>
               <Button variant="accent"><Plus className="w-4 h-4 mr-2" />Novo Horário</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Adicionar Horário</DialogTitle></DialogHeader>
               <form onSubmit={(e) => { e.preventDefault(); addMutation.mutate(); }} className="space-y-4">
                 <div className="space-y-2">
@@ -123,9 +150,35 @@ export default function AdminScheduleManager() {
                     <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Capacidade</Label>
+                    <Input type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Antecedência mínima (horas)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={actionWindowHours}
+                      onChange={(e) => setActionWindowHours(e.target.value)}
+                      placeholder="2"
+                    />
+                    <p className="text-xs text-muted-foreground">Para agendar/cancelar</p>
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label>Capacidade</Label>
-                  <Input type="number" min={1} value={capacity} onChange={(e) => setCapacity(e.target.value)} />
+                  <Label>Colaborador Fixo</Label>
+                  <Select value={defaultCollaboratorId} onValueChange={setDefaultCollaboratorId}>
+                    <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      {(collaborators || []).map(c => (
+                        <SelectItem key={c.id} value={c.id}>{c.name || 'Colaborador'}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Será automaticamente atribuído aos agendamentos.</p>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-3">
                   <div className="space-y-0.5">
@@ -163,15 +216,22 @@ export default function AdminScheduleManager() {
                     {slots!.map((slot: any) => (
                       <Card key={slot.id}>
                         <CardContent className="p-4 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             <Clock className="w-4 h-4 text-muted-foreground" />
                             <span className="font-medium text-foreground">
                               {slot.start_time?.slice(0, 5)} - {slot.end_time?.slice(0, 5)}
                             </span>
                             <span className="text-sm text-muted-foreground">{slot.class_name}</span>
                             <span className="text-xs text-muted-foreground">({slot.capacity} vagas)</span>
+                            <span className="text-xs text-muted-foreground">⏱ {slot.action_window_hours}h</span>
                             {!slot.requires_approval && (
                               <span className="text-xs text-accent font-medium">Auto-confirma</span>
+                            )}
+                            {slot.default_collaborator_id && (
+                              <span className="text-xs text-primary font-medium flex items-center gap-1">
+                                <UserCheck className="w-3 h-3" />
+                                {collabMap.get(slot.default_collaborator_id) || 'Colaborador'}
+                              </span>
                             )}
                           </div>
                           <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(slot.id)} disabled={deleteMutation.isPending}>

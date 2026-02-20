@@ -24,6 +24,7 @@ import MyStudents from "./pages/MyStudents";
 import LockSlots from "./pages/LockSlots";
 import CollaboratorTasks from "./pages/CollaboratorTasks";
 import MySchedule from "./pages/MySchedule";
+import StudentHistory from "./pages/StudentHistory";
 import Onboarding from "./pages/Onboarding";
 import Subscription from "./pages/Subscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
@@ -127,6 +128,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['student']}>
                   <MyAppointments />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/historico-treinos"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentHistory />
                 </ProtectedRoute>
               }
             />

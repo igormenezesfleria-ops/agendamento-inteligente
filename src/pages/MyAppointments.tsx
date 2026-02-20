@@ -22,7 +22,7 @@ export default function MyAppointments() {
 
       const { data, error } = await supabase
         .from('appointments')
-        .select('id, date, time_slot, status, student_id, instructor_id, attendance')
+        .select('id, date, time_slot, status, student_id, instructor_id, attendance, class_schedule_id')
         .eq('student_id', user.id)
         .order('date', { ascending: true })
         .order('time_slot', { ascending: true });
@@ -30,7 +30,18 @@ export default function MyAppointments() {
       if (error) throw error;
       if (!data || data.length === 0) return [];
 
-      // Fetch instructor names for confirmed/completed appointments
+      // Fetch class_schedules for action_window_hours
+      const scheduleIds = [...new Set(data.filter(a => a.class_schedule_id).map(a => a.class_schedule_id!))];
+      let scheduleMap = new Map<string, number>();
+      if (scheduleIds.length > 0) {
+        const { data: schedules } = await supabase
+          .from('class_schedules')
+          .select('id, action_window_hours')
+          .in('id', scheduleIds);
+        scheduleMap = new Map((schedules || []).map(s => [s.id, s.action_window_hours]));
+      }
+
+      // Fetch instructor names
       const instructorIds = [
         ...new Set(
           data
@@ -45,13 +56,13 @@ export default function MyAppointments() {
           .from('profiles')
           .select('id, name')
           .in('id', instructorIds);
-
         instructorMap = new Map((profiles || []).map((p) => [p.id, p.name || 'Instrutor']));
       }
 
       return data.map((a) => ({
         ...a,
         instructorName: a.instructor_id ? instructorMap.get(a.instructor_id) || null : null,
+        actionWindowHours: a.class_schedule_id ? scheduleMap.get(a.class_schedule_id) ?? CANCELLATION_DEADLINE_HOURS : CANCELLATION_DEADLINE_HOURS,
       }));
     },
     enabled: !!user?.id,
@@ -83,13 +94,18 @@ export default function MyAppointments() {
   });
 
   const handleCancel = (id: string) => {
+    const apt = appointments?.find(a => a.id === id);
+    if (apt && !canCancel(apt.date, apt.time_slot, apt.actionWindowHours)) {
+      toast.error('Fora do prazo permitido para esta ação.');
+      return;
+    }
     setCancellingId(id);
     cancelMutation.mutate(id);
   };
 
-  const canCancel = (date: string, timeSlot: string) => {
+  const canCancel = (date: string, timeSlot: string, windowHours?: number) => {
     const appointmentDateTime = parseISO(date + 'T' + timeSlot + ':00');
-    const deadline = addHours(new Date(), CANCELLATION_DEADLINE_HOURS);
+    const deadline = addHours(new Date(), windowHours ?? CANCELLATION_DEADLINE_HOURS);
     return isAfter(appointmentDateTime, deadline);
   };
 
@@ -139,7 +155,7 @@ export default function MyAppointments() {
                     status={apt.status}
                     instructorName={apt.instructorName}
                     attendance={apt.attendance}
-                    canCancel={canCancel(apt.date, apt.time_slot)}
+                    canCancel={canCancel(apt.date, apt.time_slot, apt.actionWindowHours)}
                     isCancelling={cancellingId === apt.id}
                     onCancel={handleCancel}
                   />

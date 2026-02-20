@@ -9,6 +9,7 @@ interface SlotCardProps {
   count: number;
   isLocked: boolean;
   isBooked: boolean;
+  hasTimeConflict?: boolean;
   canBook: boolean;
   isLoading: boolean;
   onBook: () => void;
@@ -21,6 +22,7 @@ export function SlotCard({
   count,
   isLocked,
   isBooked,
+  hasTimeConflict = false,
   canBook,
   isLoading,
   onBook,
@@ -43,7 +45,17 @@ export function SlotCard({
     return `${remaining} vagas`;
   };
 
-  const isDisabled = !canBook || isFull || isLocked || isBooked || isLoading;
+  const isDisabled = !canBook || isFull || isLocked || isBooked || hasTimeConflict || isLoading;
+
+  const getButtonLabel = () => {
+    if (isLoading) return null; // handled separately
+    if (isBooked) return 'Já Agendado';
+    if (hasTimeConflict) return 'Conflito de Horário';
+    if (isLocked) return 'Horário Bloqueado';
+    if (isFull) return 'Horário Lotado';
+    if (!canBook) return 'Prazo Encerrado';
+    return 'Solicitar Agendamento';
+  };
 
   return (
     <div className="bg-card rounded-xl border p-4 card-hover">
@@ -58,9 +70,9 @@ export function SlotCard({
         </Badge>
       </div>
 
-      {isBooked ? (
+      {isBooked || hasTimeConflict ? (
         <Button variant="secondary" className="w-full" disabled>
-          Já Agendado
+          {getButtonLabel()}
         </Button>
       ) : (
         <Button
@@ -74,14 +86,8 @@ export function SlotCard({
               <Loader2 className="w-4 h-4 animate-spin" />
               Agendando...
             </>
-          ) : isLocked ? (
-            'Horário Bloqueado'
-          ) : isFull ? (
-            'Horário Lotado'
-          ) : !canBook ? (
-            'Prazo Encerrado'
           ) : (
-            'Solicitar Agendamento'
+            getButtonLabel()
           )}
         </Button>
       )}

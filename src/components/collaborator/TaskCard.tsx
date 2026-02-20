@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { TIME_SLOTS, STATUS_LABELS } from '@/lib/constants';
 import { isWithinDeadline } from '@/lib/deadline';
-import { Loader2, Calendar, Clock, User, Check, X, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Loader2, Calendar, Clock, User, Check, X, CheckCircle2, AlertTriangle, UserCheck, UserX } from 'lucide-react';
 
 export interface TaskCardProps {
   task: {
@@ -13,6 +13,7 @@ export interface TaskCardProps {
     date: string;
     time_slot: string;
     status: string;
+    attendance?: string | null;
     profiles?: { name: string | null } | null;
   };
   type: 'pending' | 'confirmed' | 'completed';
@@ -20,9 +21,10 @@ export interface TaskCardProps {
   onAccept: (id: string) => void;
   onReject: (id: string) => void;
   onComplete: (id: string) => void;
+  onMarkAttendance?: (id: string, status: 'present' | 'absent') => void;
 }
 
-export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete }: TaskCardProps) {
+export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete, onMarkAttendance }: TaskCardProps) {
   const slot = TIME_SLOTS.find((s) => s.id === task.time_slot);
   const parsedDate = parseISO(task.date + 'T12:00:00');
   const isTodayTask = isToday(parsedDate);
@@ -52,12 +54,16 @@ export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete
                 <span>{slot?.label || task.time_slot}</span>
               </div>
             </div>
-            <Badge variant={task.status as any}>
-              {STATUS_LABELS[task.status] || task.status}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={task.status as any}>
+                {STATUS_LABELS[task.status] || task.status}
+              </Badge>
+              {task.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
+              {task.attendance === 'absent' && <Badge variant="destructive">Faltou</Badge>}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {type === 'pending' && (
               <>
                 {canAct ? (
@@ -98,21 +104,47 @@ export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete
             )}
 
             {type === 'confirmed' && isTodayTask && (
-              <Button
-                variant="accent"
-                size="sm"
-                onClick={() => onComplete(task.id)}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
+              <>
+                {(!task.attendance || task.attendance === 'pending') && onMarkAttendance && (
                   <>
-                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                    Finalizar Treino
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={() => onMarkAttendance(task.id, 'present')}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                        <><UserCheck className="w-4 h-4 mr-1" />Presente</>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => onMarkAttendance(task.id, 'absent')}
+                      disabled={isLoading}
+                    >
+                      <UserX className="w-4 h-4 mr-1" />
+                      Falta
+                    </Button>
                   </>
                 )}
-              </Button>
+                <Button
+                  variant="accent"
+                  size="sm"
+                  onClick={() => onComplete(task.id)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 mr-1" />
+                      Finalizar Treino
+                    </>
+                  )}
+                </Button>
+              </>
             )}
           </div>
         </div>

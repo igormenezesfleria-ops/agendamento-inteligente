@@ -18,7 +18,6 @@ export default function CollaboratorTasks() {
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [pendingRejectId, setPendingRejectId] = useState<string | null>(null);
 
-  // Fetch active tasks assigned to this collaborator
   const { data: tasks, isLoading } = useQuery({
     queryKey: ['myTasks', user?.id],
     queryFn: async () => {
@@ -26,7 +25,7 @@ export default function CollaboratorTasks() {
 
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select('id, date, time_slot, status, student_id')
+        .select('id, date, time_slot, status, student_id, attendance')
         .eq('instructor_id', user.id)
         .in('status', ['delegated', 'confirmed'])
         .order('date', { ascending: true })
@@ -115,6 +114,26 @@ export default function CollaboratorTasks() {
     },
   });
 
+  const attendanceMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'present' | 'absent' }) => {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ attendance: status })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      toast.success(variables.status === 'present' ? 'Presença registrada!' : 'Falta registrada!');
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      queryClient.invalidateQueries({ queryKey: ['myHistory'] });
+      setLoadingId(null);
+    },
+    onError: () => {
+      toast.error('Erro ao registrar presença');
+      setLoadingId(null);
+    },
+  });
+
   const handleAccept = (id: string) => {
     setLoadingId(id);
     acceptMutation.mutate(id);
@@ -136,6 +155,11 @@ export default function CollaboratorTasks() {
   const handleComplete = (id: string) => {
     setLoadingId(id);
     completeMutation.mutate(id);
+  };
+
+  const handleMarkAttendance = (id: string, status: 'present' | 'absent') => {
+    setLoadingId(id);
+    attendanceMutation.mutate({ id, status });
   };
 
   const pendingTasks = tasks?.filter((t: any) => t.status === 'delegated');
@@ -183,6 +207,7 @@ export default function CollaboratorTasks() {
                         onAccept={handleAccept}
                         onReject={handleRejectRequest}
                         onComplete={handleComplete}
+                        onMarkAttendance={handleMarkAttendance}
                       />
                     ))}
                   </Section>
@@ -199,6 +224,7 @@ export default function CollaboratorTasks() {
                         onAccept={handleAccept}
                         onReject={handleRejectRequest}
                         onComplete={handleComplete}
+                        onMarkAttendance={handleMarkAttendance}
                       />
                     ))}
                   </Section>

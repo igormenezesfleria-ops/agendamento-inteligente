@@ -72,10 +72,12 @@ export type Database = {
       }
       class_schedules: {
         Row: {
+          action_window_hours: number
           capacity: number
           class_name: string
           created_at: string
           day_of_week: number
+          default_collaborator_id: string | null
           end_time: string
           id: string
           instructor_id: string
@@ -83,10 +85,12 @@ export type Database = {
           start_time: string
         }
         Insert: {
+          action_window_hours?: number
           capacity?: number
           class_name?: string
           created_at?: string
           day_of_week: number
+          default_collaborator_id?: string | null
           end_time: string
           id?: string
           instructor_id: string
@@ -94,10 +98,12 @@ export type Database = {
           start_time: string
         }
         Update: {
+          action_window_hours?: number
           capacity?: number
           class_name?: string
           created_at?: string
           day_of_week?: number
+          default_collaborator_id?: string | null
           end_time?: string
           id?: string
           instructor_id?: string
@@ -105,6 +111,13 @@ export type Database = {
           start_time?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "class_schedules_default_collaborator_id_fkey"
+            columns: ["default_collaborator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "class_schedules_instructor_id_fkey"
             columns: ["instructor_id"]

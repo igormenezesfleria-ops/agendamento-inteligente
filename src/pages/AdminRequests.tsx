@@ -25,11 +25,10 @@ export default function AdminRequests() {
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [selectedCollaborator, setSelectedCollaborator] = useState<string | null>(null);
 
-  // Fetch pending requests (ALL pending, not filtered by student)
+  // Fetch pending requests
   const { data: requests, isLoading } = useQuery({
     queryKey: ['pendingRequests'],
     queryFn: async () => {
-      // 1. Fetch all pending appointments
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
         .select('id, date, time_slot, status, student_id')
@@ -40,7 +39,6 @@ export default function AdminRequests() {
       if (appError) throw appError;
       if (!appointments || appointments.length === 0) return [];
 
-      // 2. Batch-fetch student profiles
       const studentIds = [...new Set(appointments.map((a) => a.student_id))];
       const { data: profiles, error: profError } = await supabase
         .from('profiles')
@@ -53,7 +51,6 @@ export default function AdminRequests() {
         (profiles || []).map((p) => [p.id, p])
       );
 
-      // 3. Merge
       return appointments.map((a) => ({
         ...a,
         studentName: profileMap.get(a.student_id)?.name || 'Aluno',
@@ -79,7 +76,7 @@ export default function AdminRequests() {
     },
   });
 
-  // Confirm mutation — self-assign as instructor
+  // Confirm mutation
   const confirmMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -103,9 +100,27 @@ export default function AdminRequests() {
     },
   });
 
-  // Delegate mutation via RPC
+  // Delegate mutation via RPC with double-booking check
   const delegateMutation = useMutation({
     mutationFn: async ({ id, instructorId }: { id: string; instructorId: string }) => {
+      // Find the appointment being delegated
+      const appointment = requests?.find(r => r.id === id);
+      if (!appointment) throw new Error('Appointment not found');
+
+      // Check if collaborator already has an active appointment at that date + time
+      const { data: conflicts, error: conflictError } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('instructor_id', instructorId)
+        .eq('date', appointment.date)
+        .eq('time_slot', appointment.time_slot)
+        .in('status', ['confirmed', 'delegated']);
+
+      if (conflictError) throw conflictError;
+      if (conflicts && conflicts.length > 0) {
+        throw new Error('COLLABORATOR_CONFLICT');
+      }
+
       const { error } = await supabase.rpc('delegate_appointment', {
         appt_id: id,
         target_instructor_id: instructorId,
@@ -120,8 +135,12 @@ export default function AdminRequests() {
       setSelectedCollaborator(null);
       setLoadingId(null);
     },
-    onError: () => {
-      toast.error('Erro ao delegar agendamento');
+    onError: (error: any) => {
+      if (error.message === 'COLLABORATOR_CONFLICT') {
+        toast.error('Este colaborador já possui uma aula delegada neste horário.');
+      } else {
+        toast.error('Erro ao delegar agendamento');
+      }
       setLoadingId(null);
     },
   });

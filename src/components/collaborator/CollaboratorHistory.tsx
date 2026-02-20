@@ -18,7 +18,7 @@ export function CollaboratorHistory() {
 
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select('id, date, time_slot, status, student_id, completed_at')
+        .select('id, date, time_slot, status, student_id, completed_at, attendance')
         .eq('instructor_id', user.id)
         .eq('status', 'completed')
         .order('completed_at', { ascending: false });
@@ -66,35 +66,52 @@ export function CollaboratorHistory() {
     );
   }
 
+  // Group by date+time for organized view
+  const grouped = history.reduce<Record<string, typeof history>>((acc, item) => {
+    const key = `${item.date}_${item.time_slot}`;
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {});
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">{history.length} treino(s) concluído(s)</p>
-      {history.map((item) => {
-        const slot = TIME_SLOTS.find((s) => s.id === item.time_slot);
-        const parsedDate = parseISO(item.date + 'T12:00:00');
+      {Object.entries(grouped).map(([key, items]) => {
+        const first = items[0];
+        const slot = TIME_SLOTS.find((s) => s.id === first.time_slot);
+        const parsedDate = parseISO(first.date + 'T12:00:00');
         const formattedDate = format(parsedDate, "EEEE, d 'de' MMMM", { locale: ptBR });
 
         return (
-          <Card key={item.id}>
+          <Card key={key}>
             <CardContent className="p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-accent" />
-                    <span className="font-semibold text-foreground">{item.studentName}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      <span className="capitalize">{formattedDate}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4" />
-                      <span>{slot?.label || item.time_slot}</span>
-                    </div>
-                  </div>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <span className="capitalize">{formattedDate}</span>
                 </div>
-                <Badge variant="completed">Concluído</Badge>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-4 h-4" />
+                  <span>{slot?.label || first.time_slot}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-accent" />
+                      <span className="font-medium text-foreground text-sm">{item.studentName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {item.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
+                      {item.attendance === 'absent' && <Badge variant="destructive">Faltou</Badge>}
+                      {(!item.attendance || item.attendance === 'pending') && (
+                        <Badge variant="outline">Pendente</Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
