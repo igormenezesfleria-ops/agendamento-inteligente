@@ -6,7 +6,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DateSelector } from '@/components/booking/DateSelector';
 import { SlotCard } from '@/components/booking/SlotCard';
-import { BOOKING_DEADLINE_HOURS } from '@/lib/constants';
 import { toast } from 'sonner';
 import { Loader2, Inbox } from 'lucide-react';
 
@@ -50,7 +49,6 @@ export default function Booking() {
       if (error) throw error;
       const counts: Record<string, number> = {};
       data?.forEach((apt) => {
-        // Count per class_schedule_id when available, fallback to time_slot
         const key = apt.class_schedule_id || apt.time_slot;
         counts[key] = (counts[key] || 0) + 1;
       });
@@ -74,7 +72,7 @@ export default function Booking() {
     enabled: !!formattedDate,
   });
 
-  // Fetch user's existing bookings per class_schedule_id
+  // Fetch user's existing bookings (class_schedule_id AND time_slot for conflict check)
   const { data: userBookings } = useQuery({
     queryKey: ['userBookings', formattedDate, user?.id],
     queryFn: async () => {
@@ -86,19 +84,27 @@ export default function Booking() {
         .eq('date', formattedDate)
         .neq('status', 'cancelled');
       if (error) throw error;
-      // Return class_schedule_ids the user has booked
-      return data?.map((s) => s.class_schedule_id || s.time_slot) || [];
+      return data || [];
     },
     enabled: !!formattedDate && !!user?.id,
   });
 
+  // Derive booked class IDs and booked time slots for conflict detection
+  const bookedClassIds = userBookings?.map((b) => b.class_schedule_id || b.time_slot) || [];
+  const bookedTimeSlots = userBookings?.map((b) => b.time_slot) || [];
+
   const bookMutation = useMutation({
     mutationFn: async ({ timeSlot, classScheduleId }: { timeSlot: string; classScheduleId: string }) => {
       if (!user?.id || !formattedDate) throw new Error('Missing data');
-      
+
+      // Double-check time conflict (same date + same start_time)
+      if (bookedTimeSlots.includes(timeSlot)) {
+        throw new Error('TIME_CONFLICT');
+      }
+
       const matchingSlot = classSlots?.find(s => s.id === classScheduleId);
       const autoConfirm = matchingSlot && !matchingSlot.requires_approval;
-      
+
       const insertData: any = {
         student_id: user.id,
         date: formattedDate,
@@ -106,11 +112,14 @@ export default function Booking() {
         class_schedule_id: classScheduleId,
         status: autoConfirm ? 'confirmed' : 'pending',
       };
-      
-      if (autoConfirm && trainerId) {
-        insertData.instructor_id = trainerId;
+
+      // Auto-assign fixed collaborator or trainer
+      if (autoConfirm) {
+        insertData.instructor_id = matchingSlot?.default_collaborator_id || trainerId;
+      } else if (matchingSlot?.default_collaborator_id) {
+        insertData.instructor_id = matchingSlot.default_collaborator_id;
       }
-      
+
       const { error } = await supabase.from('appointments').insert(insertData);
       if (error) throw error;
     },
@@ -122,7 +131,9 @@ export default function Booking() {
       setBookingSlot(null);
     },
     onError: (error: any) => {
-      if (error.message?.includes('duplicate')) {
+      if (error.message === 'TIME_CONFLICT') {
+        toast.error('Você já possui um agendamento para este horário.');
+      } else if (error.message?.includes('duplicate')) {
         toast.error('Você já tem um agendamento neste horário');
       } else {
         toast.error('Erro ao fazer agendamento. Tente novamente.');
@@ -132,17 +143,29 @@ export default function Booking() {
   });
 
   const handleBook = (timeSlot: string, classScheduleId: string) => {
+    // Client-side time conflict check
+    if (bookedTimeSlots.includes(timeSlot)) {
+      toast.error('Você já possui um agendamento para este horário.');
+      return;
+    }
     setBookingSlot(classScheduleId);
     bookMutation.mutate({ timeSlot, classScheduleId });
   };
 
-  const canBookSlot = (startTime: string) => {
+  const canBookSlot = (startTime: string, actionWindowHours?: number) => {
     if (!selectedDate) return false;
     const [hours, mins] = startTime.split(':').map(Number);
     const slotDateTime = new Date(selectedDate);
     slotDateTime.setHours(hours, mins || 0, 0, 0);
-    const deadline = addHours(new Date(), BOOKING_DEADLINE_HOURS);
+    const windowHours = actionWindowHours ?? 2;
+    const deadline = addHours(new Date(), windowHours);
     return isAfter(slotDateTime, deadline);
+  };
+
+  // Check if slot has a time conflict (same time_slot already booked by user)
+  const hasTimeConflict = (startTime: string) => {
+    const slotKey = startTime.slice(0, 5);
+    return bookedTimeSlots.includes(slotKey);
   };
 
   const isLoading = isLoadingSlots || isLoadingCounts;
@@ -183,6 +206,7 @@ export default function Booking() {
                 {classSlots.map((slot) => {
                   const slotKey = slot.start_time?.slice(0, 5) || '';
                   const classId = slot.id;
+                  const timeConflict = hasTimeConflict(slotKey);
                   return (
                     <SlotCard
                       key={slot.id}
@@ -190,8 +214,9 @@ export default function Booking() {
                       label={`${slot.class_name} · ${slotKey} - ${slot.end_time?.slice(0, 5)}`}
                       count={slotCounts?.[classId] || 0}
                       isLocked={lockedSlots?.includes(slotKey) || false}
-                      isBooked={userBookings?.includes(classId) || false}
-                      canBook={canBookSlot(slotKey)}
+                      isBooked={bookedClassIds.includes(classId) || false}
+                      hasTimeConflict={timeConflict}
+                      canBook={canBookSlot(slotKey, slot.action_window_hours)}
                       isLoading={bookingSlot === classId}
                       onBook={() => handleBook(slotKey, classId)}
                       maxCapacity={slot.capacity}
