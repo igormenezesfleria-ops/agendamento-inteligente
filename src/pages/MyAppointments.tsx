@@ -72,6 +72,7 @@ export default function MyAppointments() {
       queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
       queryClient.invalidateQueries({ queryKey: ['slotCounts'] });
       queryClient.invalidateQueries({ queryKey: ['userBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['class-slots'] });
       setCancellingId(null);
     },
     onError: (error: any) => {
