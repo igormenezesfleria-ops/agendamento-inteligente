@@ -170,6 +170,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/collaborator', label: 'Início', icon: Home },
     { href: '/dashboard/meus-treinos', label: 'Meus Treinos', icon: CalendarCheck },
     { href: '/dashboard/minhas-tarefas', label: 'Minhas Tarefas', icon: ClipboardList },
+    { href: '/dashboard/collaborator/historico', label: 'Histórico de Treinos', icon: History },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
 

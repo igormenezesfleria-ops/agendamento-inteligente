@@ -14,6 +14,7 @@ export interface TaskCardProps {
     time_slot: string;
     status: string;
     attendance?: string | null;
+    collaborator_status?: string | null;
     profiles?: { name: string | null } | null;
   };
   type: 'pending' | 'confirmed' | 'completed';
@@ -22,9 +23,11 @@ export interface TaskCardProps {
   onReject: (id: string) => void;
   onComplete: (id: string) => void;
   onMarkAttendance?: (id: string, status: 'present' | 'absent') => void;
+  onAcceptDelegation?: (id: string) => void;
+  onDeclineDelegation?: (id: string) => void;
 }
 
-export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete, onMarkAttendance }: TaskCardProps) {
+export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete, onMarkAttendance, onAcceptDelegation, onDeclineDelegation }: TaskCardProps) {
   const slot = TIME_SLOTS.find((s) => s.id === task.time_slot);
   const parsedDate = parseISO(task.date + 'T12:00:00');
   const isTodayTask = isToday(parsedDate);
@@ -58,13 +61,48 @@ export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete
               <Badge variant={task.status as any}>
                 {STATUS_LABELS[task.status] || task.status}
               </Badge>
+              {task.collaborator_status === 'pending' && (
+                <Badge variant="outline" className="border-warning text-warning">Aguardando Aceite</Badge>
+              )}
               {task.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
               {task.attendance === 'absent' && <Badge variant="destructive">Faltou</Badge>}
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            {type === 'pending' && (
+            {/* Collaborator delegation accept/decline */}
+            {task.collaborator_status === 'pending' && onAcceptDelegation && onDeclineDelegation && (
+              <>
+                <Button
+                  variant="success"
+                  size="sm"
+                  onClick={() => onAcceptDelegation(task.id)}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-1" />
+                      Aceitar
+                    </>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                  onClick={() => onDeclineDelegation(task.id)}
+                  disabled={isLoading}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Recusar
+                </Button>
+              </>
+            )}
+
+            {/* Legacy pending actions */}
+            {type === 'pending' && task.collaborator_status !== 'pending' && (
               <>
                 {canAct ? (
                   <>

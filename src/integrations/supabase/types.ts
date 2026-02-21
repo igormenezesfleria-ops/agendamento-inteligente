@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           attendance: string | null
           class_schedule_id: string | null
+          collaborator_status: string
           completed_at: string | null
           created_at: string
           date: string
@@ -33,6 +34,7 @@ export type Database = {
         Insert: {
           attendance?: string | null
           class_schedule_id?: string | null
+          collaborator_status?: string
           completed_at?: string | null
           created_at?: string
           date: string
@@ -48,6 +50,7 @@ export type Database = {
         Update: {
           attendance?: string | null
           class_schedule_id?: string | null
+          collaborator_status?: string
           completed_at?: string | null
           created_at?: string
           date?: string
