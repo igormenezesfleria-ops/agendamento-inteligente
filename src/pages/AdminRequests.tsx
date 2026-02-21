@@ -162,16 +162,19 @@ export default function AdminRequests() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('appointments').delete().eq('id', id);
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled' })
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('Solicitação expirada removida.');
+      toast.success('Solicitação expirada descartada com sucesso.');
       queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
       setLoadingId(null);
     },
     onError: () => {
-      toast.error('Erro ao remover solicitação');
+      toast.error('Erro ao descartar solicitação');
       setLoadingId(null);
     },
   });
