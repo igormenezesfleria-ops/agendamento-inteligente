@@ -23,6 +23,7 @@ import TeamManagement from "./pages/TeamManagement";
 import MyStudents from "./pages/MyStudents";
 import LockSlots from "./pages/LockSlots";
 import CollaboratorTasks from "./pages/CollaboratorTasks";
+import CollaboratorHistoryPage from "./pages/CollaboratorHistoryPage";
 import MySchedule from "./pages/MySchedule";
 import StudentHistory from "./pages/StudentHistory";
 import Onboarding from "./pages/Onboarding";
@@ -228,6 +229,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['collaborator']}>
                   <MySchedule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/collaborator/historico"
+              element={
+                <ProtectedRoute allowedRoles={['collaborator']}>
+                  <CollaboratorHistoryPage />
                 </ProtectedRoute>
               }
             />

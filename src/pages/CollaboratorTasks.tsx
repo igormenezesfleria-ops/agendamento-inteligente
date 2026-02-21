@@ -25,7 +25,7 @@ export default function CollaboratorTasks() {
 
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select('id, date, time_slot, status, student_id, attendance')
+        .select('id, date, time_slot, status, student_id, attendance, collaborator_status')
         .eq('instructor_id', user.id)
         .in('status', ['delegated', 'confirmed'])
         .order('date', { ascending: true })
@@ -134,6 +134,44 @@ export default function CollaboratorTasks() {
     },
   });
 
+  const acceptDelegationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ collaborator_status: 'accepted', status: 'confirmed' })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Delegação aceita!');
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      setLoadingId(null);
+    },
+    onError: () => {
+      toast.error('Erro ao aceitar delegação');
+      setLoadingId(null);
+    },
+  });
+
+  const declineDelegationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ collaborator_status: 'declined', instructor_id: null, status: 'pending' })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Treino recusado e devolvido ao Admin.');
+      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
+      setLoadingId(null);
+    },
+    onError: () => {
+      toast.error('Erro ao recusar delegação');
+      setLoadingId(null);
+    },
+  });
+
   const handleAccept = (id: string) => {
     setLoadingId(id);
     acceptMutation.mutate(id);
@@ -160,6 +198,16 @@ export default function CollaboratorTasks() {
   const handleMarkAttendance = (id: string, status: 'present' | 'absent') => {
     setLoadingId(id);
     attendanceMutation.mutate({ id, status });
+  };
+
+  const handleAcceptDelegation = (id: string) => {
+    setLoadingId(id);
+    acceptDelegationMutation.mutate(id);
+  };
+
+  const handleDeclineDelegation = (id: string) => {
+    setLoadingId(id);
+    declineDelegationMutation.mutate(id);
   };
 
   const pendingTasks = tasks?.filter((t: any) => t.status === 'delegated');
@@ -208,6 +256,8 @@ export default function CollaboratorTasks() {
                         onReject={handleRejectRequest}
                         onComplete={handleComplete}
                         onMarkAttendance={handleMarkAttendance}
+                        onAcceptDelegation={handleAcceptDelegation}
+                        onDeclineDelegation={handleDeclineDelegation}
                       />
                     ))}
                   </Section>
@@ -225,6 +275,8 @@ export default function CollaboratorTasks() {
                         onReject={handleRejectRequest}
                         onComplete={handleComplete}
                         onMarkAttendance={handleMarkAttendance}
+                        onAcceptDelegation={handleAcceptDelegation}
+                        onDeclineDelegation={handleDeclineDelegation}
                       />
                     ))}
                   </Section>
