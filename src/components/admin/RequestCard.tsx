@@ -126,10 +126,29 @@ export function RequestCard({
                 </Button>
               </>
             ) : (
-              <Badge variant="destructive" className="flex items-center gap-1">
-                <AlertTriangle className="w-3 h-3" />
-                Prazo de 12h expirado
-              </Badge>
+              <>
+                <Badge variant="destructive" className="flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Prazo expirado
+                </Badge>
+                {onDelete && (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => onDelete(id)}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Descartar
+                      </>
+                    )}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
