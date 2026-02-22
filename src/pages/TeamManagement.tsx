@@ -28,13 +28,17 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Users, Loader2, ChevronRight } from 'lucide-react';
+import { UserPlus, Trash2, Users, Loader2, ChevronRight, DollarSign } from 'lucide-react';
 import { CollaboratorHistoryDialog } from '@/components/admin/CollaboratorHistoryDialog';
+import { CollaboratorRatesDialog } from '@/components/admin/CollaboratorRatesDialog';
 
 interface Collaborator {
   id: string;
   name: string | null;
   created_at: string;
+  pay_type: string | null;
+  base_rate: number | null;
+  no_show_rate: number | null;
 }
 
 export default function TeamManagement() {
@@ -45,6 +49,8 @@ export default function TeamManagement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [selectedCollab, setSelectedCollab] = useState<{ id: string; name: string | null } | null>(null);
+  const [ratesDialogOpen, setRatesDialogOpen] = useState(false);
+  const [ratesCollab, setRatesCollab] = useState<Collaborator | null>(null);
 
   const { data: collaborators, isLoading } = useQuery({
     queryKey: ['collaborators'],
@@ -53,7 +59,7 @@ export default function TeamManagement() {
       if (!currentUser) return [];
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, created_at')
+        .select('id, name, created_at, pay_type, base_rate, no_show_rate')
         .eq('role', 'collaborator')
         .eq('business_owner_id', currentUser.id)
         .order('created_at', { ascending: false });
@@ -193,6 +199,19 @@ export default function TeamManagement() {
                     </div>
 
                     <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-accent"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRatesCollab(collaborator);
+                          setRatesDialogOpen(true);
+                        }}
+                        title="Configurar pagamento"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                      </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
@@ -255,6 +274,12 @@ export default function TeamManagement() {
           onOpenChange={setHistoryDialogOpen}
           collaboratorId={selectedCollab?.id || null}
           collaboratorName={selectedCollab?.name || null}
+        />
+
+        <CollaboratorRatesDialog
+          open={ratesDialogOpen}
+          onOpenChange={setRatesDialogOpen}
+          collaborator={ratesCollab}
         />
       </div>
     </DashboardLayout>
