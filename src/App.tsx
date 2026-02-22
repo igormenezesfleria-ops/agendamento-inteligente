@@ -29,6 +29,7 @@ import StudentHistory from "./pages/StudentHistory";
 import Onboarding from "./pages/Onboarding";
 import Subscription from "./pages/Subscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import PayrollDashboard from "./pages/PayrollDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -211,6 +212,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <MySchedule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/fechamento"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <PayrollDashboard />
                 </ProtectedRoute>
               }
             />

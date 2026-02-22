@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS } from '@/lib/constants';
 import {
   Dumbbell, Calendar, User, LogOut, Menu, X, Home, Users, Bell,
-  ClipboardList, Lock, History, MessageSquare, Settings, CalendarCheck, GraduationCap,
+  ClipboardList, Lock, History, MessageSquare, Settings, CalendarCheck, GraduationCap, DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -163,6 +163,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/trancamentos', label: 'Trancamentos', icon: Lock },
     { href: '/dashboard/historico', label: 'Histórico', icon: History },
     { href: '/dashboard/comunicados', label: 'Comunicados', icon: MessageSquare },
+    { href: '/dashboard/admin/fechamento', label: 'Fechamento / Pagamentos', icon: DollarSign },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
 

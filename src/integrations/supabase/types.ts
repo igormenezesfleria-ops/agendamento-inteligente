@@ -192,6 +192,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          base_rate: number | null
           business_owner_id: string | null
           collaborator_rate: number | null
           cpf: string | null
@@ -202,6 +203,8 @@ export type Database = {
           id: string
           is_onboarded: boolean
           name: string | null
+          no_show_rate: number | null
+          pay_type: string | null
           photo_url: string | null
           role: Database["public"]["Enums"]["app_role"]
           studio_code: string | null
@@ -212,6 +215,7 @@ export type Database = {
           vip_code_used: boolean
         }
         Insert: {
+          base_rate?: number | null
           business_owner_id?: string | null
           collaborator_rate?: number | null
           cpf?: string | null
@@ -222,6 +226,8 @@ export type Database = {
           id: string
           is_onboarded?: boolean
           name?: string | null
+          no_show_rate?: number | null
+          pay_type?: string | null
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           studio_code?: string | null
@@ -232,6 +238,7 @@ export type Database = {
           vip_code_used?: boolean
         }
         Update: {
+          base_rate?: number | null
           business_owner_id?: string | null
           collaborator_rate?: number | null
           cpf?: string | null
@@ -242,6 +249,8 @@ export type Database = {
           id?: string
           is_onboarded?: boolean
           name?: string | null
+          no_show_rate?: number | null
+          pay_type?: string | null
           photo_url?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           studio_code?: string | null
