@@ -65,7 +65,15 @@ export default function PayrollDashboard() {
     },
   });
 
-  const selectedCollab = collaborators?.find((c) => c.id === selectedCollabId) || null;
+  const selectedCollab = useMemo(() => {
+    const c = collaborators?.find((c) => c.id === selectedCollabId);
+    if (!c) return null;
+    return {
+      ...c,
+      base_rate: Number(c.base_rate) || 0,
+      no_show_rate: Number(c.no_show_rate) || 0,
+    };
+  }, [collaborators, selectedCollabId]);
 
   // Date range for selected month
   const startDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
@@ -147,7 +155,7 @@ export default function PayrollDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
           <div className="space-y-1">
             <h1 className="font-display text-3xl text-foreground">Fechamento / Pagamentos</h1>
             <p className="text-muted-foreground">Calcule automaticamente o valor a pagar para cada colaborador.</p>
@@ -155,7 +163,7 @@ export default function PayrollDashboard() {
           {selectedCollabId && grouped.length > 0 && (
             <Button variant="outline" onClick={handlePrint} className="print:hidden">
               <Printer className="w-4 h-4 mr-2" />
-              Imprimir / PDF
+              Imprimir Recibo (PDF)
             </Button>
           )}
         </div>
@@ -220,9 +228,12 @@ export default function PayrollDashboard() {
         ) : (
           <div ref={printRef} className="space-y-6">
             {/* Print header (hidden on screen) */}
-            <div className="hidden print:block mb-6">
-              <h2 className="text-2xl font-bold">Extrato de Pagamento</h2>
-              <p>{selectedCollab?.name} — {MONTHS[selectedMonth]} {selectedYear}</p>
+            <div className="hidden print:block mb-6 print:border-b print:pb-4">
+              <h2 className="text-2xl font-bold">Personal Studio</h2>
+              <h3 className="text-xl mt-1">Extrato de Pagamento</h3>
+              <p className="text-sm mt-2">Colaborador: <strong>{selectedCollab?.name}</strong></p>
+              <p className="text-sm">Período: <strong>{MONTHS[selectedMonth]} / {selectedYear}</strong></p>
+              <p className="text-sm">Tipo: <strong>{selectedCollab?.pay_type === 'per_class' ? 'Por Aula' : 'Por Aluno'}</strong> — R$ {(selectedCollab?.base_rate || 0).toFixed(2)}{selectedCollab?.pay_type !== 'per_class' ? ` / falta: R$ ${(selectedCollab?.no_show_rate || 0).toFixed(2)}` : ' por aula'}</p>
             </div>
 
             {/* Summary cards */}
@@ -261,7 +272,7 @@ export default function PayrollDashboard() {
 
             {/* Pay type info */}
             {selectedCollab && (
-              <Card>
+              <Card className="print:hidden">
                 <CardContent className="p-4 flex items-center gap-3">
                   <Badge variant="secondary">
                     {selectedCollab.pay_type === 'per_class' ? 'Por Aula' : 'Por Aluno'}
