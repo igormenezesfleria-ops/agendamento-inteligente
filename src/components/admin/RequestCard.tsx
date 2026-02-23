@@ -6,8 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Check, UserPlus, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
 import { TIME_SLOTS } from '@/lib/constants';
-import { isWithinDeadline } from '@/lib/deadline';
-import { isPast, parseISO as parseISODate } from 'date-fns';
+import { isWithinDeadline, isSlotExpired } from '@/lib/deadline';
 
 interface RequestCardProps {
   id: string;
@@ -39,8 +38,7 @@ export function RequestCard({
   const formattedDate = format(parsedDate, "EEEE, d 'de' MMMM", { locale: ptBR });
 
   const canAct = isWithinDeadline(date, timeSlot, 12);
-  const appointmentDt = parseISODate(date + 'T' + timeSlot + ':00');
-  const isExpired = isPast(appointmentDt);
+  const isExpired = isSlotExpired(date, timeSlot);
 
   const initials = studentName
     .split(' ')
