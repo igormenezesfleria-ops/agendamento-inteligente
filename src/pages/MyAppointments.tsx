@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { addHours, isAfter, parseISO } from 'date-fns';
+import { addHours, isAfter } from 'date-fns';
+import { toLocalDateTime } from '@/lib/deadline';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -104,7 +105,7 @@ export default function MyAppointments() {
   };
 
   const canCancel = (date: string, timeSlot: string, windowHours?: number) => {
-    const appointmentDateTime = parseISO(date + 'T' + timeSlot + ':00');
+    const appointmentDateTime = toLocalDateTime(date, timeSlot);
     const deadline = addHours(new Date(), windowHours ?? CANCELLATION_DEADLINE_HOURS);
     return isAfter(appointmentDateTime, deadline);
   };
