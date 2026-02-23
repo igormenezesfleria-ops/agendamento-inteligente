@@ -31,17 +31,6 @@ interface CollaboratorOption {
   no_show_rate: number | null;
 }
 
-interface AppointmentRow {
-  id: string;
-  date: string;
-  time_slot: string;
-  attendance: string | null;
-  status: string;
-  class_schedule_id: string | null;
-  student: { name: string | null } | null;
-  class_schedule: { class_name: string; start_time: string } | null;
-}
-
 export default function PayrollDashboard() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
@@ -75,52 +64,70 @@ export default function PayrollDashboard() {
     };
   }, [collaborators, selectedCollabId]);
 
-  // Date range for selected month
-  const startDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
-  const endDate = new Date(selectedYear, selectedMonth + 1, 0);
-  const endDateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-
-  // Fetch appointments for selected collaborator & month
-  const { data: appointments, isLoading } = useQuery({
-    queryKey: ['payroll-appointments', selectedCollabId, startDate, endDateStr],
+  // Reuse the EXACT same query pattern from CollaboratorHistory
+  const { data: rawAppointments, isLoading } = useQuery({
+    queryKey: ['payroll-history', selectedCollabId],
     queryFn: async () => {
       if (!selectedCollabId) return [];
-      const { data, error } = await supabase
+
+      const { data: appointments, error: appError } = await supabase
         .from('appointments')
-        .select('id, date, time_slot, attendance, status, class_schedule_id, student:profiles!appointments_student_id_fkey(name), class_schedule:class_schedules!appointments_class_schedule_id_fkey(class_name, start_time)')
+        .select('id, date, time_slot, status, student_id, completed_at, attendance')
         .eq('instructor_id', selectedCollabId)
-        .gte('date', startDate)
-        .lte('date', endDateStr)
-        .in('status', ['completed', 'confirmed', 'delegated'])
-        .order('date', { ascending: true })
-        .order('time_slot', { ascending: true });
-      if (error) throw error;
-      return (data || []) as unknown as AppointmentRow[];
+        .eq('status', 'completed')
+        .order('completed_at', { ascending: false });
+
+      if (appError) throw appError;
+      if (!appointments || appointments.length === 0) return [];
+
+      const studentIds = [...new Set(appointments.map((a) => a.student_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', studentIds);
+
+      const profileMap = new Map(
+        (profiles || []).map((p) => [p.id, p.name || 'Aluno'])
+      );
+
+      return appointments.map((a) => ({
+        ...a,
+        studentName: profileMap.get(a.student_id) || 'Aluno',
+      }));
     },
     enabled: !!selectedCollabId,
   });
 
-  // Group appointments by date+time_slot (a "class session")
+  // Filter by selected month/year using local date parsing to avoid timezone shifts
+  const monthFiltered = useMemo(() => {
+    if (!rawAppointments) return [];
+    return rawAppointments.filter((a) => {
+      const [y, m] = a.date.split('-').map(Number);
+      return y === selectedYear && m === selectedMonth + 1;
+    });
+  }, [rawAppointments, selectedMonth, selectedYear]);
+
+  // Group by date+time_slot (class session)
   const grouped = useMemo(() => {
-    if (!appointments) return [];
+    if (!monthFiltered.length) return [];
     const map = new Map<string, { date: string; timeSlot: string; className: string; students: { name: string; attendance: string }[] }>();
-    for (const appt of appointments) {
+    for (const appt of monthFiltered) {
       const key = `${appt.date}_${appt.time_slot}`;
       if (!map.has(key)) {
         map.set(key, {
           date: appt.date,
           timeSlot: appt.time_slot,
-          className: appt.class_schedule?.class_name || 'Treino',
+          className: 'Treino',
           students: [],
         });
       }
       map.get(key)!.students.push({
-        name: appt.student?.name || 'Aluno',
+        name: appt.studentName,
         attendance: appt.attendance || 'pending',
       });
     }
     return Array.from(map.values());
-  }, [appointments]);
+  }, [monthFiltered]);
 
   // Calculate totals
   const totals = useMemo(() => {
