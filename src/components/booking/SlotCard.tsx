@@ -14,6 +14,7 @@ interface SlotCardProps {
   isLoading: boolean;
   onBook: () => void;
   maxCapacity?: number;
+  actionWindowHours?: number;
 }
 
 export function SlotCard({
@@ -27,6 +28,7 @@ export function SlotCard({
   isLoading,
   onBook,
   maxCapacity,
+  actionWindowHours = 2,
 }: SlotCardProps) {
   const cap = maxCapacity ?? MAX_STUDENTS_PER_SLOT;
   const remaining = cap - count;
@@ -53,7 +55,7 @@ export function SlotCard({
     if (hasTimeConflict) return 'Conflito de Horário';
     if (isLocked) return 'Horário Bloqueado';
     if (isFull) return 'Horário Lotado';
-    if (!canBook) return 'Prazo Encerrado';
+    if (!canBook) return 'Prazo Esgotado';
     return 'Solicitar Agendamento';
   };
 

@@ -148,6 +148,13 @@ export default function Booking() {
       toast.error('Você já possui um agendamento para este horário.');
       return;
     }
+    // Client-side deadline check with educational message
+    const slot = classSlots?.find(s => s.id === classScheduleId);
+    const windowHrs = slot?.action_window_hours ?? 2;
+    if (!canBookSlot(timeSlot, windowHrs)) {
+      toast.error(`O agendamento só pode ser feito com no mínimo ${windowHrs} horas de antecedência.`);
+      return;
+    }
     setBookingSlot(classScheduleId);
     bookMutation.mutate({ timeSlot, classScheduleId });
   };
@@ -161,6 +168,8 @@ export default function Booking() {
     const deadline = addHours(new Date(), windowHours);
     return isAfter(slotDateTime, deadline);
   };
+
+  const getSlotWindowHours = (slot: any) => slot.action_window_hours ?? 2;
 
   // Check if slot has a time conflict (same time_slot already booked by user)
   const hasTimeConflict = (startTime: string) => {
@@ -220,6 +229,7 @@ export default function Booking() {
                       isLoading={bookingSlot === classId}
                       onBook={() => handleBook(slotKey, classId)}
                       maxCapacity={slot.capacity}
+                      actionWindowHours={getSlotWindowHours(slot)}
                     />
                   );
                 })}

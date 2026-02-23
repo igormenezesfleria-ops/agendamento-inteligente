@@ -97,7 +97,7 @@ export default function MyAppointments() {
   const handleCancel = (id: string) => {
     const apt = appointments?.find(a => a.id === id);
     if (apt && !canCancel(apt.date, apt.time_slot, apt.actionWindowHours)) {
-      toast.error('Fora do prazo permitido para esta ação.');
+      toast.error(`O cancelamento só pode ser feito com no mínimo ${apt.actionWindowHours} horas de antecedência.`);
       return;
     }
     setCancellingId(id);
