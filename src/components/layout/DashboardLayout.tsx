@@ -35,10 +35,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border print:hidden">
         <div className="flex items-center justify-between px-4 h-16">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg accent-gradient flex items-center justify-center">
-              <Dumbbell className="w-4 h-4 text-accent-foreground" />
-            </div>
-            <span className="font-display text-lg text-sidebar-foreground">Personal Studio</span>
+            <img src="/logo.png" alt="X AXIS" className="h-8 w-auto" />
+            <span className="font-display text-lg text-sidebar-foreground">X AXIS</span>
           </Link>
           <Button
             variant="ghost"
@@ -61,10 +59,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="hidden lg:flex items-center gap-3 px-6 h-16 border-b border-sidebar-border">
-            <div className="w-10 h-10 rounded-xl accent-gradient flex items-center justify-center">
-              <Dumbbell className="w-5 h-5 text-accent-foreground" />
-            </div>
-            <span className="font-display text-xl text-sidebar-foreground">Personal Studio</span>
+            <img src="/logo.png" alt="X AXIS" className="h-10 w-auto" />
+            <span className="font-display text-xl text-sidebar-foreground">X AXIS</span>
           </div>
 
           {/* User info */}
