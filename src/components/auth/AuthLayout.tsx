@@ -1,6 +1,5 @@
 import { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Dumbbell } from 'lucide-react';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -16,11 +15,9 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         <div className="w-full max-w-md mx-auto">
           {/* Logo */}
           <Link to="/" className="inline-flex items-center gap-3 mb-10 group">
-            <div className="w-12 h-12 rounded-xl accent-gradient flex items-center justify-center shadow-accent group-hover:scale-105 transition-transform">
-              <Dumbbell className="w-6 h-6 text-accent-foreground" />
-            </div>
+            <img src="/logo.png" alt="X AXIS" className="h-12 w-auto group-hover:scale-105 transition-transform" />
             <span className="font-display text-xl font-bold text-foreground">
-              Personal Studio
+              X AXIS
             </span>
           </Link>
 
@@ -49,9 +46,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-[120px] animate-pulse-subtle" style={{ animationDelay: '1s' }} />
 
         <div className="relative z-10 text-center px-12">
-          <div className="w-24 h-24 rounded-3xl accent-gradient flex items-center justify-center shadow-accent mx-auto mb-8">
-            <Dumbbell className="w-12 h-12 text-accent-foreground" />
-          </div>
+          <img src="/logo.png" alt="X AXIS" className="h-24 w-auto mx-auto mb-8" />
           <h2 className="font-display text-4xl text-primary-foreground mb-4">
             Resultados Reais
           </h2>

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Dumbbell, Calendar, Users, ArrowRight } from 'lucide-react';
+import { Calendar, Users, ArrowRight, BarChart3 } from 'lucide-react';
 
 export function Hero() {
   return (
@@ -19,24 +19,21 @@ export function Hero() {
       <div className="container relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-20 text-center">
         {/* Logo/Brand */}
         <div className="mb-8 animate-fade-in">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl accent-gradient shadow-accent mb-4">
-            <Dumbbell className="w-10 h-10 text-accent-foreground" />
-          </div>
+          <img src="/logo.png" alt="X AXIS" className="h-20 w-auto mx-auto mb-4" />
           <h2 className="text-accent font-display text-xl font-bold tracking-wider uppercase">
-            Personal Studio
+            X AXIS
           </h2>
         </div>
 
         {/* Main headline */}
         <h1 className="font-display text-4xl md:text-6xl lg:text-7xl text-primary-foreground mb-6 max-w-4xl animate-slide-up">
-          Transforme Seu
-          <span className="block text-gradient">Corpo e Mente</span>
+          Gestão e Agendamento
+          <span className="block text-gradient">Inteligente</span>
         </h1>
 
         {/* Subtitle */}
         <p className="text-primary-foreground/70 text-lg md:text-xl max-w-2xl mb-10 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          Agende seus treinos personalizados com facilidade. 
-          Acompanhamento profissional e resultados reais.
+          O app definitivo para conectar Personal Trainers e alunos. Simplifique seus agendamentos, acesse históricos de aulas e tenha a gestão completa do seu desempenho em um só lugar.
         </p>
 
         {/* CTA Buttons */}
@@ -59,17 +56,17 @@ export function Hero() {
           <FeatureCard 
             icon={Calendar}
             title="Agendamento Fácil"
-            description="Reserve seus horários em poucos cliques"
+            description="Reserve e gerencie seus horários com seu Personal em poucos cliques."
           />
           <FeatureCard 
             icon={Users}
-            title="Turmas Reduzidas"
-            description="Máximo de 4 alunos por horário"
+            title="Solicite Seu Horário"
+            description="Solicite e marque seu horário de treino diretamente com o Personal, de forma rápida e organizada."
           />
           <FeatureCard 
-            icon={Dumbbell}
-            title="Treino Personalizado"
-            description="Acompanhamento individual do seu progresso"
+            icon={BarChart3}
+            title="Gestão e Histórico"
+            description="Gerencie suas aulas, veja o histórico completo de aulas ministradas e acompanhe todos os treinos realizados."
           />
         </div>
       </div>
