@@ -30,7 +30,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navItems = getNavItems(role);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background w-full overflow-x-hidden">
       {/* Mobile header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border print:hidden">
         <div className="flex items-center justify-between px-4 h-16">
@@ -144,8 +144,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       )}
 
       {/* Main content */}
-      <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen print:ml-0 print:pt-0">
-        <div className="p-6 lg:p-8 print:p-4">{children}</div>
+      <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen w-full overflow-x-hidden print:ml-0 print:pt-0">
+        <div className="p-4 md:p-8 print:p-4">{children}</div>
       </main>
     </div>
   );

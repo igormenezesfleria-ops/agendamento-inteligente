@@ -1,18 +1,21 @@
+import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2 } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2, ChevronRight, Zap } from 'lucide-react';
 import { format, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 export function AdminDashboard() {
   const { user } = useAuth();
   const today = format(new Date(), 'yyyy-MM-dd');
   const dayOfWeek = getDay(new Date());
+  const nowTime = format(new Date(), 'HH:mm');
 
   const { data: pendingCount = 0 } = useQuery({
     queryKey: ['admin-stat-pending'],
@@ -53,7 +56,6 @@ export function AdminDashboard() {
     enabled: !!user?.id,
   });
 
-  // Today's class slots
   const { data: classSlots } = useQuery({
     queryKey: ['admin-today-slots', user?.id, dayOfWeek],
     queryFn: async () => {
@@ -95,6 +97,23 @@ export function AdminDashboard() {
     },
   });
 
+  // Find the next upcoming appointment for today
+  const nextClass = useMemo(() => {
+    if (!todayAppointments || !classSlots) return null;
+    const confirmedAppts = todayAppointments
+      .filter((a: any) => a.status === 'confirmed' && a.time_slot >= nowTime)
+      .sort((a: any, b: any) => a.time_slot.localeCompare(b.time_slot));
+    if (confirmedAppts.length === 0) return null;
+    const appt = confirmedAppts[0] as any;
+    const slot = classSlots.find((s) => s.start_time?.slice(0, 5) === appt.time_slot);
+    return {
+      time: appt.time_slot,
+      endTime: slot?.end_time?.slice(0, 5) || '',
+      studentName: appt.studentName,
+      className: slot?.class_name || 'Treino',
+    };
+  }, [todayAppointments, classSlots, nowTime]);
+
   const statusVariant = (status: string) => {
     switch (status) {
       case 'confirmed': return 'confirmed';
@@ -107,18 +126,60 @@ export function AdminDashboard() {
   const todayFormatted = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in max-w-full overflow-hidden">
       <div className="space-y-1">
-        <h1 className="font-display text-3xl text-foreground">Painel Administrativo</h1>
+        <h1 className="font-display text-2xl sm:text-3xl text-foreground">Painel Administrativo</h1>
         <p className="text-muted-foreground capitalize">{todayFormatted}</p>
       </div>
 
       {/* Metric cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-        <MetricCard icon={Bell} label="Pendentes" value={pendingCount} accent />
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+        <Link to="/dashboard/solicitacoes" className="group">
+          <Card className="cursor-pointer transition-opacity hover:opacity-80 border-accent/30">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center accent-gradient shrink-0">
+                <Bell className="w-6 h-6 text-accent-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
+                <p className="text-sm text-muted-foreground">Solicitações Pendentes</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+            </CardContent>
+          </Card>
+        </Link>
         <MetricCard icon={Calendar} label="Treinos Hoje" value={todayCount} />
         <MetricCard icon={GraduationCap} label="Alunos Ativos" value={studentCount} />
       </div>
+
+      {/* Next class highlight */}
+      <Card className={cn(nextClass ? 'border-accent/40 bg-accent/5' : '')}>
+        <CardContent className="p-4">
+          {nextClass ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="w-10 h-10 rounded-xl accent-gradient flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-accent-foreground" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Seu Próximo Treino</p>
+                <p className="text-foreground font-medium">
+                  {nextClass.time} - {nextClass.endTime} · {nextClass.studentName}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Seu Próximo Treino</p>
+                <p className="text-sm text-muted-foreground">Sem mais treinos para hoje. Dia de descanso! 💪</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Today's agenda */}
       <div className="space-y-4">
@@ -138,24 +199,32 @@ export function AdminDashboard() {
 
               return (
                 <Card key={slot.id} className={cn(slotAppts.length > 0 && 'border-accent/30')}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex items-center gap-2 min-w-[120px]">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium text-foreground">
-                          {slotKey} - {slot.end_time?.slice(0, 5)}
-                        </span>
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
+                      {/* Time + capacity row */}
+                      <div className="flex items-center justify-between sm:justify-start gap-2 sm:min-w-[120px]">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                          <span className="font-medium text-foreground text-sm">
+                            {slotKey} - {slot.end_time?.slice(0, 5)}
+                          </span>
+                        </div>
+                        <Badge variant="outline" className="text-xs sm:hidden shrink-0">
+                          {slotAppts.length}/{slot.capacity}
+                        </Badge>
                       </div>
-                      <div className="flex-1">
+
+                      {/* Students */}
+                      <div className="flex-1 min-w-0">
                         {slotAppts.length === 0 ? (
                           <span className="text-sm text-muted-foreground">Sem agendamentos</span>
                         ) : (
-                          <div className="space-y-2">
+                          <div className="flex flex-wrap gap-2">
                             {slotAppts.map((appt: any) => (
-                              <div key={appt.id} className="flex items-center gap-3">
-                                <User className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm text-foreground">{appt.studentName}</span>
-                                <Badge variant={statusVariant(appt.status) as any}>
+                              <div key={appt.id} className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5">
+                                <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                <span className="text-sm text-foreground truncate max-w-[120px] sm:max-w-none">{appt.studentName}</span>
+                                <Badge variant={statusVariant(appt.status) as any} className="text-[10px] px-1.5 py-0">
                                   {STATUS_LABELS[appt.status] || appt.status}
                                 </Badge>
                               </div>
@@ -163,7 +232,9 @@ export function AdminDashboard() {
                           </div>
                         )}
                       </div>
-                      <Badge variant="outline" className="text-xs">
+
+                      {/* Capacity badge - desktop only */}
+                      <Badge variant="outline" className="text-xs hidden sm:inline-flex shrink-0">
                         {slotAppts.length}/{slot.capacity}
                       </Badge>
                     </div>
@@ -178,12 +249,12 @@ export function AdminDashboard() {
   );
 }
 
-function MetricCard({ icon: Icon, label, value, accent }: { icon: React.ElementType; label: string; value: number; accent?: boolean }) {
+function MetricCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
   return (
     <Card>
       <CardContent className="p-4 flex items-center gap-4">
-        <div className={cn('w-12 h-12 rounded-xl flex items-center justify-center', accent ? 'accent-gradient' : 'bg-secondary')}>
-          <Icon className={cn('w-6 h-6', accent ? 'text-accent-foreground' : 'text-secondary-foreground')} />
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-secondary shrink-0">
+          <Icon className="w-6 h-6 text-secondary-foreground" />
         </div>
         <div>
           <p className="text-2xl font-bold text-foreground">{value}</p>
