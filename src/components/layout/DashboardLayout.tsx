@@ -92,12 +92,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Navigation */}
           <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.href;
+            {navItems.map((item, idx) => {
+              if ('section' in item) {
+                return (
+                  <p key={`section-${idx}`} className="text-[10px] font-bold tracking-widest text-sidebar-foreground/40 uppercase pt-5 pb-1 px-4">
+                    {(item as any).section}
+                  </p>
+                );
+              }
+              const navItem = item as { href: string; label: string; icon: React.ElementType };
+              const isActive = location.pathname === navItem.href;
               return (
                 <Link
-                  key={item.href}
-                  to={item.href}
+                  key={navItem.href}
+                  to={navItem.href}
                   onClick={() => setIsSidebarOpen(false)}
                   className={cn(
                     'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors',
@@ -106,8 +114,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                       : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground'
                   )}
                 >
-                  <item.icon className="w-5 h-5" />
-                  {item.label}
+                  <navItem.icon className="w-5 h-5" />
+                  {navItem.label}
                 </Link>
               );
             })}
@@ -152,18 +160,21 @@ function getNavItems(role: string) {
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
 
-  const adminItems = [
+  const adminItems: Array<{ href: string; label: string; icon: React.ElementType } | { section: string }> = [
     { href: '/dashboard/admin', label: 'Início', icon: Home },
+    { section: 'Operação' },
     { href: '/dashboard/solicitacoes', label: 'Solicitações', icon: Bell },
     { href: '/dashboard/minha-agenda', label: 'Minha Agenda', icon: CalendarCheck },
     { href: '/dashboard/agenda', label: 'Agenda Completa', icon: Calendar },
-    { href: '/dashboard/configurar-horarios', label: 'Configurar Horários', icon: Settings },
-    { href: '/dashboard/equipe', label: 'Equipe', icon: Users },
+    { section: 'Gestão' },
     { href: '/dashboard/meus-alunos', label: 'Meus Alunos', icon: GraduationCap },
-    { href: '/dashboard/trancamentos', label: 'Trancamentos', icon: Lock },
+    { href: '/dashboard/equipe', label: 'Equipe', icon: Users },
     { href: '/dashboard/historico', label: 'Histórico', icon: History },
+    { href: '/dashboard/admin/fechamento', label: 'Fechamento', icon: DollarSign },
+    { section: 'Ajustes' },
+    { href: '/dashboard/configurar-horarios', label: 'Configurar Horários', icon: Settings },
+    { href: '/dashboard/trancamentos', label: 'Trancamentos', icon: Lock },
     { href: '/dashboard/comunicados', label: 'Comunicados', icon: MessageSquare },
-    { href: '/dashboard/admin/fechamento', label: 'Fechamento / Pagamentos', icon: DollarSign },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
 
