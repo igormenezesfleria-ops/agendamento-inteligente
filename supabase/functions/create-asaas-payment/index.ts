@@ -5,15 +5,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY')!;
-const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
-
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // 1. Environment check
+    const ASAAS_API_KEY = Deno.env.get('ASAAS_API_KEY');
+    if (!ASAAS_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: 'API Key do Asaas não configurada no Supabase Secrets' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
+
     // Auth check
     const authHeader = req.headers.get('Authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -32,53 +40,76 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
 
-    const { billingType, planId, planDays, value, userId, userEmail, creditCard } = await req.json();
+    const { billingType, planId, planDays, value, userId, userEmail, userName, creditCard } = await req.json();
 
     if (!billingType || !planId || !value || !userId) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    const externalReference = `${userId}__${planId}__${planDays}`;
+    const asaasHeaders = {
+      'Content-Type': 'application/json',
+      'access_token': ASAAS_API_KEY,
+    };
 
-    // Create or find customer in Asaas
-    const customerRes = await fetch(`${ASAAS_BASE_URL}/customers`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'access_token': ASAAS_API_KEY,
-      },
-      body: JSON.stringify({
-        name: userEmail || 'Cliente',
-        email: userEmail,
-        externalReference: userId,
-      }),
-    });
+    // 2. Create or find customer
+    let customerId: string | null = null;
 
-    const customerData = await customerRes.json();
-    const customerId = customerData.id || customerData.errors?.[0]?.description?.includes('já cadastrado')
-      ? undefined
-      : customerData.id;
-
-    // If customer already exists, find them
-    let finalCustomerId = customerId;
-    if (!finalCustomerId) {
+    // Try to find existing customer by externalReference
+    try {
       const findRes = await fetch(`${ASAAS_BASE_URL}/customers?externalReference=${userId}`, {
         headers: { 'access_token': ASAAS_API_KEY },
       });
       const findData = await findRes.json();
-      finalCustomerId = findData.data?.[0]?.id;
+      if (findData.data && findData.data.length > 0) {
+        customerId = findData.data[0].id;
+      }
+    } catch (e) {
+      console.error('Error finding customer:', e);
     }
 
-    if (!finalCustomerId) {
-      return new Response(JSON.stringify({ error: 'Failed to create/find customer' }), { status: 500, headers: corsHeaders });
+    // If not found, create new customer
+    if (!customerId) {
+      const customerRes = await fetch(`${ASAAS_BASE_URL}/customers`, {
+        method: 'POST',
+        headers: asaasHeaders,
+        body: JSON.stringify({
+          name: userName || userEmail || 'Cliente',
+          email: userEmail,
+          externalReference: userId,
+          notificationDisabled: true,
+        }),
+      });
+
+      const customerData = await customerRes.json();
+
+      if (customerData.errors) {
+        const errorMsg = customerData.errors[0]?.description || 'Erro ao criar cliente no Asaas';
+        console.error('Asaas customer creation error:', customerData.errors);
+        return new Response(
+          JSON.stringify({ error: errorMsg }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      customerId = customerData.id;
     }
 
-    // Create payment
+    if (!customerId) {
+      return new Response(
+        JSON.stringify({ error: 'Falha ao criar/encontrar cliente no Asaas' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 3. Create payment
+    const externalReference = `${userId}__${planId}__${planDays}`;
+    const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
     const paymentBody: Record<string, unknown> = {
-      customer: finalCustomerId,
+      customer: customerId,
       billingType,
       value,
-      dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      dueDate,
       description: `Plano ${planId} - X AXIS`,
       externalReference,
     };
@@ -96,29 +127,41 @@ Deno.serve(async (req) => {
 
     const paymentRes = await fetch(`${ASAAS_BASE_URL}/payments`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'access_token': ASAAS_API_KEY,
-      },
+      headers: asaasHeaders,
       body: JSON.stringify(paymentBody),
     });
 
     const paymentData = await paymentRes.json();
 
     if (paymentData.errors) {
-      return new Response(JSON.stringify({ error: paymentData.errors[0]?.description || 'Payment error' }), { status: 400, headers: corsHeaders });
+      const errorMsg = paymentData.errors[0]?.description || 'Erro ao criar pagamento no Asaas';
+      console.error('Asaas payment error:', paymentData.errors);
+      return new Response(
+        JSON.stringify({ error: errorMsg }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // For PIX, get QR code
+    // 4. For PIX, get QR code
     let pixQrCode = null;
     if (billingType === 'PIX' && paymentData.id) {
-      const pixRes = await fetch(`${ASAAS_BASE_URL}/payments/${paymentData.id}/pixQrCode`, {
-        headers: { 'access_token': ASAAS_API_KEY },
-      });
-      pixQrCode = await pixRes.json();
+      try {
+        const pixRes = await fetch(`${ASAAS_BASE_URL}/payments/${paymentData.id}/pixQrCode`, {
+          headers: { 'access_token': ASAAS_API_KEY },
+        });
+        const pixData = await pixRes.json();
+
+        if (pixData.errors) {
+          console.error('Asaas PIX QR error:', pixData.errors);
+        } else {
+          pixQrCode = pixData;
+        }
+      } catch (e) {
+        console.error('Error fetching PIX QR code:', e);
+      }
     }
 
-    // If credit card was confirmed immediately, activate subscription
+    // 5. If credit card confirmed immediately, activate subscription
     if (billingType === 'CREDIT_CARD' && (paymentData.status === 'CONFIRMED' || paymentData.status === 'RECEIVED')) {
       const adminClient = createClient(
         Deno.env.get('SUPABASE_URL')!,
@@ -126,7 +169,7 @@ Deno.serve(async (req) => {
       );
 
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + planDays);
+      expiresAt.setDate(expiresAt.getDate() + (planDays || 30));
 
       await adminClient.from('profiles').update({
         subscription_status: 'active',
@@ -135,13 +178,20 @@ Deno.serve(async (req) => {
       }).eq('id', userId);
     }
 
+    // 6. Return response
     return new Response(JSON.stringify({
-      ...paymentData,
+      id: paymentData.id,
+      status: paymentData.status,
+      billingType: paymentData.billingType,
       pixQrCode,
       externalReference,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: corsHeaders });
+    console.error('Edge function error:', err);
+    return new Response(
+      JSON.stringify({ error: (err as Error).message || 'Erro interno do servidor' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });
