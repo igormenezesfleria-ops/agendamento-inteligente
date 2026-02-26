@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -5,15 +6,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Calendar, Clock, ArrowRight, Dumbbell, Info } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Dumbbell, Info, BarChart3 } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
+import { PerformanceReceipt } from '@/components/student/PerformanceReceipt';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
+  const [receiptOpen, setReceiptOpen] = useState(false);
 
   const { data: nextAppointment, isLoading } = useQuery({
     queryKey: ['next-appointment', user?.id],
@@ -82,6 +85,26 @@ export function StudentDashboard() {
           Pronto para mais um treino?
         </p>
       </div>
+
+      {/* Performance Receipt Card */}
+      <Card className="border-0 bg-slate-900 text-white overflow-hidden relative">
+        <CardContent className="p-5 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
+            <BarChart3 className="w-6 h-6 text-orange-500" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm text-white">Extrato de Desempenho</p>
+            <p className="text-xs text-slate-400">Mostre sua evolução nos Stories!</p>
+          </div>
+          <Button
+            onClick={() => setReceiptOpen(true)}
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shrink-0"
+            size="sm"
+          >
+            📊 Compartilhar
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Primary CTA */}
       <Button asChild variant="accent" size="lg" className="w-full">
@@ -163,6 +186,9 @@ export function StudentDashboard() {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Receipt Modal */}
+      <PerformanceReceipt open={receiptOpen} onOpenChange={setReceiptOpen} />
     </div>
   );
 }
