@@ -201,6 +201,7 @@ export type Database = {
           default_capacity: number
           hourly_rate: number | null
           id: string
+          instagram_handle: string | null
           is_onboarded: boolean
           name: string | null
           no_show_rate: number | null
@@ -224,6 +225,7 @@ export type Database = {
           default_capacity?: number
           hourly_rate?: number | null
           id: string
+          instagram_handle?: string | null
           is_onboarded?: boolean
           name?: string | null
           no_show_rate?: number | null
@@ -247,6 +249,7 @@ export type Database = {
           default_capacity?: number
           hourly_rate?: number | null
           id?: string
+          instagram_handle?: string | null
           is_onboarded?: boolean
           name?: string | null
           no_show_rate?: number | null
