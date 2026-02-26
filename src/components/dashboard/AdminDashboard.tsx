@@ -1,18 +1,21 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2, ChevronRight, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2, ChevronRight, Zap, BarChart3 } from 'lucide-react';
 import { format, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt';
 
 export function AdminDashboard() {
   const { user } = useAuth();
+  const [showImpact, setShowImpact] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
   const dayOfWeek = getDay(new Date());
   const nowTime = format(new Date(), 'HH:mm');
@@ -131,6 +134,28 @@ export function AdminDashboard() {
         <h1 className="font-display text-2xl sm:text-3xl text-foreground">Painel Administrativo</h1>
         <p className="text-muted-foreground capitalize">{todayFormatted}</p>
       </div>
+
+      {/* Impact Report CTA */}
+      <Card className="bg-slate-900 border-orange-500/30 overflow-hidden">
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
+            <BarChart3 className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">Relatório de Impacto</p>
+            <p className="text-xs text-slate-400">Compartilhe seus resultados nos Stories</p>
+          </div>
+          <Button
+            onClick={() => setShowImpact(true)}
+            size="sm"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold shrink-0"
+          >
+            📊 Gerar
+          </Button>
+        </CardContent>
+      </Card>
+
+      <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />
 
       {/* Metric cards */}
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
