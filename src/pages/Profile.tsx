@@ -25,6 +25,7 @@ const profileSchema = z.object({
   name: z.string().min(2, 'Nome deve ter no mínimo 2 caracteres').max(100, 'Nome muito longo'),
   cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$|^\d{11}$/, 'CPF inválido').optional().or(z.literal('')),
   date_of_birth: z.string().optional(),
+  instagram_handle: z.string().max(30, 'Handle muito longo').optional().or(z.literal('')),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -44,6 +45,7 @@ export default function Profile() {
       name: profile?.name || '',
       cpf: profile?.cpf || '',
       date_of_birth: profile?.date_of_birth || '',
+      instagram_handle: (profile as any)?.instagram_handle || '',
     },
   });
 
@@ -52,7 +54,7 @@ export default function Profile() {
       if (!user?.id) throw new Error('Not authenticated');
       const { error } = await supabase
         .from('profiles')
-        .update({ name: data.name, cpf: data.cpf || null, date_of_birth: data.date_of_birth || null })
+        .update({ name: data.name, cpf: data.cpf || null, date_of_birth: data.date_of_birth || null, instagram_handle: data.instagram_handle || null } as any)
         .eq('id', user.id);
       if (error) throw error;
     },
@@ -222,6 +224,13 @@ export default function Profile() {
               <div className="space-y-2">
                 <Label htmlFor="date_of_birth">Data de Nascimento</Label>
                 <Input id="date_of_birth" type="date" {...register('date_of_birth')} />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="instagram_handle">Instagram (@)</Label>
+                <Input id="instagram_handle" placeholder="@seuinstagram" {...register('instagram_handle')} maxLength={30} />
+                {errors.instagram_handle && <p className="text-sm text-destructive">{errors.instagram_handle.message}</p>}
+                <p className="text-xs text-muted-foreground">Usado para marcar você nos extratos de treino.</p>
               </div>
 
               <div className="space-y-2">
