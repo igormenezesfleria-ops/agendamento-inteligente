@@ -273,6 +273,53 @@ export type Database = {
           },
         ]
       }
+      recurring_student_schedules: {
+        Row: {
+          business_owner_id: string
+          class_schedule_id: string | null
+          created_at: string
+          day_of_week: number
+          id: string
+          instructor_id: string | null
+          is_active: boolean
+          student_id: string
+          time_slot: string
+          updated_at: string
+        }
+        Insert: {
+          business_owner_id: string
+          class_schedule_id?: string | null
+          created_at?: string
+          day_of_week: number
+          id?: string
+          instructor_id?: string | null
+          is_active?: boolean
+          student_id: string
+          time_slot: string
+          updated_at?: string
+        }
+        Update: {
+          business_owner_id?: string
+          class_schedule_id?: string | null
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          instructor_id?: string | null
+          is_active?: boolean
+          student_id?: string
+          time_slot?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_student_schedules_class_schedule_id_fkey"
+            columns: ["class_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
