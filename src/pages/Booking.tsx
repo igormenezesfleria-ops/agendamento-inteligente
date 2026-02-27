@@ -79,7 +79,7 @@ export default function Booking() {
       if (!formattedDate || !user?.id) return [];
       const { data, error } = await supabase
         .from('appointments')
-        .select('time_slot, class_schedule_id')
+        .select('time_slot, class_schedule_id, notes')
         .eq('student_id', user.id)
         .eq('date', formattedDate)
         .neq('status', 'cancelled');
@@ -91,6 +91,9 @@ export default function Booking() {
 
   // Derive booked class IDs and booked time slots for conflict detection
   const bookedClassIds = userBookings?.map((b) => b.class_schedule_id || b.time_slot) || [];
+  const fixedClassIds = new Set(
+    userBookings?.filter((b) => b.notes?.includes('Aluno Fixo')).map((b) => b.class_schedule_id || b.time_slot) || []
+  );
   const bookedTimeSlots = userBookings?.map((b) => b.time_slot) || [];
 
   const bookMutation = useMutation({
@@ -224,6 +227,7 @@ export default function Booking() {
                       count={slotCounts?.[classId] || 0}
                       isLocked={lockedSlots?.includes(slotKey) || false}
                       isBooked={bookedClassIds.includes(classId) || false}
+                      isFixed={fixedClassIds.has(classId)}
                       hasTimeConflict={timeConflict}
                       canBook={canBookSlot(slotKey, slot.action_window_hours)}
                       isLoading={bookingSlot === classId}

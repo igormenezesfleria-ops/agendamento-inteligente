@@ -9,6 +9,7 @@ interface SlotCardProps {
   count: number;
   isLocked: boolean;
   isBooked: boolean;
+  isFixed?: boolean;
   hasTimeConflict?: boolean;
   canBook: boolean;
   isLoading: boolean;
@@ -23,6 +24,7 @@ export function SlotCard({
   count,
   isLocked,
   isBooked,
+  isFixed = false,
   hasTimeConflict = false,
   canBook,
   isLoading,
@@ -51,7 +53,7 @@ export function SlotCard({
 
   const getButtonLabel = () => {
     if (isLoading) return null; // handled separately
-    if (isBooked) return 'Já Agendado';
+    if (isBooked) return isFixed ? 'Fixo' : 'Já Agendado';
     if (hasTimeConflict) return 'Conflito de Horário';
     if (isLocked) return 'Horário Bloqueado';
     if (isFull) return 'Horário Lotado';
