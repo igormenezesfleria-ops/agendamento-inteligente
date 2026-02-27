@@ -32,6 +32,7 @@ export default function MyStudents() {
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [recurringStudent, setRecurringStudent] = useState<Student | null>(null);
 
   const { data: students, isLoading } = useQuery({
     queryKey: ['my-students', user?.id],
@@ -139,7 +140,7 @@ export default function MyStudents() {
                     </div>
                   </div>
 
-                  <div className="flex gap-2 mt-4">
+                  <div className="flex gap-2 mt-4 flex-wrap">
                     <Button
                       variant="outline"
                       size="sm"
@@ -148,6 +149,15 @@ export default function MyStudents() {
                     >
                       <History className="w-4 h-4 mr-1" />
                       Histórico
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setRecurringStudent(student)}
+                    >
+                      <CalendarClock className="w-4 h-4 mr-1" />
+                      Aluno Fixo
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -223,6 +233,14 @@ export default function MyStudents() {
             )}
           </DialogContent>
         </Dialog>
+        {/* Recurring Schedule Dialog */}
+        {recurringStudent && (
+          <RecurringScheduleDialog
+            open={!!recurringStudent}
+            onOpenChange={(open) => { if (!open) setRecurringStudent(null); }}
+            student={recurringStudent}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
