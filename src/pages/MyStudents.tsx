@@ -14,7 +14,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock } from 'lucide-react';
+import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
