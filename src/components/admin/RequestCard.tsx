@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Check, UserPlus, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Check, UserPlus, Loader2, AlertTriangle, Trash2, X } from 'lucide-react';
 import { TIME_SLOTS } from '@/lib/constants';
 import { isWithinDeadline, isSlotExpired } from '@/lib/deadline';
 
@@ -19,6 +19,7 @@ interface RequestCardProps {
   onConfirm: (id: string) => void;
   onDelegate: (id: string) => void;
   onDelete?: (id: string) => void;
+  onReject?: (id: string) => void;
 }
 
 export function RequestCard({
@@ -32,6 +33,7 @@ export function RequestCard({
   onConfirm,
   onDelegate,
   onDelete,
+  onReject,
 }: RequestCardProps) {
   const slot = TIME_SLOTS.find((s) => s.id === timeSlot);
   const parsedDate = parseISO(date + 'T12:00:00');
@@ -122,6 +124,18 @@ export function RequestCard({
                   <UserPlus className="w-4 h-4 mr-1" />
                   Delegar
                 </Button>
+                {onReject && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => onReject(id)}
+                    disabled={isLoading}
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Recusar
+                  </Button>
+                )}
               </>
             ) : (
               <>

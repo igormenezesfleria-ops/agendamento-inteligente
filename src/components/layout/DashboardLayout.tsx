@@ -160,7 +160,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/admin', label: 'Início', icon: Home },
     { section: 'Operação' },
     { href: '/dashboard/solicitacoes', label: 'Solicitações', icon: Bell },
-    { href: '/dashboard/minha-agenda', label: 'Minha Agenda', icon: CalendarCheck },
+    { href: '/dashboard/minha-agenda', label: 'Minhas Tarefas', icon: ClipboardList },
     { href: '/dashboard/agenda', label: 'Agenda Completa', icon: Calendar },
     { section: 'Gestão' },
     { href: '/dashboard/meus-alunos', label: 'Meus Alunos', icon: GraduationCap },
