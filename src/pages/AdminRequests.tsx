@@ -179,9 +179,33 @@ export default function AdminRequests() {
     },
   });
 
+  const rejectMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'rejected' })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Treino recusado.');
+      queryClient.invalidateQueries({ queryKey: ['pendingRequests'] });
+      setLoadingId(null);
+    },
+    onError: () => {
+      toast.error('Erro ao recusar treino');
+      setLoadingId(null);
+    },
+  });
+
   const handleDelete = (id: string) => {
     setLoadingId(id);
     deleteMutation.mutate(id);
+  };
+
+  const handleReject = (id: string) => {
+    setLoadingId(id);
+    rejectMutation.mutate(id);
   };
 
   const handleDelegateSubmit = () => {
@@ -224,6 +248,7 @@ export default function AdminRequests() {
                 onConfirm={handleConfirm}
                 onDelegate={handleDelegate}
                 onDelete={handleDelete}
+                onReject={handleReject}
               />
             ))}
           </div>

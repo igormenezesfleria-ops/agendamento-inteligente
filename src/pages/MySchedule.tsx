@@ -29,7 +29,8 @@ export default function MySchedule() {
         .from('appointments')
         .select('id, date, time_slot, status, student_id, attendance, private_notes')
         .eq('instructor_id', user!.id)
-        .in('status', ['confirmed', 'delegated', 'completed'])
+        .in('status', ['confirmed', 'delegated'])
+        .gte('date', format(today, 'yyyy-MM-dd'))
         .order('date')
         .order('time_slot');
 
@@ -85,7 +86,7 @@ export default function MySchedule() {
   };
 
   const today = startOfDay(new Date());
-  const title = profile?.role === 'admin' ? 'Minha Agenda' : 'Meus Treinos';
+  const title = profile?.role === 'admin' ? 'Minhas Tarefas' : 'Meus Treinos';
 
   const canMarkAttendance = (appt: any) => {
     const apptDate = parseISO(appt.date);
@@ -98,7 +99,11 @@ export default function MySchedule() {
       <div className="space-y-8 animate-fade-in">
         <div className="space-y-2">
           <h1 className="font-display text-3xl text-foreground">{title}</h1>
-          <p className="text-muted-foreground">Seus treinos confirmados com controle de presença.</p>
+          <p className="text-muted-foreground">
+            {profile?.role === 'admin'
+              ? 'Treinos pendentes de ação — marque presença para concluir.'
+              : 'Seus treinos confirmados com controle de presença.'}
+          </p>
         </div>
 
         {isLoading ? (
