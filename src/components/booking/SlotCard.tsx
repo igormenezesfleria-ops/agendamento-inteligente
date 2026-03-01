@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Users, Loader2 } from 'lucide-react';
-import { MAX_STUDENTS_PER_SLOT } from '@/lib/constants';
 
 interface SlotCardProps {
   timeSlot: string;
   label: string;
-  count: number;
+  effectiveRemaining: number;
+  maxCapacity: number;
   isLocked: boolean;
   isBooked: boolean;
   isFixed?: boolean;
@@ -14,14 +14,14 @@ interface SlotCardProps {
   canBook: boolean;
   isLoading: boolean;
   onBook: () => void;
-  maxCapacity?: number;
   actionWindowHours?: number;
 }
 
 export function SlotCard({
   timeSlot,
   label,
-  count,
+  effectiveRemaining,
+  maxCapacity,
   isLocked,
   isBooked,
   isFixed = false,
@@ -29,11 +29,9 @@ export function SlotCard({
   canBook,
   isLoading,
   onBook,
-  maxCapacity,
   actionWindowHours = 2,
 }: SlotCardProps) {
-  const cap = maxCapacity ?? MAX_STUDENTS_PER_SLOT;
-  const remaining = cap - count;
+  const remaining = effectiveRemaining;
   const isFull = remaining <= 0;
 
   const getAvailabilityVariant = () => {
@@ -49,11 +47,14 @@ export function SlotCard({
     return `${remaining} vagas`;
   };
 
-  const isDisabled = !canBook || isFull || isLocked || isBooked || hasTimeConflict || isLoading;
+  // Fixed or already booked → always disabled
+  const forceDisabled = isFixed || isBooked || hasTimeConflict;
+  const isDisabled = forceDisabled || !canBook || isFull || isLocked || isLoading;
 
   const getButtonLabel = () => {
-    if (isLoading) return null; // handled separately
-    if (isBooked) return isFixed ? 'Fixo' : 'Já Agendado';
+    if (isLoading) return null;
+    if (isFixed) return 'Horário Fixo';
+    if (isBooked) return 'Já Agendado';
     if (hasTimeConflict) return 'Conflito de Horário';
     if (isLocked) return 'Horário Bloqueado';
     if (isFull) return 'Horário Lotado';
@@ -74,7 +75,7 @@ export function SlotCard({
         </Badge>
       </div>
 
-      {isBooked || hasTimeConflict ? (
+      {forceDisabled ? (
         <Button
           variant="secondary"
           className="w-full bg-muted text-muted-foreground cursor-not-allowed opacity-70"
