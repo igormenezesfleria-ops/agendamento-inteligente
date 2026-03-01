@@ -19,7 +19,7 @@ export default function Booking() {
   const dayOfWeek = selectedDate ? getDay(selectedDate) : null;
   const trainerId = profile?.business_owner_id;
 
-  // Fetch class_schedules for the trainer matching the selected day
+  // 1. Fetch class_schedules for the trainer matching the selected day
   const { data: classSlots, isLoading: isLoadingSlots } = useQuery({
     queryKey: ['class-slots', trainerId, dayOfWeek],
     queryFn: async () => {
@@ -36,7 +36,7 @@ export default function Booking() {
     enabled: !!trainerId && dayOfWeek !== null,
   });
 
-  // Fetch slot counts for selected date, grouped by class_schedule_id
+  // 2. Fetch existing appointment counts for the selected date (capacity usage)
   const { data: slotCounts, isLoading: isLoadingCounts } = useQuery({
     queryKey: ['slotCounts', formattedDate],
     queryFn: async () => {
@@ -57,7 +57,42 @@ export default function Booking() {
     enabled: !!formattedDate,
   });
 
-  // Fetch locked slots
+  // 3. Fetch ALL fixed students for this trainer + dayOfWeek (for capacity math)
+  const { data: allFixedForDay } = useQuery({
+    queryKey: ['allFixedForDay', trainerId, dayOfWeek],
+    queryFn: async () => {
+      if (!trainerId || dayOfWeek === null) return [];
+      const { data, error } = await supabase
+        .from('recurring_student_schedules')
+        .select('student_id, class_schedule_id, time_slot')
+        .eq('business_owner_id', trainerId)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!trainerId && dayOfWeek !== null,
+  });
+
+  // 4. Fetch THIS student's fixed schedules for this day (for button state)
+  const { data: myFixedSchedules } = useQuery({
+    queryKey: ['myFixedSchedules', user?.id, trainerId, dayOfWeek],
+    queryFn: async () => {
+      if (!user?.id || !trainerId || dayOfWeek === null) return [];
+      const { data, error } = await supabase
+        .from('recurring_student_schedules')
+        .select('class_schedule_id, time_slot')
+        .eq('student_id', user.id)
+        .eq('business_owner_id', trainerId)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.id && !!trainerId && dayOfWeek !== null,
+  });
+
+  // 5. Fetch locked slots
   const { data: lockedSlots } = useQuery({
     queryKey: ['lockedSlots', formattedDate],
     queryFn: async () => {
@@ -72,14 +107,14 @@ export default function Booking() {
     enabled: !!formattedDate,
   });
 
-  // Fetch user's existing bookings (class_schedule_id AND time_slot for conflict check)
+  // 6. Fetch user's existing bookings for conflict detection
   const { data: userBookings } = useQuery({
     queryKey: ['userBookings', formattedDate, user?.id],
     queryFn: async () => {
       if (!formattedDate || !user?.id) return [];
       const { data, error } = await supabase
         .from('appointments')
-        .select('time_slot, class_schedule_id, notes')
+        .select('time_slot, class_schedule_id')
         .eq('student_id', user.id)
         .eq('date', formattedDate)
         .neq('status', 'cancelled');
@@ -89,31 +124,66 @@ export default function Booking() {
     enabled: !!formattedDate && !!user?.id,
   });
 
-  // Derive sets for robust conflict detection (check both class_schedule_id AND time_slot)
+  // --- Derived sets ---
+
+  // Student's own fixed class_schedule_ids and time_slots
+  const myFixedClassIds = new Set(
+    myFixedSchedules?.filter((s) => s.class_schedule_id).map((s) => s.class_schedule_id!) || []
+  );
+  const myFixedTimeSlots = new Set(
+    myFixedSchedules?.map((s) => s.time_slot) || []
+  );
+
+  // Student's existing bookings (any type)
   const bookedClassIds = new Set(
     userBookings?.filter((b) => b.class_schedule_id).map((b) => b.class_schedule_id!) || []
   );
   const bookedTimeSlots = new Set(
     userBookings?.map((b) => b.time_slot) || []
   );
-  const fixedClassIds = new Set(
-    userBookings?.filter((b) => b.notes?.includes('Aluno Fixo')).map((b) => b.class_schedule_id || b.time_slot) || []
-  );
-  const fixedTimeSlots = new Set(
-    userBookings?.filter((b) => b.notes?.includes('Aluno Fixo')).map((b) => b.time_slot) || []
-  );
 
+  // Count of ALL fixed students per class_schedule_id (for capacity subtraction)
+  const fixedCountByClassId: Record<string, number> = {};
+  allFixedForDay?.forEach((s) => {
+    const key = s.class_schedule_id || s.time_slot;
+    fixedCountByClassId[key] = (fixedCountByClassId[key] || 0) + 1;
+  });
+
+  // Check if this student is fixed for a given slot
+  const isStudentFixed = (classId: string, timeSlot: string) =>
+    myFixedClassIds.has(classId) || myFixedTimeSlots.has(timeSlot);
+
+  // Check if this student already has a booking (fixed or manual)
   const isSlotBooked = (classId: string, timeSlot: string) =>
     bookedClassIds.has(classId) || bookedTimeSlots.has(timeSlot);
 
-  const isSlotFixed = (classId: string, timeSlot: string) =>
-    fixedClassIds.has(classId) || fixedTimeSlots.has(timeSlot);
+  // Time conflict: same start_time already booked
+  const hasTimeConflict = (startTime: string) => {
+    const slotKey = startTime.slice(0, 5);
+    return bookedTimeSlots.has(slotKey);
+  };
+
+  /**
+   * Effective remaining spots:
+   * = maxCapacity - existingAppointments
+   * But we also ensure fixed students who DON'T yet have an appointment row
+   * are subtracted. Fixed students with existing appointments are already
+   * counted in slotCounts, so we only add the delta.
+   */
+  const getEffectiveRemaining = (classId: string, maxCapacity: number) => {
+    const appointmentCount = slotCounts?.[classId] || 0;
+    const totalFixed = fixedCountByClassId[classId] || 0;
+    // Fixed students already with appointments are in appointmentCount.
+    // We need: max - max(appointmentCount, totalFixed)
+    // Because all fixed students WILL have a spot, even if not yet generated.
+    const effectiveUsed = Math.max(appointmentCount, totalFixed);
+    return maxCapacity - effectiveUsed;
+  };
 
   const bookMutation = useMutation({
     mutationFn: async ({ timeSlot, classScheduleId }: { timeSlot: string; classScheduleId: string }) => {
       if (!user?.id || !formattedDate) throw new Error('Missing data');
 
-      // Double-check time conflict (same date + same start_time)
       if (bookedTimeSlots.has(timeSlot)) {
         throw new Error('TIME_CONFLICT');
       }
@@ -129,7 +199,6 @@ export default function Booking() {
         status: autoConfirm ? 'confirmed' : 'pending',
       };
 
-      // Auto-assign fixed collaborator or trainer
       if (autoConfirm) {
         insertData.instructor_id = matchingSlot?.default_collaborator_id || trainerId;
       } else if (matchingSlot?.default_collaborator_id) {
@@ -158,23 +227,6 @@ export default function Booking() {
     },
   });
 
-  const handleBook = (timeSlot: string, classScheduleId: string) => {
-    // Client-side time conflict check
-    if (bookedTimeSlots.has(timeSlot)) {
-      toast.error('Você já possui um agendamento para este horário.');
-      return;
-    }
-    // Client-side deadline check with educational message
-    const slot = classSlots?.find(s => s.id === classScheduleId);
-    const windowHrs = slot?.action_window_hours ?? 2;
-    if (!canBookSlot(timeSlot, windowHrs)) {
-      toast.error(`O agendamento só pode ser feito com no mínimo ${windowHrs} horas de antecedência.`);
-      return;
-    }
-    setBookingSlot(classScheduleId);
-    bookMutation.mutate({ timeSlot, classScheduleId });
-  };
-
   const canBookSlot = (startTime: string, actionWindowHours?: number) => {
     if (!selectedDate) return false;
     const [hours, mins] = startTime.split(':').map(Number);
@@ -185,12 +237,19 @@ export default function Booking() {
     return isAfter(slotDateTime, deadline);
   };
 
-  const getSlotWindowHours = (slot: any) => slot.action_window_hours ?? 2;
-
-  // Check if slot has a time conflict (same time_slot already booked by user)
-  const hasTimeConflict = (startTime: string) => {
-    const slotKey = startTime.slice(0, 5);
-    return bookedTimeSlots.has(slotKey);
+  const handleBook = (timeSlot: string, classScheduleId: string) => {
+    if (bookedTimeSlots.has(timeSlot)) {
+      toast.error('Você já possui um agendamento para este horário.');
+      return;
+    }
+    const slot = classSlots?.find(s => s.id === classScheduleId);
+    const windowHrs = slot?.action_window_hours ?? 2;
+    if (!canBookSlot(timeSlot, windowHrs)) {
+      toast.error(`O agendamento só pode ser feito com no mínimo ${windowHrs} horas de antecedência.`);
+      return;
+    }
+    setBookingSlot(classScheduleId);
+    bookMutation.mutate({ timeSlot, classScheduleId });
   };
 
   const isLoading = isLoadingSlots || isLoadingCounts;
@@ -231,22 +290,26 @@ export default function Booking() {
                 {classSlots.map((slot) => {
                   const slotKey = slot.start_time?.slice(0, 5) || '';
                   const classId = slot.id;
-                  const timeConflict = hasTimeConflict(slotKey);
+                  const fixed = isStudentFixed(classId, slotKey);
+                  const booked = isSlotBooked(classId, slotKey);
+                  const timeConflict = !booked && !fixed && hasTimeConflict(slotKey);
+                  const effectiveRemaining = getEffectiveRemaining(classId, slot.capacity);
+
                   return (
                     <SlotCard
                       key={slot.id}
                       timeSlot={slotKey}
                       label={`${slot.class_name} · ${slotKey} - ${slot.end_time?.slice(0, 5)}`}
-                      count={slotCounts?.[classId] || 0}
+                      effectiveRemaining={effectiveRemaining}
+                      maxCapacity={slot.capacity}
                       isLocked={lockedSlots?.includes(slotKey) || false}
-                      isBooked={isSlotBooked(classId, slotKey)}
-                      isFixed={isSlotFixed(classId, slotKey)}
+                      isBooked={booked}
+                      isFixed={fixed}
                       hasTimeConflict={timeConflict}
                       canBook={canBookSlot(slotKey, slot.action_window_hours)}
                       isLoading={bookingSlot === classId}
                       onBook={() => handleBook(slotKey, classId)}
-                      maxCapacity={slot.capacity}
-                      actionWindowHours={getSlotWindowHours(slot)}
+                      actionWindowHours={slot.action_window_hours ?? 2}
                     />
                   );
                 })}
