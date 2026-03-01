@@ -89,19 +89,32 @@ export default function Booking() {
     enabled: !!formattedDate && !!user?.id,
   });
 
-  // Derive booked class IDs and booked time slots for conflict detection
-  const bookedClassIds = userBookings?.map((b) => b.class_schedule_id || b.time_slot) || [];
+  // Derive sets for robust conflict detection (check both class_schedule_id AND time_slot)
+  const bookedClassIds = new Set(
+    userBookings?.filter((b) => b.class_schedule_id).map((b) => b.class_schedule_id!) || []
+  );
+  const bookedTimeSlots = new Set(
+    userBookings?.map((b) => b.time_slot) || []
+  );
   const fixedClassIds = new Set(
     userBookings?.filter((b) => b.notes?.includes('Aluno Fixo')).map((b) => b.class_schedule_id || b.time_slot) || []
   );
-  const bookedTimeSlots = userBookings?.map((b) => b.time_slot) || [];
+  const fixedTimeSlots = new Set(
+    userBookings?.filter((b) => b.notes?.includes('Aluno Fixo')).map((b) => b.time_slot) || []
+  );
+
+  const isSlotBooked = (classId: string, timeSlot: string) =>
+    bookedClassIds.has(classId) || bookedTimeSlots.has(timeSlot);
+
+  const isSlotFixed = (classId: string, timeSlot: string) =>
+    fixedClassIds.has(classId) || fixedTimeSlots.has(timeSlot);
 
   const bookMutation = useMutation({
     mutationFn: async ({ timeSlot, classScheduleId }: { timeSlot: string; classScheduleId: string }) => {
       if (!user?.id || !formattedDate) throw new Error('Missing data');
 
       // Double-check time conflict (same date + same start_time)
-      if (bookedTimeSlots.includes(timeSlot)) {
+      if (bookedTimeSlots.has(timeSlot)) {
         throw new Error('TIME_CONFLICT');
       }
 
@@ -147,7 +160,7 @@ export default function Booking() {
 
   const handleBook = (timeSlot: string, classScheduleId: string) => {
     // Client-side time conflict check
-    if (bookedTimeSlots.includes(timeSlot)) {
+    if (bookedTimeSlots.has(timeSlot)) {
       toast.error('Você já possui um agendamento para este horário.');
       return;
     }
@@ -177,7 +190,7 @@ export default function Booking() {
   // Check if slot has a time conflict (same time_slot already booked by user)
   const hasTimeConflict = (startTime: string) => {
     const slotKey = startTime.slice(0, 5);
-    return bookedTimeSlots.includes(slotKey);
+    return bookedTimeSlots.has(slotKey);
   };
 
   const isLoading = isLoadingSlots || isLoadingCounts;
@@ -226,8 +239,8 @@ export default function Booking() {
                       label={`${slot.class_name} · ${slotKey} - ${slot.end_time?.slice(0, 5)}`}
                       count={slotCounts?.[classId] || 0}
                       isLocked={lockedSlots?.includes(slotKey) || false}
-                      isBooked={bookedClassIds.includes(classId) || false}
-                      isFixed={fixedClassIds.has(classId)}
+                      isBooked={isSlotBooked(classId, slotKey)}
+                      isFixed={isSlotFixed(classId, slotKey)}
                       hasTimeConflict={timeConflict}
                       canBook={canBookSlot(slotKey, slot.action_window_hours)}
                       isLoading={bookingSlot === classId}

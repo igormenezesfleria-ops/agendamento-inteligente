@@ -75,13 +75,17 @@ export function SlotCard({
       </div>
 
       {isBooked || hasTimeConflict ? (
-        <Button variant="secondary" className="w-full" disabled>
+        <Button
+          variant="secondary"
+          className="w-full bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+          disabled
+        >
           {getButtonLabel()}
         </Button>
       ) : (
         <Button
           variant={isDisabled ? 'secondary' : 'accent'}
-          className="w-full"
+          className={`w-full ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}`}
           disabled={isDisabled}
           onClick={onBook}
         >
