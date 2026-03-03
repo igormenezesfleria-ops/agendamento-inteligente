@@ -144,7 +144,7 @@ export default function MyStudents() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="flex-1 bg-muted hover:bg-muted/80 border-border"
                       onClick={() => { setSelectedStudent(student); setHistoryOpen(true); }}
                     >
                       <History className="w-4 h-4 mr-1" />
@@ -153,7 +153,7 @@ export default function MyStudents() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1"
+                      className="flex-1 bg-muted hover:bg-muted/80 border-border"
                       onClick={() => setRecurringStudent(student)}
                     >
                       <CalendarClock className="w-4 h-4 mr-1" />
@@ -221,10 +221,12 @@ export default function MyStudents() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {attendanceLabel(appt.attendance)}
-                        <Badge variant={appt.status === 'completed' ? 'confirmed' : 'outline'}>
-                          {STATUS_LABELS[appt.status] || appt.status}
-                        </Badge>
+                        {appt.attendance === 'present' || appt.attendance === 'absent'
+                          ? attendanceLabel(appt.attendance)
+                          : <Badge variant={appt.status === 'completed' ? 'completed' : 'outline'}>
+                              {STATUS_LABELS[appt.status] || appt.status}
+                            </Badge>
+                        }
                       </div>
                     </CardContent>
                   </Card>

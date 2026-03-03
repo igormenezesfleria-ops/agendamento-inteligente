@@ -223,7 +223,20 @@ export default function Profile() {
 
               <div className="space-y-2">
                 <Label htmlFor="date_of_birth">Data de Nascimento</Label>
-                <Input id="date_of_birth" type="date" {...register('date_of_birth')} />
+                <Input
+                  id="date_of_birth"
+                  placeholder="DD/MM/AAAA"
+                  maxLength={10}
+                  {...register('date_of_birth')}
+                  onChange={(e) => {
+                    const digits = e.target.value.replace(/\D/g, '');
+                    let formatted = digits;
+                    if (digits.length > 2) formatted = digits.slice(0, 2) + '/' + digits.slice(2);
+                    if (digits.length > 4) formatted = digits.slice(0, 2) + '/' + digits.slice(2, 4) + '/' + digits.slice(4, 8);
+                    e.target.value = formatted;
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">Formato: DD/MM/AAAA</p>
               </div>
 
               <div className="space-y-2">

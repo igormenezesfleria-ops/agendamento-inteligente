@@ -134,24 +134,27 @@ export default function AdminHistory() {
                             <span className="text-sm font-medium text-foreground">{student.studentName}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            {student.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
-                            {student.attendance === 'absent' && <Badge variant="destructive">Faltou</Badge>}
-                            {student.status === 'cancelled' && (
-                              <Badge variant="destructive">
-                                {STATUS_LABELS.cancelled}
-                              </Badge>
-                            )}
+                            {student.attendance === 'present'
+                              ? <Badge variant="confirmed">Presente</Badge>
+                              : student.attendance === 'absent'
+                              ? <Badge variant="destructive">Faltou</Badge>
+                              : student.status === 'cancelled'
+                              ? <Badge variant="destructive">{STATUS_LABELS.cancelled}</Badge>
+                              : student.status === 'rejected'
+                              ? <Badge variant="destructive">{STATUS_LABELS.rejected}</Badge>
+                              : <Badge variant="completed">{STATUS_LABELS.completed}</Badge>
+                            }
                           </div>
                         </div>
                       ))}
                     </div>
 
-                    {/* Notes from any student */}
-                    {group.students.some((s) => s.notes) && (
+                    {/* Notes - filter out generic "Aluno Fixo" notes, only show real observations */}
+                    {group.students.some((s) => s.notes && !s.notes.includes('Aluno Fixo')) && (
                       <div className="mt-3 p-3 rounded-lg bg-accent/5 border border-accent/10">
                         <p className="text-xs font-medium text-accent mb-1">Observações:</p>
                         {group.students
-                          .filter((s) => s.notes)
+                          .filter((s) => s.notes && !s.notes.includes('Aluno Fixo'))
                           .map((s) => (
                             <p key={s.id} className="text-xs text-muted-foreground">
                               <strong>{s.studentName}:</strong> {s.notes}
