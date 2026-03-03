@@ -205,7 +205,7 @@ export default function LockSlots() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
-                <Button variant="accent" onClick={addLockedSlot} disabled={isSubmitting || !selectedTimeSlot}>
+                <Button variant="destructive" onClick={addLockedSlot} disabled={isSubmitting || !selectedTimeSlot}>
                   {isSubmitting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Trancando...</>) : (<><Lock className="w-4 h-4 mr-2" />Trancar</>)}
                 </Button>
               </DialogFooter>
