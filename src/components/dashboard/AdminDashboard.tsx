@@ -157,27 +157,7 @@ export function AdminDashboard() {
 
       <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />
 
-      {/* Metric cards */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-        <Link to="/dashboard/solicitacoes" className="group">
-          <Card className="cursor-pointer transition-opacity hover:opacity-80 border-accent/30">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center accent-gradient shrink-0">
-                <Bell className="w-6 h-6 text-accent-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
-                <p className="text-sm text-muted-foreground">Solicitações Pendentes</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-            </CardContent>
-          </Card>
-        </Link>
-        <MetricCard icon={Calendar} label="Treinos Hoje" value={todayCount} />
-        <MetricCard icon={GraduationCap} label="Alunos Ativos" value={studentCount} />
-      </div>
-
-      {/* Next class highlight */}
+      {/* Next class highlight — top priority */}
       <Card className={cn(nextClass ? 'border-accent/40 bg-accent/5' : '')}>
         <CardContent className="p-4">
           {nextClass ? (
@@ -205,6 +185,26 @@ export function AdminDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Metric cards */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
+        <Link to="/dashboard/solicitacoes" className="group">
+          <Card className="cursor-pointer transition-opacity hover:opacity-80 border-accent/30">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center accent-gradient shrink-0">
+                <Bell className="w-6 h-6 text-accent-foreground" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
+                <p className="text-sm text-muted-foreground">Solicitações Pendentes</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
+            </CardContent>
+          </Card>
+        </Link>
+        <MetricCard icon={Calendar} label="Treinos Hoje" value={todayCount} />
+        <MetricCard icon={GraduationCap} label="Alunos Ativos" value={studentCount} />
+      </div>
 
       {/* Today's agenda */}
       <div className="space-y-4">
@@ -242,7 +242,7 @@ export function AdminDashboard() {
                       {/* Students */}
                       <div className="flex-1 min-w-0">
                         {slotAppts.length === 0 ? (
-                          <span className="text-sm text-muted-foreground">Sem agendamentos</span>
+                          <span className="text-sm text-muted-foreground/40">—</span>
                         ) : (
                           <div className="flex flex-wrap gap-2">
                             {slotAppts.map((appt: any) => (
