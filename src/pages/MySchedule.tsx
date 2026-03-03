@@ -21,6 +21,7 @@ export default function MySchedule() {
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [selectedAppt, setSelectedAppt] = useState<any>(null);
   const [privateNotes, setPrivateNotes] = useState('');
+  const [expandedAttendance, setExpandedAttendance] = useState<string | null>(null);
 
   const { data: appointments, isLoading } = useQuery({
     queryKey: ['my-schedule', user?.id],
@@ -146,44 +147,56 @@ export default function MySchedule() {
                       {appt.attendance === 'absent' && (
                         <Badge variant="destructive">Faltou</Badge>
                       )}
-                      {appt.status === 'completed' ? (
-                        <Badge variant="outline">Concluído</Badge>
+                      {appt.status === 'delegated' && (
+                        <Badge variant="secondary">Delegado</Badge>
+                      )}
+
+                      {canMarkAttendance(appt) ? (
+                        expandedAttendance === appt.id ? (
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="success"
+                              onClick={() => { attendanceMutation.mutate({ id: appt.id, attendance: 'present' }); setExpandedAttendance(null); }}
+                              disabled={attendanceMutation.isPending}
+                            >
+                              <CheckCircle2 className="w-4 h-4 mr-1" />
+                              Presente
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => { attendanceMutation.mutate({ id: appt.id, attendance: 'absent' }); setExpandedAttendance(null); }}
+                              disabled={attendanceMutation.isPending}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              Faltou
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="accent"
+                            onClick={() => setExpandedAttendance(appt.id)}
+                            className="font-semibold"
+                          >
+                            <CheckCircle2 className="w-4 h-4 mr-1" />
+                            Dar Presença / Falta
+                          </Button>
+                        )
                       ) : (
-                        <Badge variant={appt.status === 'confirmed' ? 'confirmed' : 'secondary'}>
-                          {appt.status === 'confirmed' ? 'Confirmado' : 'Delegado'}
+                        <Badge variant="outline">
+                          {appt.attendance === 'present' ? 'Presente' : appt.attendance === 'absent' ? 'Faltou' : 'Aguardando'}
                         </Badge>
                       )}
 
-                      {canMarkAttendance(appt) && (
-                        <>
-                          <Button
-                            size="sm"
-                            variant="success"
-                            onClick={() => attendanceMutation.mutate({ id: appt.id, attendance: 'present' })}
-                            disabled={attendanceMutation.isPending}
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Presente
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => attendanceMutation.mutate({ id: appt.id, attendance: 'absent' })}
-                            disabled={attendanceMutation.isPending}
-                          >
-                            <XCircle className="w-4 h-4 mr-1" />
-                            Faltou
-                          </Button>
-                        </>
-                      )}
-
                       <Button
-                        size="sm"
+                        size="icon"
                         variant="ghost"
                         onClick={() => openNotes(appt)}
+                        title={appt.private_notes ? 'Ver observação' : 'Adicionar observação'}
                       >
-                        <FileText className="w-4 h-4 mr-1" />
-                        {appt.private_notes ? 'Ver Nota' : 'Nota'}
+                        <FileText className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
