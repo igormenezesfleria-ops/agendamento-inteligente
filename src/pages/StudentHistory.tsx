@@ -1,27 +1,37 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Calendar, Clock, Inbox } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { Loader2, Clock, Inbox } from 'lucide-react';
+import { format, parseISO, lastDayOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { MonthYearFilter } from '@/components/history/MonthYearFilter';
 
 export default function StudentHistory() {
   const { user } = useAuth();
+  const now = new Date();
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
+
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth(new Date(year, month - 1)).getDate()).padStart(2, '0')}`;
 
   const { data: history, isLoading } = useQuery({
-    queryKey: ['student-full-history', user?.id],
+    queryKey: ['student-full-history', user?.id, month, year],
     queryFn: async () => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from('appointments')
         .select('id, date, time_slot, status, attendance')
         .eq('student_id', user.id)
+        .gte('date', startDate)
+        .lte('date', endDate)
         .or('status.eq.completed,attendance.eq.present,attendance.eq.absent')
         .order('date', { ascending: false })
-        .limit(100);
+        .limit(200);
       if (error) throw error;
       return data || [];
     },
@@ -31,11 +41,12 @@ export default function StudentHistory() {
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in">
-        <div className="space-y-2">
-          <h1 className="font-display text-3xl text-foreground">Histórico de Treinos</h1>
-          <p className="text-muted-foreground">
-            Veja seu histórico de treinos realizados e faltas.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="font-display text-3xl text-foreground">Histórico de Treinos</h1>
+            <p className="text-muted-foreground">Veja seu histórico de treinos realizados e faltas.</p>
+          </div>
+          <MonthYearFilter month={month} year={year} onMonthChange={setMonth} onYearChange={setYear} />
         </div>
 
         {isLoading ? (
@@ -60,14 +71,12 @@ export default function StudentHistory() {
                 <Card key={item.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="flex flex-col">
-                          <span className="font-medium text-foreground capitalize text-sm">{formattedDate}</span>
-                          <span className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <Clock className="w-3 h-3" />
-                            {item.time_slot}
-                          </span>
-                        </div>
+                      <div className="flex flex-col">
+                        <span className="font-medium text-foreground capitalize text-sm">{formattedDate}</span>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                          <Clock className="w-3 h-3" />
+                          {item.time_slot}
+                        </span>
                       </div>
                       <div>
                         {item.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
