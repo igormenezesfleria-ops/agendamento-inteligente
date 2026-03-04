@@ -1,12 +1,14 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Calendar, Clock, User, Inbox, Users } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, lastDayOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
+import { MonthYearFilter } from '@/components/history/MonthYearFilter';
 
 interface HistoryAppointment {
   id: string;
@@ -29,16 +31,25 @@ interface ClassGroup {
 }
 
 export default function AdminHistory() {
+  const now = new Date();
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [year, setYear] = useState(now.getFullYear());
+
+  const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+  const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDayOfMonth(new Date(year, month - 1)).getDate()).padStart(2, '0')}`;
+
   const { data: groups, isLoading } = useQuery({
-    queryKey: ['admin-history-grouped'],
+    queryKey: ['admin-history-grouped', month, year],
     queryFn: async () => {
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
         .select('id, date, time_slot, status, student_id, instructor_id, completed_at, attendance, notes')
         .in('status', ['completed', 'cancelled', 'rejected'])
+        .gte('date', startDate)
+        .lte('date', endDate)
         .order('date', { ascending: false })
         .order('time_slot', { ascending: true })
-        .limit(200);
+        .limit(500);
 
       if (appError) throw appError;
       if (!appointments || appointments.length === 0) return [];
@@ -56,7 +67,6 @@ export default function AdminHistory() {
         studentName: profileMap.get(a.student_id) || 'Aluno',
       }));
 
-      // Group by date + time_slot
       const groupMap = new Map<string, ClassGroup>();
       enriched.forEach((apt) => {
         const key = `${apt.date}_${apt.time_slot}`;
@@ -73,11 +83,12 @@ export default function AdminHistory() {
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in">
-        <div className="space-y-2">
-          <h1 className="font-display text-3xl text-foreground">Histórico de Aulas</h1>
-          <p className="text-muted-foreground">
-            Aulas agrupadas por dia e horário, com detalhes de cada aluno.
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="font-display text-3xl text-foreground">Histórico de Aulas</h1>
+            <p className="text-muted-foreground">Aulas agrupadas por dia e horário, com detalhes de cada aluno.</p>
+          </div>
+          <MonthYearFilter month={month} year={year} onMonthChange={setMonth} onYearChange={setYear} />
         </div>
 
         {isLoading ? (
@@ -90,7 +101,7 @@ export default function AdminHistory() {
               <Inbox className="w-8 h-8 text-muted-foreground" />
             </div>
             <h3 className="font-display text-lg text-foreground mb-2">Sem histórico</h3>
-            <p className="text-muted-foreground">Nenhuma aula finalizada ainda.</p>
+            <p className="text-muted-foreground">Nenhuma aula finalizada neste período.</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -104,7 +115,6 @@ export default function AdminHistory() {
               return (
                 <Card key={group.key}>
                   <CardContent className="p-5">
-                    {/* Class header */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-foreground font-semibold">
@@ -122,7 +132,6 @@ export default function AdminHistory() {
                       </Badge>
                     </div>
 
-                    {/* Students list */}
                     <div className="space-y-2">
                       {group.students.map((student) => (
                         <div
@@ -149,7 +158,6 @@ export default function AdminHistory() {
                       ))}
                     </div>
 
-                    {/* Notes - filter out generic "Aluno Fixo" notes, only show real observations */}
                     {group.students.some((s) => s.notes && !s.notes.includes('Aluno Fixo')) && (
                       <div className="mt-3 p-3 rounded-lg bg-accent/5 border border-accent/10">
                         <p className="text-xs font-medium text-accent mb-1">Observações:</p>
