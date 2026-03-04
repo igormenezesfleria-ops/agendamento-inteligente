@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
         let collaboratorStatus = "accepted";
 
         if (requiresApproval) {
-          // Will stay pending — the UI filters by 48h window
+          // Will stay pending — the UI filters by 72h (3-day) window
           status = "pending";
           collaboratorStatus = "pending";
         } else {
