@@ -110,8 +110,17 @@ export default function MyAppointments() {
     return isAfter(appointmentDateTime, deadline);
   };
 
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
   const upcomingAppointments = appointments?.filter(
-    (apt) => apt.status !== 'cancelled' && apt.status !== 'completed' && apt.attendance !== 'present'
+    (apt) =>
+      apt.date >= todayStr &&
+      apt.status !== 'cancelled' &&
+      apt.status !== 'rejected' &&
+      apt.status !== 'completed' &&
+      apt.attendance !== 'present' &&
+      apt.attendance !== 'absent'
   );
 
   const pastAppointments = appointments?.filter(

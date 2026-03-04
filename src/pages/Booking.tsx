@@ -36,26 +36,88 @@ export default function Booking() {
     enabled: !!trainerId && dayOfWeek !== null,
   });
 
-  // 2. Fetch existing appointment counts for the selected date (capacity usage)
-  const { data: slotCounts, isLoading: isLoadingCounts } = useQuery({
-    queryKey: ['slotCounts', formattedDate],
+  // 2. Fetch existing appointments for the selected date (capacity + classmate names)
+  const { data: dateAppointments, isLoading: isLoadingCounts } = useQuery({
+    queryKey: ['dateAppointments', formattedDate],
     queryFn: async () => {
-      if (!formattedDate) return {};
+      if (!formattedDate) return [];
       const { data, error } = await supabase
         .from('appointments')
-        .select('time_slot, class_schedule_id')
+        .select('time_slot, class_schedule_id, student_id, status')
         .eq('date', formattedDate)
         .in('status', ['pending', 'confirmed', 'delegated']);
       if (error) throw error;
-      const counts: Record<string, number> = {};
-      data?.forEach((apt) => {
-        const key = apt.class_schedule_id || apt.time_slot;
-        counts[key] = (counts[key] || 0) + 1;
-      });
-      return counts;
+      return data || [];
     },
     enabled: !!formattedDate,
   });
+
+  // Derive slot counts from dateAppointments
+  const slotCounts = (() => {
+    const counts: Record<string, number> = {};
+    dateAppointments?.forEach((apt) => {
+      const key = apt.class_schedule_id || apt.time_slot;
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return counts;
+  })();
+
+  // Fetch confirmed classmate names for each slot
+  const confirmedStudentIds = [
+    ...new Set(
+      (dateAppointments || [])
+        .filter((a) => a.status === 'confirmed' || a.status === 'delegated')
+        .map((a) => a.student_id)
+        .filter((id) => id !== user?.id)
+    ),
+  ];
+
+  const { data: classmateProfiles } = useQuery({
+    queryKey: ['classmateProfiles', confirmedStudentIds.sort().join(',')],
+    queryFn: async () => {
+      if (confirmedStudentIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', confirmedStudentIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: confirmedStudentIds.length > 0,
+  });
+
+  // Build a map: classScheduleId -> classmate names
+  const getClassmateNames = (classId: string, timeSlot: string): string[] => {
+    const slotAppts = (dateAppointments || []).filter(
+      (a) =>
+        (a.class_schedule_id === classId || a.time_slot === timeSlot) &&
+        (a.status === 'confirmed' || a.status === 'delegated') &&
+        a.student_id !== user?.id
+    );
+    const fixedOthers = (allFixedForDay || []).filter(
+      (f) =>
+        (f.class_schedule_id === classId || f.time_slot === timeSlot) &&
+        f.student_id !== user?.id &&
+        !slotAppts.some((a) => a.student_id === f.student_id)
+    );
+    const profileMap = new Map((classmateProfiles || []).map((p) => [p.id, p.name || 'Aluno']));
+    const names: string[] = [];
+    slotAppts.forEach((a) => {
+      const name = profileMap.get(a.student_id);
+      if (name) names.push(name);
+    });
+    // Also include fixed students not yet with appointments
+    const fixedIds = fixedOthers.map((f) => f.student_id);
+    if (fixedIds.length > 0) {
+      // We need their names too - they might not be in classmateProfiles yet
+      // For now, show from profileMap if available
+      fixedIds.forEach((id) => {
+        const name = profileMap.get(id);
+        if (name) names.push(name);
+      });
+    }
+    return names;
+  };
 
   // 3. Fetch ALL fixed students for this trainer + dayOfWeek (for capacity math)
   const { data: allFixedForDay } = useQuery({
@@ -310,6 +372,7 @@ export default function Booking() {
                       isLoading={bookingSlot === classId}
                       onBook={() => handleBook(slotKey, classId)}
                       actionWindowHours={slot.action_window_hours ?? 2}
+                      classmateNames={getClassmateNames(classId, slotKey)}
                     />
                   );
                 })}

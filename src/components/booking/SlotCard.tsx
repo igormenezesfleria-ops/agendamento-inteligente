@@ -15,6 +15,7 @@ interface SlotCardProps {
   isLoading: boolean;
   onBook: () => void;
   actionWindowHours?: number;
+  classmateNames?: string[];
 }
 
 export function SlotCard({
@@ -30,6 +31,7 @@ export function SlotCard({
   isLoading,
   onBook,
   actionWindowHours = 2,
+  classmateNames = [],
 }: SlotCardProps) {
   const remaining = effectiveRemaining;
   const isFull = remaining <= 0;
@@ -74,6 +76,19 @@ export function SlotCard({
           {getAvailabilityText()}
         </Badge>
       </div>
+
+      {classmateNames.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          {classmateNames.map((name, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium"
+            >
+              {name.split(' ').slice(0, 2).join(' ')}
+            </span>
+          ))}
+        </div>
+      )}
 
       {forceDisabled ? (
         <Button
