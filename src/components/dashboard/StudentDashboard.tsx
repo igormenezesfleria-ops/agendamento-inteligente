@@ -150,9 +150,6 @@ export function StudentDashboard() {
         )
       )}
 
-      {/* Workout History */}
-      <StudentWorkoutHistory />
-
       {/* Announcements */}
       <AnnouncementsFeed />
 
@@ -186,6 +183,9 @@ export function StudentDashboard() {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Workout History */}
+      <StudentWorkoutHistory />
 
       {/* Receipt Modal */}
       <PerformanceReceipt open={receiptOpen} onOpenChange={setReceiptOpen} />
