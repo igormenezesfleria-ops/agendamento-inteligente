@@ -36,7 +36,7 @@ export default function Booking() {
     enabled: !!trainerId && dayOfWeek !== null,
   });
 
-  // 2. Fetch existing appointments for the selected date (capacity + classmate names)
+  // 2. Fetch existing appointments for the selected date (global capacity)
   const { data: dateAppointments, isLoading: isLoadingCounts } = useQuery({
     queryKey: ['dateAppointments', formattedDate],
     queryFn: async () => {
@@ -62,63 +62,6 @@ export default function Booking() {
     return counts;
   })();
 
-  // Fetch confirmed classmate names for each slot
-  const confirmedStudentIds = [
-    ...new Set(
-      (dateAppointments || [])
-        .filter((a) => a.status === 'confirmed' || a.status === 'delegated')
-        .map((a) => a.student_id)
-        .filter((id) => id !== user?.id)
-    ),
-  ];
-
-  const { data: classmateProfiles } = useQuery({
-    queryKey: ['classmateProfiles', confirmedStudentIds.sort().join(',')],
-    queryFn: async () => {
-      if (confirmedStudentIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name')
-        .in('id', confirmedStudentIds);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: confirmedStudentIds.length > 0,
-  });
-
-  // Build a map: classScheduleId -> classmate names
-  const getClassmateNames = (classId: string, timeSlot: string): string[] => {
-    const slotAppts = (dateAppointments || []).filter(
-      (a) =>
-        (a.class_schedule_id === classId || a.time_slot === timeSlot) &&
-        (a.status === 'confirmed' || a.status === 'delegated') &&
-        a.student_id !== user?.id
-    );
-    const fixedOthers = (allFixedForDay || []).filter(
-      (f) =>
-        (f.class_schedule_id === classId || f.time_slot === timeSlot) &&
-        f.student_id !== user?.id &&
-        !slotAppts.some((a) => a.student_id === f.student_id)
-    );
-    const profileMap = new Map((classmateProfiles || []).map((p) => [p.id, p.name || 'Aluno']));
-    const names: string[] = [];
-    slotAppts.forEach((a) => {
-      const name = profileMap.get(a.student_id);
-      if (name) names.push(name);
-    });
-    // Also include fixed students not yet with appointments
-    const fixedIds = fixedOthers.map((f) => f.student_id);
-    if (fixedIds.length > 0) {
-      // We need their names too - they might not be in classmateProfiles yet
-      // For now, show from profileMap if available
-      fixedIds.forEach((id) => {
-        const name = profileMap.get(id);
-        if (name) names.push(name);
-      });
-    }
-    return names;
-  };
-
   // 3. Fetch ALL fixed students for this trainer + dayOfWeek (for capacity math)
   const { data: allFixedForDay } = useQuery({
     queryKey: ['allFixedForDay', trainerId, dayOfWeek],
@@ -136,7 +79,67 @@ export default function Booking() {
     enabled: !!trainerId && dayOfWeek !== null,
   });
 
-  // 4. Fetch THIS student's fixed schedules for this day (for button state)
+  // 4. Fetch classmate profiles: include BOTH appointment students AND fixed students
+  const allRelevantStudentIds = [
+    ...new Set([
+      ...(dateAppointments || [])
+        .filter((a) => a.status === 'confirmed' || a.status === 'delegated' || a.status === 'pending')
+        .map((a) => a.student_id),
+      ...(allFixedForDay || []).map((f) => f.student_id),
+    ].filter((id) => id !== user?.id)),
+  ];
+
+  const { data: classmateProfiles } = useQuery({
+    queryKey: ['classmateProfiles', allRelevantStudentIds.sort().join(',')],
+    queryFn: async () => {
+      if (allRelevantStudentIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', allRelevantStudentIds);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: allRelevantStudentIds.length > 0,
+  });
+
+  // Build classmate names for a slot (appointments + fixed students without duplicates)
+  const getClassmateNames = (classId: string, timeSlot: string): string[] => {
+    const profileMap = new Map((classmateProfiles || []).map((p) => [p.id, p.name || 'Aluno']));
+    const seen = new Set<string>();
+    const names: string[] = [];
+
+    // From active appointments
+    (dateAppointments || []).forEach((a) => {
+      if (
+        (a.class_schedule_id === classId || a.time_slot === timeSlot) &&
+        (a.status === 'confirmed' || a.status === 'delegated') &&
+        a.student_id !== user?.id &&
+        !seen.has(a.student_id)
+      ) {
+        seen.add(a.student_id);
+        const name = profileMap.get(a.student_id);
+        if (name) names.push(name);
+      }
+    });
+
+    // From fixed students not yet in appointments
+    (allFixedForDay || []).forEach((f) => {
+      if (
+        (f.class_schedule_id === classId || f.time_slot === timeSlot) &&
+        f.student_id !== user?.id &&
+        !seen.has(f.student_id)
+      ) {
+        seen.add(f.student_id);
+        const name = profileMap.get(f.student_id);
+        if (name) names.push(name);
+      }
+    });
+
+    return names;
+  };
+
+  // 5. Fetch THIS student's fixed schedules for this day (for button state)
   const { data: myFixedSchedules } = useQuery({
     queryKey: ['myFixedSchedules', user?.id, trainerId, dayOfWeek],
     queryFn: async () => {
@@ -154,7 +157,7 @@ export default function Booking() {
     enabled: !!user?.id && !!trainerId && dayOfWeek !== null,
   });
 
-  // 5. Fetch locked slots
+  // 6. Fetch locked slots
   const { data: lockedSlots } = useQuery({
     queryKey: ['lockedSlots', formattedDate],
     queryFn: async () => {
@@ -169,7 +172,7 @@ export default function Booking() {
     enabled: !!formattedDate,
   });
 
-  // 6. Fetch user's existing bookings for conflict detection
+  // 7. Fetch user's existing bookings for conflict detection
   const { data: userBookings } = useQuery({
     queryKey: ['userBookings', formattedDate, user?.id],
     queryFn: async () => {
@@ -188,7 +191,6 @@ export default function Booking() {
 
   // --- Derived sets ---
 
-  // Student's own fixed class_schedule_ids and time_slots
   const myFixedClassIds = new Set(
     myFixedSchedules?.filter((s) => s.class_schedule_id).map((s) => s.class_schedule_id!) || []
   );
@@ -196,7 +198,6 @@ export default function Booking() {
     myFixedSchedules?.map((s) => s.time_slot) || []
   );
 
-  // Student's existing bookings (any type)
   const bookedClassIds = new Set(
     userBookings?.filter((b) => b.class_schedule_id).map((b) => b.class_schedule_id!) || []
   );
@@ -211,33 +212,25 @@ export default function Booking() {
     fixedCountByClassId[key] = (fixedCountByClassId[key] || 0) + 1;
   });
 
-  // Check if this student is fixed for a given slot
   const isStudentFixed = (classId: string, timeSlot: string) =>
     myFixedClassIds.has(classId) || myFixedTimeSlots.has(timeSlot);
 
-  // Check if this student already has a booking (fixed or manual)
   const isSlotBooked = (classId: string, timeSlot: string) =>
     bookedClassIds.has(classId) || bookedTimeSlots.has(timeSlot);
 
-  // Time conflict: same start_time already booked
   const hasTimeConflict = (startTime: string) => {
     const slotKey = startTime.slice(0, 5);
     return bookedTimeSlots.has(slotKey);
   };
 
   /**
-   * Effective remaining spots:
-   * = maxCapacity - existingAppointments
-   * But we also ensure fixed students who DON'T yet have an appointment row
-   * are subtracted. Fixed students with existing appointments are already
-   * counted in slotCounts, so we only add the delta.
+   * Global capacity: availableSpots = maxCapacity - max(appointmentCount, totalFixed)
+   * This ensures fixed students always reserve a spot even before their
+   * appointment row is auto-generated.
    */
   const getEffectiveRemaining = (classId: string, maxCapacity: number) => {
     const appointmentCount = slotCounts?.[classId] || 0;
     const totalFixed = fixedCountByClassId[classId] || 0;
-    // Fixed students already with appointments are in appointmentCount.
-    // We need: max - max(appointmentCount, totalFixed)
-    // Because all fixed students WILL have a spot, even if not yet generated.
     const effectiveUsed = Math.max(appointmentCount, totalFixed);
     return maxCapacity - effectiveUsed;
   };
@@ -272,8 +265,8 @@ export default function Booking() {
     },
     onSuccess: () => {
       toast.success('Agendamento realizado com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['slotCounts'] });
-      queryClient.invalidateQueries({ queryKey: ['userBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['dateAppointments', formattedDate] });
+      queryClient.invalidateQueries({ queryKey: ['userBookings', formattedDate, user?.id] });
       queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
       setBookingSlot(null);
     },
