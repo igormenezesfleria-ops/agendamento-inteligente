@@ -44,7 +44,7 @@ export function SlotCard({
 
   const getAvailabilityText = () => {
     if (isLocked) return 'Bloqueado';
-    if (isFull) return 'Lotado';
+    if (isFull) return 'Esgotado';
     if (remaining === 1) return '1 vaga';
     return `${remaining} vagas`;
   };
@@ -59,7 +59,7 @@ export function SlotCard({
     if (isBooked) return 'Já Agendado';
     if (hasTimeConflict) return 'Conflito de Horário';
     if (isLocked) return 'Horário Bloqueado';
-    if (isFull) return 'Horário Lotado';
+    if (isFull) return 'Vagas Esgotadas';
     if (!canBook) return 'Prazo Esgotado';
     return 'Solicitar Agendamento';
   };

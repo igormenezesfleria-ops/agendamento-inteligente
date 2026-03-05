@@ -62,28 +62,28 @@ export default function Booking() {
     return counts;
   })();
 
-  // Fetch confirmed classmate names for each slot
-  const confirmedStudentIds = [
-    ...new Set(
-      (dateAppointments || [])
-        .filter((a) => a.status === 'confirmed' || a.status === 'delegated')
-        .map((a) => a.student_id)
-        .filter((id) => id !== user?.id)
-    ),
+  // Fetch classmate names: include BOTH appointment students AND fixed students
+  const allRelevantStudentIds = [
+    ...new Set([
+      ...(dateAppointments || [])
+        .filter((a) => a.status === 'confirmed' || a.status === 'delegated' || a.status === 'pending')
+        .map((a) => a.student_id),
+      ...(allFixedForDay || []).map((f) => f.student_id),
+    ].filter((id) => id !== user?.id)),
   ];
 
   const { data: classmateProfiles } = useQuery({
-    queryKey: ['classmateProfiles', confirmedStudentIds.sort().join(',')],
+    queryKey: ['classmateProfiles', allRelevantStudentIds.sort().join(',')],
     queryFn: async () => {
-      if (confirmedStudentIds.length === 0) return [];
+      if (allRelevantStudentIds.length === 0) return [];
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name')
-        .in('id', confirmedStudentIds);
+        .in('id', allRelevantStudentIds);
       if (error) throw error;
       return data || [];
     },
-    enabled: confirmedStudentIds.length > 0,
+    enabled: allRelevantStudentIds.length > 0,
   });
 
   // Build a map: classScheduleId -> classmate names
@@ -272,8 +272,8 @@ export default function Booking() {
     },
     onSuccess: () => {
       toast.success('Agendamento realizado com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['slotCounts'] });
-      queryClient.invalidateQueries({ queryKey: ['userBookings'] });
+      queryClient.invalidateQueries({ queryKey: ['dateAppointments', formattedDate] });
+      queryClient.invalidateQueries({ queryKey: ['userBookings', formattedDate, user?.id] });
       queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
       setBookingSlot(null);
     },
