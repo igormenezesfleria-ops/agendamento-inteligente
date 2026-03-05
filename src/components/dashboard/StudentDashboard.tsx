@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
@@ -11,12 +11,20 @@ import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
 import { PerformanceReceipt } from '@/components/student/PerformanceReceipt';
+import { TriageModal } from '@/components/student/TriageModal';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [triageOpen, setTriageOpen] = useState(false);
+
+  useEffect(() => {
+    if (profile && profile.profile_completed === false && profile.business_owner_id) {
+      setTriageOpen(true);
+    }
+  }, [profile]);
 
   const { data: nextAppointment, isLoading } = useQuery({
     queryKey: ['next-appointment', user?.id],
@@ -189,6 +197,9 @@ export function StudentDashboard() {
 
       {/* Receipt Modal */}
       <PerformanceReceipt open={receiptOpen} onOpenChange={setReceiptOpen} />
+
+      {/* Triage Onboarding Modal */}
+      <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
     </div>
   );
 }

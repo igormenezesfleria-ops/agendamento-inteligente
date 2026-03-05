@@ -21,6 +21,13 @@ interface Profile {
   subscription_plan: string | null;
   subscription_expires_at: string | null;
   vip_code_used: boolean;
+  phone: string | null;
+  emergency_contact: string | null;
+  main_objective: string | null;
+  has_injury: boolean;
+  injury_details: string | null;
+  is_active: boolean;
+  profile_completed: boolean;
 }
 
 interface AuthContextType {

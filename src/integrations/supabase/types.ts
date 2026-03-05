@@ -199,14 +199,21 @@ export type Database = {
           created_at: string
           date_of_birth: string | null
           default_capacity: number
+          emergency_contact: string | null
+          has_injury: boolean | null
           hourly_rate: number | null
           id: string
+          injury_details: string | null
           instagram_handle: string | null
+          is_active: boolean | null
           is_onboarded: boolean
+          main_objective: string | null
           name: string | null
           no_show_rate: number | null
           pay_type: string | null
+          phone: string | null
           photo_url: string | null
+          profile_completed: boolean | null
           role: Database["public"]["Enums"]["app_role"]
           studio_code: string | null
           subscription_expires_at: string | null
@@ -223,14 +230,21 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           default_capacity?: number
+          emergency_contact?: string | null
+          has_injury?: boolean | null
           hourly_rate?: number | null
           id: string
+          injury_details?: string | null
           instagram_handle?: string | null
+          is_active?: boolean | null
           is_onboarded?: boolean
+          main_objective?: string | null
           name?: string | null
           no_show_rate?: number | null
           pay_type?: string | null
+          phone?: string | null
           photo_url?: string | null
+          profile_completed?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]
           studio_code?: string | null
           subscription_expires_at?: string | null
@@ -247,14 +261,21 @@ export type Database = {
           created_at?: string
           date_of_birth?: string | null
           default_capacity?: number
+          emergency_contact?: string | null
+          has_injury?: boolean | null
           hourly_rate?: number | null
           id?: string
+          injury_details?: string | null
           instagram_handle?: string | null
+          is_active?: boolean | null
           is_onboarded?: boolean
+          main_objective?: string | null
           name?: string | null
           no_show_rate?: number | null
           pay_type?: string | null
+          phone?: string | null
           photo_url?: string | null
+          profile_completed?: boolean | null
           role?: Database["public"]["Enums"]["app_role"]
           studio_code?: string | null
           subscription_expires_at?: string | null

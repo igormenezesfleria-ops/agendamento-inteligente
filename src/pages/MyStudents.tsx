@@ -14,7 +14,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -24,6 +25,13 @@ interface Student {
   id: string;
   name: string | null;
   created_at: string;
+  phone: string | null;
+  emergency_contact: string | null;
+  main_objective: string | null;
+  has_injury: boolean;
+  injury_details: string | null;
+  is_active: boolean;
+  profile_completed: boolean;
 }
 
 export default function MyStudents() {
@@ -31,6 +39,7 @@ export default function MyStudents() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [triageOpen, setTriageOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [recurringStudent, setRecurringStudent] = useState<Student | null>(null);
 
@@ -39,7 +48,7 @@ export default function MyStudents() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, created_at')
+        .select('id, name, created_at, phone, emergency_contact, main_objective, has_injury, injury_details, is_active, profile_completed')
         .eq('business_owner_id', user!.id)
         .eq('role', 'student')
         .order('name');
@@ -85,6 +94,14 @@ export default function MyStudents() {
     if (a === 'present') return <Badge variant="confirmed">Presente</Badge>;
     if (a === 'absent') return <Badge variant="destructive">Faltou</Badge>;
     return null;
+  };
+
+  const objectiveLabels: Record<string, string> = {
+    emagrecimento: 'Emagrecimento',
+    hipertrofia: 'Hipertrofia',
+    saude: 'Saúde / Condicionamento',
+    reabilitacao: 'Reabilitação',
+    alta_performance: 'Alta Performance',
   };
 
   return (
@@ -134,13 +151,27 @@ export default function MyStudents() {
                         </span>
                       </div>
                       <div>
-                        <h3 className="font-medium text-foreground">{student.name || 'Sem nome'}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium text-foreground">{student.name || 'Sem nome'}</h3>
+                          {student.has_injury && (
+                            <AlertTriangle className="w-4 h-4 text-destructive" />
+                          )}
+                        </div>
                         <Badge variant="student" className="mt-1">Aluno</Badge>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex gap-2 mt-4 flex-wrap">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 bg-muted hover:bg-muted/80 border-border"
+                      onClick={() => { setSelectedStudent(student); setTriageOpen(true); }}
+                    >
+                      <ClipboardList className="w-4 h-4 mr-1" />
+                      Ficha
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -190,6 +221,67 @@ export default function MyStudents() {
             ))}
           </div>
         )}
+
+        {/* Student Triage Dialog */}
+        <Dialog open={triageOpen} onOpenChange={setTriageOpen}>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Ficha de Triagem - {selectedStudent?.name}</DialogTitle>
+            </DialogHeader>
+            {selectedStudent && !selectedStudent.profile_completed ? (
+              <div className="text-center py-8">
+                <ClipboardList className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-muted-foreground text-sm">O aluno ainda não preencheu a ficha de triagem.</p>
+              </div>
+            ) : selectedStudent ? (
+              <div className="space-y-4">
+                {/* Injury Alert */}
+                {selectedStudent.has_injury && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>⚠️ Lesão / Limitação</AlertTitle>
+                    <AlertDescription className="font-medium">
+                      {selectedStudent.injury_details || 'Não especificada'}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="grid gap-3">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                    <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Telefone / WhatsApp</p>
+                      <p className="text-sm font-medium text-foreground">{selectedStudent.phone || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                    <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Contato de Emergência</p>
+                      <p className="text-sm font-medium text-foreground">{selectedStudent.emergency_contact || '—'}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                    <Target className="w-4 h-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Objetivo Principal</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {selectedStudent.main_objective ? objectiveLabels[selectedStudent.main_objective] || selectedStudent.main_objective : '—'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                    <Activity className="w-4 h-4 text-muted-foreground mt-0.5" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Pratica atividade física?</p>
+                      <p className="text-sm font-medium text-foreground">{selectedStudent.is_active ? 'Sim' : 'Não'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </DialogContent>
+        </Dialog>
 
         {/* Student History Dialog */}
         <Dialog open={historyOpen} onOpenChange={setHistoryOpen}>
