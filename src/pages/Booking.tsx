@@ -36,7 +36,9 @@ export default function Booking() {
     enabled: !!trainerId && dayOfWeek !== null,
   });
 
-  // 2. Fetch existing appointments for the selected date (global capacity)
+  // 2. Fetch existing appointments for the selected date (global capacity + visibility)
+  // CAPACITY: counts ALL rows (pending + confirmed + delegated)
+  // VISIBILITY: only confirmed/delegated/fixed names are shown (filtered separately)
   const { data: dateAppointments, isLoading: isLoadingCounts } = useQuery({
     queryKey: ['dateAppointments', formattedDate],
     queryFn: async () => {
@@ -50,6 +52,7 @@ export default function Booking() {
       return data || [];
     },
     enabled: !!formattedDate,
+    refetchInterval: 10000, // Poll every 10s for real-time capacity sync
   });
 
   // Derive slot counts from dateAppointments
