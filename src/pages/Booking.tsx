@@ -36,7 +36,9 @@ export default function Booking() {
     enabled: !!trainerId && dayOfWeek !== null,
   });
 
-  // 2. Fetch existing appointments for the selected date (global capacity)
+  // 2. Fetch existing appointments for the selected date (global capacity + visibility)
+  // CAPACITY: counts ALL rows (pending + confirmed + delegated)
+  // VISIBILITY: only confirmed/delegated/fixed names are shown (filtered separately)
   const { data: dateAppointments, isLoading: isLoadingCounts } = useQuery({
     queryKey: ['dateAppointments', formattedDate],
     queryFn: async () => {
@@ -50,6 +52,7 @@ export default function Booking() {
       return data || [];
     },
     enabled: !!formattedDate,
+    refetchInterval: 10000, // Poll every 10s for real-time capacity sync
   });
 
   // Derive slot counts from dateAppointments
@@ -77,13 +80,16 @@ export default function Booking() {
       return data || [];
     },
     enabled: !!trainerId && dayOfWeek !== null,
+    refetchInterval: 10000, // Poll for real-time capacity sync
   });
 
-  // 4. Fetch classmate profiles: include BOTH appointment students AND fixed students
+  // 4. VISIBILITY ONLY: Fetch classmate profiles (confirmed/delegated/fixed names shown, pending stays anonymous)
+  // Only fetch profiles for students whose names will actually be shown (confirmed/delegated + fixed)
+  // Pending students count toward capacity but remain anonymous
   const allRelevantStudentIds = [
     ...new Set([
       ...(dateAppointments || [])
-        .filter((a) => a.status === 'confirmed' || a.status === 'delegated' || a.status === 'pending')
+        .filter((a) => a.status === 'confirmed' || a.status === 'delegated')
         .map((a) => a.student_id),
       ...(allFixedForDay || []).map((f) => f.student_id),
     ].filter((id) => id !== user?.id)),
