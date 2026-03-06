@@ -52,7 +52,7 @@ export default function Booking() {
       return data || [];
     },
     enabled: !!formattedDate,
-    refetchInterval: 10000, // Poll every 10s for real-time capacity sync
+    refetchInterval: 2000,
   });
 
   // Derive slot counts from dateAppointments
@@ -80,7 +80,7 @@ export default function Booking() {
       return data || [];
     },
     enabled: !!trainerId && dayOfWeek !== null,
-    refetchInterval: 10000, // Poll for real-time capacity sync
+    refetchInterval: 2000,
   });
 
   // 4. VISIBILITY ONLY: Fetch classmate profiles (confirmed/delegated/fixed names shown, pending stays anonymous)
