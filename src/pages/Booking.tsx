@@ -84,10 +84,12 @@ export default function Booking() {
   });
 
   // 4. VISIBILITY ONLY: Fetch classmate profiles (confirmed/delegated/fixed names shown, pending stays anonymous)
+  // Only fetch profiles for students whose names will actually be shown (confirmed/delegated + fixed)
+  // Pending students count toward capacity but remain anonymous
   const allRelevantStudentIds = [
     ...new Set([
       ...(dateAppointments || [])
-        .filter((a) => a.status === 'confirmed' || a.status === 'delegated' || a.status === 'pending')
+        .filter((a) => a.status === 'confirmed' || a.status === 'delegated')
         .map((a) => a.student_id),
       ...(allFixedForDay || []).map((f) => f.student_id),
     ].filter((id) => id !== user?.id)),
