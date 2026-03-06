@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Users, Loader2 } from 'lucide-react';
+import { Clock, Users, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface SlotCardProps {
   timeSlot: string;
@@ -33,6 +34,7 @@ export function SlotCard({
   actionWindowHours = 2,
   classmateNames = [],
 }: SlotCardProps) {
+  const [showClassmates, setShowClassmates] = useState(false);
   const remaining = effectiveRemaining;
   const isFull = remaining <= 0;
 
@@ -44,12 +46,11 @@ export function SlotCard({
 
   const getAvailabilityText = () => {
     if (isLocked) return 'Bloqueado';
-    if (isFull) return 'Esgotado';
+    if (isFull) return 'Lotado';
     if (remaining === 1) return '1 vaga';
     return `${remaining} vagas`;
   };
 
-  // Fixed or already booked → always disabled
   const forceDisabled = isFixed || isBooked || hasTimeConflict;
   const isDisabled = forceDisabled || !canBook || isFull || isLocked || isLoading;
 
@@ -59,7 +60,7 @@ export function SlotCard({
     if (isBooked) return 'Já Agendado';
     if (hasTimeConflict) return 'Conflito de Horário';
     if (isLocked) return 'Horário Bloqueado';
-    if (isFull) return 'Vagas Esgotadas';
+    if (isFull) return 'Lotado';
     if (!canBook) return 'Prazo Esgotado';
     return 'Solicitar Agendamento';
   };
@@ -78,7 +79,18 @@ export function SlotCard({
       </div>
 
       {classmateNames.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          className="w-full mb-3 flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => setShowClassmates(!showClassmates)}
+        >
+          <span>{classmateNames.length} aluno{classmateNames.length > 1 ? 's' : ''} confirmado{classmateNames.length > 1 ? 's' : ''}</span>
+          {showClassmates ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </button>
+      )}
+
+      {showClassmates && classmateNames.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1.5 animate-fade-in">
           {classmateNames.map((name, i) => (
             <span
               key={i}
