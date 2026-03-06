@@ -80,9 +80,10 @@ export default function Booking() {
       return data || [];
     },
     enabled: !!trainerId && dayOfWeek !== null,
+    refetchInterval: 10000, // Poll for real-time capacity sync
   });
 
-  // 4. Fetch classmate profiles: include BOTH appointment students AND fixed students
+  // 4. VISIBILITY ONLY: Fetch classmate profiles (confirmed/delegated/fixed names shown, pending stays anonymous)
   const allRelevantStudentIds = [
     ...new Set([
       ...(dateAppointments || [])
