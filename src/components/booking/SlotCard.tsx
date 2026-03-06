@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Users, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Clock, Users, Loader2, ChevronDown, User } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SlotCardProps {
   timeSlot: string;
@@ -34,21 +35,20 @@ export function SlotCard({
   actionWindowHours = 2,
   classmateNames = [],
 }: SlotCardProps) {
-  const [showClassmates, setShowClassmates] = useState(false);
-  const remaining = effectiveRemaining;
-  const isFull = remaining <= 0;
+  const [expanded, setExpanded] = useState(false);
+  const isFull = effectiveRemaining <= 0;
 
   const getAvailabilityVariant = () => {
-    if (isFull || isLocked) return 'full';
-    if (remaining <= 1) return 'limited';
-    return 'available';
+    if (isFull || isLocked) return 'full' as const;
+    if (effectiveRemaining <= 1) return 'limited' as const;
+    return 'available' as const;
   };
 
   const getAvailabilityText = () => {
     if (isLocked) return 'Bloqueado';
     if (isFull) return 'Lotado';
-    if (remaining === 1) return '1 vaga';
-    return `${remaining} vagas`;
+    if (effectiveRemaining === 1) return '1 vaga';
+    return `${effectiveRemaining} vagas`;
   };
 
   const forceDisabled = isFixed || isBooked || hasTimeConflict;
@@ -65,68 +65,104 @@ export function SlotCard({
     return 'Solicitar Agendamento';
   };
 
+  const confirmedCount = classmateNames.length;
+
   return (
-    <div className="bg-card rounded-xl border p-4 card-hover">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-muted-foreground" />
-          <span className="font-semibold text-foreground">{label}</span>
+    <div className="bg-card rounded-xl border overflow-hidden card-hover">
+      {/* Clickable header area — expands/collapses the card */}
+      <button
+        type="button"
+        className="w-full p-4 text-left focus:outline-none"
+        onClick={() => setExpanded(!expanded)}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-muted-foreground" />
+            <span className="font-semibold text-foreground">{label}</span>
+          </div>
+          <Badge variant={getAvailabilityVariant()}>
+            <Users className="w-3 h-3 mr-1" />
+            {getAvailabilityText()}
+          </Badge>
         </div>
-        <Badge variant={getAvailabilityVariant()}>
-          <Users className="w-3 h-3 mr-1" />
-          {getAvailabilityText()}
-        </Badge>
+
+        <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+          <span>
+            {confirmedCount > 0
+              ? `${confirmedCount} aluno${confirmedCount > 1 ? 's' : ''} confirmado${confirmedCount > 1 ? 's' : ''}`
+              : 'Toque para ver detalhes'}
+          </span>
+          <ChevronDown
+            className={cn(
+              'w-4 h-4 transition-transform duration-200',
+              expanded && 'rotate-180'
+            )}
+          />
+        </div>
+      </button>
+
+      {/* Expanded content — classmate names */}
+      <div
+        className={cn(
+          'overflow-hidden transition-all duration-200 ease-in-out',
+          expanded ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
+        )}
+      >
+        <div className="px-4 pb-2 border-t border-border/50">
+          <p className="text-xs font-medium text-muted-foreground pt-3 pb-2">
+            Alunos confirmados nesta aula:
+          </p>
+          {confirmedCount > 0 ? (
+            <div className="flex flex-wrap gap-1.5 pb-3">
+              {classmateNames.map((name, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-accent/10 text-accent font-medium"
+                >
+                  <User className="w-3 h-3" />
+                  {name.split(' ').slice(0, 2).join(' ')}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground/70 italic pb-3">
+              Nenhum aluno confirmado ainda.
+            </p>
+          )}
+        </div>
       </div>
 
-      {classmateNames.length > 0 && (
-        <button
-          type="button"
-          className="w-full mb-3 flex items-center justify-between text-xs text-muted-foreground hover:text-foreground transition-colors"
-          onClick={() => setShowClassmates(!showClassmates)}
-        >
-          <span>{classmateNames.length} aluno{classmateNames.length > 1 ? 's' : ''} confirmado{classmateNames.length > 1 ? 's' : ''}</span>
-          {showClassmates ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-        </button>
-      )}
-
-      {showClassmates && classmateNames.length > 0 && (
-        <div className="mb-3 flex flex-wrap gap-1.5 animate-fade-in">
-          {classmateNames.map((name, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium"
-            >
-              {name.split(' ').slice(0, 2).join(' ')}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {forceDisabled ? (
-        <Button
-          variant="secondary"
-          className="w-full bg-muted text-muted-foreground cursor-not-allowed opacity-70"
-          disabled
-        >
-          {getButtonLabel()}
-        </Button>
-      ) : (
-        <Button
-          variant={isDisabled ? 'secondary' : 'accent'}
-          className={`w-full ${isDisabled ? 'opacity-70 cursor-not-allowed' : ''}`}
-          disabled={isDisabled}
-          onClick={onBook}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Agendando...
-            </>
-          ) : (
-            getButtonLabel()
-          )}
-        </Button>
-      )}
+      {/* Booking button */}
+      <div className="px-4 pb-4">
+        {forceDisabled ? (
+          <Button
+            variant="secondary"
+            className="w-full bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+            disabled
+          >
+            {getButtonLabel()}
+          </Button>
+        ) : (
+          <Button
+            variant={isDisabled ? 'secondary' : 'accent'}
+            className={cn('w-full', isDisabled && 'opacity-70 cursor-not-allowed')}
+            disabled={isDisabled}
+            onClick={(e) => {
+              e.stopPropagation();
+              onBook();
+            }}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Agendando...
+              </>
+            ) : (
+              getButtonLabel()
+            )}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
