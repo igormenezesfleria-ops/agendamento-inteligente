@@ -130,6 +130,39 @@ export type Database = {
           },
         ]
       }
+      expenses: {
+        Row: {
+          admin_id: string
+          amount: number
+          category: string
+          created_at: string
+          due_date: string
+          id: string
+          is_paid: boolean
+          name: string
+        }
+        Insert: {
+          admin_id: string
+          amount?: number
+          category?: string
+          created_at?: string
+          due_date: string
+          id?: string
+          is_paid?: boolean
+          name: string
+        }
+        Update: {
+          admin_id?: string
+          amount?: number
+          category?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          is_paid?: boolean
+          name?: string
+        }
+        Relationships: []
+      }
       locked_slots: {
         Row: {
           created_at: string
@@ -200,6 +233,7 @@ export type Database = {
           date_of_birth: string | null
           default_capacity: number
           emergency_contact: string | null
+          fixed_monthly_rate: number | null
           has_injury: boolean | null
           hourly_rate: number | null
           id: string
@@ -231,6 +265,7 @@ export type Database = {
           date_of_birth?: string | null
           default_capacity?: number
           emergency_contact?: string | null
+          fixed_monthly_rate?: number | null
           has_injury?: boolean | null
           hourly_rate?: number | null
           id: string
@@ -262,6 +297,7 @@ export type Database = {
           date_of_birth?: string | null
           default_capacity?: number
           emergency_contact?: string | null
+          fixed_monthly_rate?: number | null
           has_injury?: boolean | null
           hourly_rate?: number | null
           id?: string
