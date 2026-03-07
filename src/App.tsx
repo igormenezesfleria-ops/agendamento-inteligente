@@ -30,6 +30,7 @@ import Onboarding from "./pages/Onboarding";
 import Subscription from "./pages/Subscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PayrollDashboard from "./pages/PayrollDashboard";
+import FinancialDashboard from "./pages/FinancialDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -220,6 +221,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <PayrollDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/financeiro"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <FinancialDashboard />
                 </ProtectedRoute>
               }
             />

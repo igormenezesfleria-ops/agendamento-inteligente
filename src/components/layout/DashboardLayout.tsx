@@ -166,7 +166,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/meus-alunos', label: 'Meus Alunos', icon: GraduationCap },
     { href: '/dashboard/equipe', label: 'Equipe', icon: Users },
     { href: '/dashboard/historico', label: 'Histórico', icon: History },
-    { href: '/dashboard/admin/fechamento', label: 'Fechamento', icon: DollarSign },
+    { href: '/dashboard/admin/financeiro', label: 'Gestão Financeira', icon: DollarSign },
     { section: 'Ajustes' },
     { href: '/dashboard/configurar-horarios', label: 'Configurar Horários', icon: Settings },
     { href: '/dashboard/trancamentos', label: 'Trancamentos', icon: Lock },
