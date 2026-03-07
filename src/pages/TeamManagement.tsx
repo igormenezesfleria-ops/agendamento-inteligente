@@ -60,7 +60,7 @@ export default function TeamManagement() {
       if (!currentUser) return [];
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, created_at, pay_type, base_rate, no_show_rate')
+        .select('id, name, created_at, pay_type, base_rate, no_show_rate, fixed_monthly_rate')
         .eq('role', 'collaborator')
         .eq('business_owner_id', currentUser.id)
         .order('created_at', { ascending: false });
