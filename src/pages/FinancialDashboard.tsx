@@ -430,7 +430,7 @@ export default function FinancialDashboard() {
                         {formatCurrency(Number(expense.amount))}
                       </p>
                       {expense.is_paid && (
-                        <Badge variant="default" className="text-[10px] bg-accent text-accent-foreground">Pago</Badge>
+                        <Badge variant="default" className="text-[10px] bg-accent text-accent-foreground shrink-0">Pago</Badge>
                       )}
                       <Button
                         variant="ghost"

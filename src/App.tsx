@@ -224,6 +224,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/dashboard/admin/financeiro"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <FinancialDashboard />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Collaborator routes */}
             <Route
