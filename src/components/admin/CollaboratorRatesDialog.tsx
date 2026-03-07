@@ -31,6 +31,7 @@ interface CollaboratorRatesDialogProps {
     pay_type: string | null;
     base_rate: number | null;
     no_show_rate: number | null;
+    fixed_monthly_rate?: number | null;
   } | null;
 }
 
@@ -40,25 +41,40 @@ export function CollaboratorRatesDialog({ open, onOpenChange, collaborator }: Co
   const [payType, setPayType] = useState('per_class');
   const [baseRate, setBaseRate] = useState('');
   const [noShowRate, setNoShowRate] = useState('');
+  const [fixedMonthlyRate, setFixedMonthlyRate] = useState('');
 
   useEffect(() => {
     if (collaborator) {
       setPayType(collaborator.pay_type || 'per_class');
       setBaseRate(String(collaborator.base_rate ?? 0));
       setNoShowRate(String(collaborator.no_show_rate ?? 0));
+      setFixedMonthlyRate(String(collaborator.fixed_monthly_rate ?? 0));
     }
   }, [collaborator]);
 
   const mutation = useMutation({
     mutationFn: async () => {
       if (!collaborator) return;
+
+      const updateData: Record<string, unknown> = { pay_type: payType };
+
+      if (payType === 'per_class') {
+        updateData.base_rate = parseFloat(baseRate) || 0;
+        updateData.no_show_rate = 0;
+        updateData.fixed_monthly_rate = 0;
+      } else if (payType === 'per_student') {
+        updateData.base_rate = parseFloat(baseRate) || 0;
+        updateData.no_show_rate = parseFloat(noShowRate) || 0;
+        updateData.fixed_monthly_rate = 0;
+      } else if (payType === 'fixed_monthly') {
+        updateData.base_rate = 0;
+        updateData.no_show_rate = 0;
+        updateData.fixed_monthly_rate = parseFloat(fixedMonthlyRate) || 0;
+      }
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          pay_type: payType,
-          base_rate: parseFloat(baseRate) || 0,
-          no_show_rate: parseFloat(noShowRate) || 0,
-        })
+        .update(updateData)
         .eq('id', collaborator.id);
       if (error) throw error;
     },
@@ -95,35 +111,71 @@ export function CollaboratorRatesDialog({ open, onOpenChange, collaborator }: Co
               <SelectContent>
                 <SelectItem value="per_class">Por Aula (valor fixo por aula dada)</SelectItem>
                 <SelectItem value="per_student">Por Aluno (valor por presença/falta)</SelectItem>
+                <SelectItem value="fixed_monthly">Salário Fixo Mensal</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label>{payType === 'per_class' ? 'Valor por Aula (R$)' : 'Valor por Aluno Presente (R$)'}</Label>
-            <Input
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0.00"
-              value={baseRate}
-              onChange={(e) => setBaseRate(e.target.value)}
-            />
-          </div>
-
-          {payType === 'per_student' && (
+          {payType === 'per_class' && (
             <div className="space-y-2">
-              <Label>Valor por Aluno com Falta (R$)</Label>
+              <Label>Valor por Aula (R$)</Label>
               <Input
                 type="number"
                 step="0.01"
                 min="0"
                 placeholder="0.00"
-                value={noShowRate}
-                onChange={(e) => setNoShowRate(e.target.value)}
+                value={baseRate}
+                onChange={(e) => setBaseRate(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Valor pago quando o aluno falta à aula.
+                Valor pago por cada aula ministrada, independente do número de alunos.
+              </p>
+            </div>
+          )}
+
+          {payType === 'per_student' && (
+            <>
+              <div className="space-y-2">
+                <Label>Valor por Aluno Presente (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={baseRate}
+                  onChange={(e) => setBaseRate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Valor por Aluno com Falta (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={noShowRate}
+                  onChange={(e) => setNoShowRate(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Valor pago quando o aluno falta à aula.
+                </p>
+              </div>
+            </>
+          )}
+
+          {payType === 'fixed_monthly' && (
+            <div className="space-y-2">
+              <Label>Salário Fixo Mensal (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0.00"
+                value={fixedMonthlyRate}
+                onChange={(e) => setFixedMonthlyRate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Valor fixo pago mensalmente, independente de aulas ou alunos.
               </p>
             </div>
           )}

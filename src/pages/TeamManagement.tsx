@@ -39,6 +39,7 @@ interface Collaborator {
   pay_type: string | null;
   base_rate: number | null;
   no_show_rate: number | null;
+  fixed_monthly_rate: number | null;
 }
 
 export default function TeamManagement() {
