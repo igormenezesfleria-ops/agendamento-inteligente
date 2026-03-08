@@ -208,7 +208,7 @@ export default function FinancialDashboard() {
     onSuccess: () => {
       toast({ title: 'Conta adicionada!' });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      setNewExpense({ name: '', amount: '', due_date: '', category: 'Outros' });
+      setNewExpense({ name: '', amount: '', due_date: '', category: 'Outros', is_fixed: false });
       setAddDialogOpen(false);
     },
     onError: () => {
