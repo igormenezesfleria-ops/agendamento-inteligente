@@ -27,6 +27,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MONTHS } from '@/lib/constants';
 import { SmartConsultant } from '@/components/financial/SmartConsultant';
+import { PayrollSection } from '@/components/financial/PayrollSection';
 import {
   Loader2,
   DollarSign,
@@ -464,6 +465,13 @@ export default function FinancialDashboard() {
             )}
           </CardContent>
         </Card>
+        {/* Payroll Breakdown */}
+        <PayrollSection
+          collaborators={collaborators}
+          appointments={completedAppointments}
+          isLoading={!collaborators}
+          formatCurrency={formatCurrency}
+        />
         {/* Smart Consultant */}
         <SmartConsultant netIncome={netBalance} formatCurrency={formatCurrency} />
       </div>
