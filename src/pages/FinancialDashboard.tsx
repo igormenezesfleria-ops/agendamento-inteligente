@@ -193,12 +193,15 @@ export default function FinancialDashboard() {
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Não autenticado');
+      // Use a date strictly in the selected month to avoid timezone shifts
+      const dueDate = newExpense.due_date || `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-15`;
       const { error } = await supabase.from('expenses').insert({
         admin_id: user.id,
         name: newExpense.name,
         amount: parseFloat(newExpense.amount) || 0,
-        due_date: newExpense.due_date,
+        due_date: dueDate,
         category: newExpense.category,
+        is_fixed: newExpense.is_fixed,
       });
       if (error) throw error;
     },
