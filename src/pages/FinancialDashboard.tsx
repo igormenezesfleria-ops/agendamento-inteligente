@@ -241,11 +241,21 @@ export default function FinancialDashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="space-y-6 animate-fade-in print-area">
         {/* Header */}
-        <div className="space-y-1">
-          <h1 className="font-display text-3xl text-foreground">Gestão Financeira</h1>
-          <p className="text-muted-foreground">Visão geral de receitas, despesas e folha de pagamento.</p>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="font-display text-3xl text-foreground">Gestão Financeira</h1>
+            <p className="text-muted-foreground">Visão geral de receitas, despesas e folha de pagamento.</p>
+          </div>
+          <Button
+            variant="outline"
+            className="no-print"
+            onClick={() => window.print()}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Gerar Relatório
+          </Button>
         </div>
 
         {/* Period filter */}
