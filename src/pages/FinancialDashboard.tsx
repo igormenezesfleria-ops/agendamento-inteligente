@@ -465,6 +465,13 @@ export default function FinancialDashboard() {
             )}
           </CardContent>
         </Card>
+        {/* Payroll Breakdown */}
+        <PayrollSection
+          collaborators={collaborators}
+          appointments={completedAppointments}
+          isLoading={!collaborators}
+          formatCurrency={formatCurrency}
+        />
         {/* Smart Consultant */}
         <SmartConsultant netIncome={netBalance} formatCurrency={formatCurrency} />
       </div>
