@@ -457,6 +457,9 @@ export default function FinancialDashboard() {
                       <p className={`font-bold text-sm sm:text-base whitespace-nowrap ${expense.is_paid ? 'text-accent' : 'text-foreground'}`}>
                         {formatCurrency(Number(expense.amount))}
                       </p>
+                      {expense.is_fixed && (
+                        <Badge variant="outline" className="text-[10px] shrink-0">Fixa</Badge>
+                      )}
                       {expense.is_paid && (
                         <Badge variant="default" className="text-[10px] bg-accent text-accent-foreground shrink-0">Pago</Badge>
                       )}
