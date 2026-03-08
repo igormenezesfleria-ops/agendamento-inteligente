@@ -464,6 +464,8 @@ export default function FinancialDashboard() {
             )}
           </CardContent>
         </Card>
+        {/* Smart Consultant */}
+        <SmartConsultant netIncome={netBalance} formatCurrency={formatCurrency} />
       </div>
     </DashboardLayout>
   );
