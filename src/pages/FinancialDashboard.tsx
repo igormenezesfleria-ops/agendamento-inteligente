@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { MONTHS } from '@/lib/constants';
+import { SmartConsultant } from '@/components/financial/SmartConsultant';
 import {
   Loader2,
   DollarSign,
@@ -35,6 +36,7 @@ import {
   Plus,
   Trash2,
   Receipt,
+  FileText,
 } from 'lucide-react';
 
 interface Expense {

@@ -246,3 +246,27 @@
     }
   }
 }
+
+/* Print styles for Financial Report */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-area, .print-area * {
+    visibility: visible !important;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 1rem;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-section {
+    break-inside: avoid;
+    margin-bottom: 1rem;
+  }
+}
