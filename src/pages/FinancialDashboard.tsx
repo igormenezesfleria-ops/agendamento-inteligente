@@ -486,6 +486,8 @@ export default function FinancialDashboard() {
           appointments={completedAppointments}
           isLoading={!collaborators}
           formatCurrency={formatCurrency}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
         />
         {/* Smart Consultant */}
         <SmartConsultant netIncome={netBalance} formatCurrency={formatCurrency} />
