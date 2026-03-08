@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, Loader2, FileText } from 'lucide-react';
+import { CollaboratorReceiptDialog } from './CollaboratorReceiptDialog';
 
 interface CollabPayroll {
   id: string;
@@ -26,6 +28,8 @@ interface PayrollSectionProps {
   appointments: Appointment[] | undefined;
   isLoading: boolean;
   formatCurrency: (val: number) => string;
+  selectedMonth: number;
+  selectedYear: number;
 }
 
 const PAY_TYPE_LABELS: Record<string, string> = {
@@ -34,7 +38,9 @@ const PAY_TYPE_LABELS: Record<string, string> = {
   fixed_monthly: 'Salário Fixo',
 };
 
-export function PayrollSection({ collaborators, appointments, isLoading, formatCurrency }: PayrollSectionProps) {
+export function PayrollSection({ collaborators, appointments, isLoading, formatCurrency, selectedMonth, selectedYear }: PayrollSectionProps) {
+  const [receiptCollab, setReceiptCollab] = useState<CollabPayroll | null>(null);
+
   const breakdowns = useMemo(() => {
     if (!collaborators) return [];
 
@@ -77,40 +83,63 @@ export function PayrollSection({ collaborators, appointments, isLoading, formatC
   }
 
   return (
-    <Card className="print-section">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Users className="w-5 h-5 text-accent" />
-          Folha de Pagamento (Equipe)
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {breakdowns.length === 0 ? (
-          <p className="text-center text-muted-foreground py-6">Nenhum colaborador encontrado.</p>
-        ) : (
-          <div className="space-y-3">
-            {breakdowns.map((b) => (
-              <div
-                key={b.id}
-                className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-foreground truncate">{b.name || 'Sem nome'}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant="secondary" className="text-[10px]">
-                      {PAY_TYPE_LABELS[b.pay_type || 'per_class'] || b.pay_type}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">{b.detail}</span>
+    <>
+      <Card className="print-section">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Users className="w-5 h-5 text-accent" />
+            Folha de Pagamento (Equipe)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {breakdowns.length === 0 ? (
+            <p className="text-center text-muted-foreground py-6">Nenhum colaborador encontrado.</p>
+          ) : (
+            <div className="space-y-3">
+              {breakdowns.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground truncate">{b.name || 'Sem nome'}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Badge variant="secondary" className="text-[10px]">
+                        {PAY_TYPE_LABELS[b.pay_type || 'per_class'] || b.pay_type}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{b.detail}</span>
+                    </div>
                   </div>
+                  <p className="font-bold text-sm sm:text-base text-foreground whitespace-nowrap">
+                    {formatCurrency(b.total)}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 no-print"
+                    onClick={() => setReceiptCollab(b)}
+                  >
+                    <FileText className="w-4 h-4 mr-1" />
+                    Ver Recibo
+                  </Button>
                 </div>
-                <p className="font-bold text-sm sm:text-base text-foreground whitespace-nowrap">
-                  {formatCurrency(b.total)}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {receiptCollab && (
+        <CollaboratorReceiptDialog
+          open={!!receiptCollab}
+          onOpenChange={(open) => !open && setReceiptCollab(null)}
+          collaborator={receiptCollab}
+          appointments={appointments || []}
+          month={selectedMonth}
+          year={selectedYear}
+          formatCurrency={formatCurrency}
+        />
+      )}
+    </>
   );
 }
