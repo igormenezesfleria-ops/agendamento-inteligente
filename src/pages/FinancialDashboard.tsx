@@ -46,6 +46,7 @@ interface Expense {
   amount: number;
   due_date: string;
   is_paid: boolean;
+  is_fixed: boolean;
   category: string;
   created_at: string;
 }
@@ -79,24 +80,25 @@ export default function FinancialDashboard() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [grossRevenue, setGrossRevenue] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newExpense, setNewExpense] = useState({ name: '', amount: '', due_date: '', category: 'Outros' });
+  const [newExpense, setNewExpense] = useState({ name: '', amount: '', due_date: '', category: 'Outros', is_fixed: false });
 
   const yearOptions = [selectedYear - 1, selectedYear, selectedYear + 1];
 
-  // Fetch expenses for period
+  // Fetch expenses for period (variable for selected month + all fixed)
   const { data: expenses, isLoading: loadingExpenses } = useQuery({
     queryKey: ['expenses', selectedMonth, selectedYear],
     queryFn: async () => {
-      const startDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+      const mm = String(selectedMonth + 1).padStart(2, '0');
+      const startDate = `${selectedYear}-${mm}-01`;
       const endMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
       const endYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
       const endDate = `${endYear}-${String(endMonth + 1).padStart(2, '0')}-01`;
 
+      // Fetch variable expenses for the month AND all fixed expenses
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
-        .gte('due_date', startDate)
-        .lt('due_date', endDate)
+        .or(`and(due_date.gte.${startDate},due_date.lt.${endDate}),is_fixed.eq.true`)
         .order('due_date', { ascending: true });
       if (error) throw error;
       return data as Expense[];
@@ -191,19 +193,22 @@ export default function FinancialDashboard() {
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Não autenticado');
+      // Use a date strictly in the selected month to avoid timezone shifts
+      const dueDate = newExpense.due_date || `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-15`;
       const { error } = await supabase.from('expenses').insert({
         admin_id: user.id,
         name: newExpense.name,
         amount: parseFloat(newExpense.amount) || 0,
-        due_date: newExpense.due_date,
+        due_date: dueDate,
         category: newExpense.category,
+        is_fixed: newExpense.is_fixed,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: 'Conta adicionada!' });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      setNewExpense({ name: '', amount: '', due_date: '', category: 'Outros' });
+      setNewExpense({ name: '', amount: '', due_date: '', category: 'Outros', is_fixed: false });
       setAddDialogOpen(false);
     },
     onError: () => {
@@ -390,6 +395,16 @@ export default function FinancialDashboard() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div className="space-y-0.5">
+                      <Label>Conta Fixa (Repete todo mês)</Label>
+                      <p className="text-xs text-muted-foreground">Aparecerá automaticamente em todos os meses.</p>
+                    </div>
+                    <Switch
+                      checked={newExpense.is_fixed}
+                      onCheckedChange={(checked) => setNewExpense({ ...newExpense, is_fixed: checked })}
+                    />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancelar</Button>
@@ -442,6 +457,9 @@ export default function FinancialDashboard() {
                       <p className={`font-bold text-sm sm:text-base whitespace-nowrap ${expense.is_paid ? 'text-accent' : 'text-foreground'}`}>
                         {formatCurrency(Number(expense.amount))}
                       </p>
+                      {expense.is_fixed && (
+                        <Badge variant="outline" className="text-[10px] shrink-0">Fixa</Badge>
+                      )}
                       {expense.is_paid && (
                         <Badge variant="default" className="text-[10px] bg-accent text-accent-foreground shrink-0">Pago</Badge>
                       )}
@@ -471,6 +489,8 @@ export default function FinancialDashboard() {
           appointments={completedAppointments}
           isLoading={!collaborators}
           formatCurrency={formatCurrency}
+          selectedMonth={selectedMonth}
+          selectedYear={selectedYear}
         />
         {/* Smart Consultant */}
         <SmartConsultant netIncome={netBalance} formatCurrency={formatCurrency} />

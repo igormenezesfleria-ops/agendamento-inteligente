@@ -269,4 +269,25 @@
     break-inside: avoid;
     margin-bottom: 1rem;
   }
+
+  /* Individual receipt print mode */
+  body.printing-receipt * {
+    visibility: hidden !important;
+  }
+  body.printing-receipt .receipt-print-area,
+  body.printing-receipt .receipt-print-area * {
+    visibility: visible !important;
+  }
+  body.printing-receipt .receipt-print-area {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 2rem;
+    background: white;
+    z-index: 9999;
+  }
+  body.printing-receipt .receipt-print-area .no-print {
+    display: none !important;
+  }
 }
