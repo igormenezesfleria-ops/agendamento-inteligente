@@ -88,20 +88,19 @@ export default function FinancialDashboard() {
   const { data: expenses, isLoading: loadingExpenses } = useQuery({
     queryKey: ['expenses', selectedMonth, selectedYear],
     queryFn: async () => {
-      const mm = String(selectedMonth + 1).padStart(2, '0');
-      const startDate = `${selectedYear}-${mm}-01`;
-      const endMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
-      const endYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
-      const endDate = `${endYear}-${String(endMonth + 1).padStart(2, '0')}-01`;
-
-      // Fetch variable expenses for the month AND all fixed expenses
+      // Fetch ALL expenses for admin, then filter client-side to avoid PostgREST date edge-cases
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
-        .or(`and(due_date.gte.${startDate},due_date.lt.${endDate}),is_fixed.eq.true`)
         .order('due_date', { ascending: true });
       if (error) throw error;
-      return data as Expense[];
+
+      // Client-side filter: show if month/year matches OR is_fixed
+      return (data as Expense[]).filter((e) => {
+        if (e.is_fixed) return true;
+        const [y, m] = e.due_date.split('-').map(Number);
+        return y === selectedYear && m === selectedMonth + 1;
+      });
     },
   });
 
