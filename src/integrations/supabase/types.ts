@@ -138,6 +138,7 @@ export type Database = {
           created_at: string
           due_date: string
           id: string
+          is_fixed: boolean
           is_paid: boolean
           name: string
         }
@@ -148,6 +149,7 @@ export type Database = {
           created_at?: string
           due_date: string
           id?: string
+          is_fixed?: boolean
           is_paid?: boolean
           name: string
         }
@@ -158,6 +160,7 @@ export type Database = {
           created_at?: string
           due_date?: string
           id?: string
+          is_fixed?: boolean
           is_paid?: boolean
           name?: string
         }

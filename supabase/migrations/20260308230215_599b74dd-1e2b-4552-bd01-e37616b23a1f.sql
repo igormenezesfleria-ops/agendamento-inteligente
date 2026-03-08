@@ -1,0 +1,1 @@
+ALTER TABLE public.expenses ADD COLUMN is_fixed boolean NOT NULL DEFAULT false;
