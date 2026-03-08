@@ -79,7 +79,7 @@ export default function FinancialDashboard() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [grossRevenue, setGrossRevenue] = useState('');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [newExpense, setNewExpense] = useState({ name: '', amount: '', due_date: '', category: 'Outros' });
+  const [newExpense, setNewExpense] = useState({ name: '', amount: '', due_date: '', category: 'Outros', is_fixed: false });
 
   const yearOptions = [selectedYear - 1, selectedYear, selectedYear + 1];
 
