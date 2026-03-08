@@ -46,6 +46,7 @@ interface Expense {
   amount: number;
   due_date: string;
   is_paid: boolean;
+  is_fixed: boolean;
   category: string;
   created_at: string;
 }
