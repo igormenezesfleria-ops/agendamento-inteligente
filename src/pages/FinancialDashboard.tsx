@@ -395,6 +395,16 @@ export default function FinancialDashboard() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div className="space-y-0.5">
+                      <Label>Conta Fixa (Repete todo mês)</Label>
+                      <p className="text-xs text-muted-foreground">Aparecerá automaticamente em todos os meses.</p>
+                    </div>
+                    <Switch
+                      checked={newExpense.is_fixed}
+                      onCheckedChange={(checked) => setNewExpense({ ...newExpense, is_fixed: checked })}
+                    />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setAddDialogOpen(false)}>Cancelar</Button>
