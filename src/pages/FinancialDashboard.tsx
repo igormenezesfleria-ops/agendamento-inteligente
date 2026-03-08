@@ -83,20 +83,21 @@ export default function FinancialDashboard() {
 
   const yearOptions = [selectedYear - 1, selectedYear, selectedYear + 1];
 
-  // Fetch expenses for period
+  // Fetch expenses for period (variable for selected month + all fixed)
   const { data: expenses, isLoading: loadingExpenses } = useQuery({
     queryKey: ['expenses', selectedMonth, selectedYear],
     queryFn: async () => {
-      const startDate = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-01`;
+      const mm = String(selectedMonth + 1).padStart(2, '0');
+      const startDate = `${selectedYear}-${mm}-01`;
       const endMonth = selectedMonth === 11 ? 0 : selectedMonth + 1;
       const endYear = selectedMonth === 11 ? selectedYear + 1 : selectedYear;
       const endDate = `${endYear}-${String(endMonth + 1).padStart(2, '0')}-01`;
 
+      // Fetch variable expenses for the month AND all fixed expenses
       const { data, error } = await supabase
         .from('expenses')
         .select('*')
-        .gte('due_date', startDate)
-        .lt('due_date', endDate)
+        .or(`and(due_date.gte.${startDate},due_date.lt.${endDate}),is_fixed.eq.true`)
         .order('due_date', { ascending: true });
       if (error) throw error;
       return data as Expense[];
