@@ -31,6 +31,7 @@ import Subscription from "./pages/Subscription";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PayrollDashboard from "./pages/PayrollDashboard";
 import FinancialDashboard from "./pages/FinancialDashboard";
+import Questionnaires from "./pages/Questionnaires";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
