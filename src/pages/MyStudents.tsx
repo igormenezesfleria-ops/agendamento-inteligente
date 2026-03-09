@@ -253,6 +253,7 @@ export default function MyStudents() {
                 <p className="text-muted-foreground text-sm">O aluno ainda não preencheu a ficha de triagem.</p>
               </div>
             ) : selectedStudent ? (
+              <>
               <Tabs defaultValue="ficha" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="ficha">
