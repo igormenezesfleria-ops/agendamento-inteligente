@@ -195,7 +195,10 @@ export type Database = {
       }
       membership_plans: {
         Row: {
+          accepts_credit: boolean
+          accepts_pix: boolean
           admin_id: string
+          classes_per_week: number | null
           created_at: string
           credits_amount: number | null
           description: string | null
@@ -205,9 +208,13 @@ export type Database = {
           plan_type: Database["public"]["Enums"]["plan_type"]
           price: number
           updated_at: string
+          validity_months: number | null
         }
         Insert: {
+          accepts_credit?: boolean
+          accepts_pix?: boolean
           admin_id: string
+          classes_per_week?: number | null
           created_at?: string
           credits_amount?: number | null
           description?: string | null
@@ -217,9 +224,13 @@ export type Database = {
           plan_type?: Database["public"]["Enums"]["plan_type"]
           price?: number
           updated_at?: string
+          validity_months?: number | null
         }
         Update: {
+          accepts_credit?: boolean
+          accepts_pix?: boolean
           admin_id?: string
+          classes_per_week?: number | null
           created_at?: string
           credits_amount?: number | null
           description?: string | null
@@ -229,6 +240,7 @@ export type Database = {
           plan_type?: Database["public"]["Enums"]["plan_type"]
           price?: number
           updated_at?: string
+          validity_months?: number | null
         }
         Relationships: []
       }
