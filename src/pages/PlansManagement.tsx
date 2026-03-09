@@ -25,6 +25,10 @@ interface Plan {
   price: number;
   plan_type: PlanType;
   credits_amount: number | null;
+  classes_per_week: number | null;
+  validity_months: number | null;
+  accepts_pix: boolean;
+  accepts_credit: boolean;
   is_active: boolean;
 }
 
