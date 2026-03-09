@@ -31,25 +31,42 @@ const HOOPER_SCALES = [
 
 const SARCF_QUESTIONS = [
   {
-    question: 'Força: Quanta dificuldade você tem para levantar e carregar 5 kg?',
-    options: ['Nenhuma', 'Alguma', 'Muita ou incapaz'],
+    question: 'Força: Quanta dificuldade você tem para levantar e carregar 4,5 kg?',
+    options: ['Nenhuma dificuldade (0)', 'Alguma dificuldade (1)', 'Muita dificuldade ou incapaz (2)'],
   },
   {
-    question: 'Caminhada: Quanta dificuldade você tem para atravessar um cômodo?',
-    options: ['Nenhuma', 'Alguma', 'Muita, precisa de ajuda ou incapaz'],
+    question: 'Assistência para andar: Quanta dificuldade você tem para caminhar pelo cômodo?',
+    options: ['Nenhuma (0)', 'Alguma (1)', 'Muita ou usa ajuda (2)'],
   },
   {
-    question: 'Levantar-se: Quanta dificuldade você tem para se levantar de uma cadeira ou cama?',
-    options: ['Nenhuma', 'Alguma', 'Muita ou incapaz sem ajuda'],
+    question: 'Levantar de uma cadeira: Quanta dificuldade você tem para se transferir de uma cadeira ou cama?',
+    options: ['Nenhuma dificuldade (0)', 'Alguma dificuldade (1)', 'Muita dificuldade ou incapaz (2)'],
   },
   {
     question: 'Subir escadas: Quanta dificuldade você tem para subir um lance de 10 degraus?',
-    options: ['Nenhuma', 'Alguma', 'Muita ou incapaz'],
+    options: ['Nenhuma (0)', 'Alguma (1)', 'Muita ou incapaz (2)'],
   },
   {
     question: 'Quedas: Quantas vezes você caiu no último ano?',
-    options: ['Nenhuma', '1 a 3 quedas', '4 ou mais quedas'],
+    options: ['Nenhuma (0)', '1 a 3 quedas (1)', '4 ou mais quedas (2)'],
   },
+];
+
+const FESI_QUESTIONS = [
+  'Vestir-se ou despir-se',
+  'Tomar banho',
+  'Levantar-se de uma cadeira',
+  'Subir ou descer escadas',
+  'Pegar algo acima da cabeça ou do chão',
+  'Andar em superfície escorregadia (ex.: molhada ou com gelo)',
+  'Andar em superfície irregular (ex.: pedras, buracos)',
+];
+
+const FESI_OPTIONS = [
+  { label: 'Nem um pouco preocupado', score: 1 },
+  { label: 'Um pouco preocupado', score: 2 },
+  { label: 'Muito preocupado', score: 3 },
+  { label: 'Extremamente preocupado', score: 4 },
 ];
 
 function OptionCard({
