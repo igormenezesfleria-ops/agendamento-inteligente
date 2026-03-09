@@ -14,9 +14,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
+import { StudentAssessmentsTab } from '@/components/admin/StudentAssessmentsTab';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
