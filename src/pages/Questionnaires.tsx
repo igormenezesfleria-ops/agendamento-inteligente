@@ -116,7 +116,7 @@ export default function Questionnaires() {
       );
     }
 
-    if ((type === 'PAR-Q' || type === 'SARC-F') && Array.isArray(obj.questions)) {
+    if ((type === 'PAR-Q' || type === 'SARC-F' || type === 'FES-I') && Array.isArray(obj.questions)) {
       const questions = obj.questions as Array<Record<string, Json | undefined>>;
       return (
         <div className="space-y-3">
