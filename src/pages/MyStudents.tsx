@@ -64,7 +64,7 @@ export default function MyStudents() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, created_at, phone, emergency_contact, main_objective, has_injury, injury_details, is_active, profile_completed')
+        .select('id, name, created_at, phone, emergency_contact, main_objective, has_injury, injury_details, is_active, profile_completed, height, birth_date')
         .eq('business_owner_id', user!.id)
         .eq('role', 'student')
         .order('name');
