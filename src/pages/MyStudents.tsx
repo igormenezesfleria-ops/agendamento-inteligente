@@ -348,6 +348,7 @@ export default function MyStudents() {
                 </TabsContent>
               </Tabs>
               <StudentDevTools studentId={selectedStudent.id} studentName={selectedStudent.name} />
+              </>
             ) : null}
           </DialogContent>
         </Dialog>
