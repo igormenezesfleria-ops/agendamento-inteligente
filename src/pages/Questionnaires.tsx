@@ -152,7 +152,7 @@ export default function Questionnaires() {
         <div className="space-y-3">
           <div className="flex justify-between items-center border-b border-border pb-2">
             <span className="text-sm font-medium">Local da dor/lesão</span>
-            <Badge variant="secondary">{locationLabels[String(obj.location)] || obj.location}</Badge>
+            <Badge variant="secondary">{locationLabels[String(obj.location)] || String(obj.location)}</Badge>
           </div>
           <div className="flex justify-between items-center border-b border-border pb-2">
             <span className="text-sm font-medium">Nível de dor</span>
