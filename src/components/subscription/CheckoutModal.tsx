@@ -63,7 +63,8 @@ interface CheckoutModalProps {
   plan: AnyPlan | null;
 }
 
-export default function CheckoutModal({ open, onOpenChange, plan }: CheckoutModalProps) {
+export default function CheckoutModal({ open, onOpenChange, plan: rawPlan }: CheckoutModalProps) {
+  const plan = rawPlan ? normalizePlan(rawPlan) : null;
   const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<string>('pix');
