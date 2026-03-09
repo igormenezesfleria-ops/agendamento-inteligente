@@ -156,7 +156,7 @@ export default function Questionnaires() {
           </div>
           <div className="flex justify-between items-center border-b border-border pb-2">
             <span className="text-sm font-medium">Nível de dor</span>
-            <Badge variant={Number(obj.pain_level) >= 5 ? 'destructive' : 'secondary'}>{obj.pain_level}/10</Badge>
+            <Badge variant={Number(obj.pain_level) >= 5 ? 'destructive' : 'secondary'}>{String(obj.pain_level)}/10</Badge>
           </div>
           <div className="flex justify-between items-center border-b border-border pb-2">
             <span className="text-sm font-medium">Dor piora com movimento?</span>
