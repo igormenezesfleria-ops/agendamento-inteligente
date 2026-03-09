@@ -69,6 +69,16 @@ const FESI_OPTIONS = [
   { label: 'Extremamente preocupado', score: 4 },
 ];
 
+const ANAMNESE_LOCATIONS = ['Ombro', 'Coluna', 'Quadril', 'Joelho', 'Tornozelo/Pé', 'Outro'];
+
+const ANAMNESE_YN_QUESTIONS = [
+  'A dor piora durante o movimento ou esforço físico?',
+  'Você já realizou alguma cirurgia neste local?',
+];
+
+const ANAMNESE_TRIPLE_QUESTION = 'Você possui liberação médica ou laudo de imagem para este problema?';
+const ANAMNESE_TRIPLE_OPTIONS = ['Sim', 'Não', 'Ainda não fui ao médico'];
+
 function OptionCard({
   selected,
   onClick,
