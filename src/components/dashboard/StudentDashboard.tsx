@@ -240,6 +240,13 @@ export function StudentDashboard() {
 
       {/* Triage Onboarding Modal */}
       <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
+
+      {/* Questionnaire Answering Modal */}
+      <QuestionnaireModal
+        open={!!selectedQuestionnaire}
+        onOpenChange={(open) => { if (!open) setSelectedQuestionnaire(null); }}
+        questionnaire={selectedQuestionnaire}
+      />
     </div>
   );
 }
