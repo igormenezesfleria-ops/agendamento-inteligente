@@ -262,6 +262,33 @@ export default function MyStudents() {
                   </Alert>
                 )}
 
+                {/* Age & Height highlight */}
+                {(selectedStudent.birth_date || selectedStudent.height) && (
+                  <div className="flex gap-3">
+                    {selectedStudent.birth_date && (() => {
+                      const age = calculateAge(selectedStudent.birth_date);
+                      return age !== null ? (
+                        <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                          <Cake className="w-4 h-4 text-accent shrink-0" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Idade</p>
+                            <p className="text-lg font-bold text-accent">{age} anos</p>
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+                    {selectedStudent.height && (
+                      <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                        <Ruler className="w-4 h-4 text-accent shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Altura</p>
+                          <p className="text-lg font-bold text-accent">{selectedStudent.height}m</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid gap-3">
                   <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
                     <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />

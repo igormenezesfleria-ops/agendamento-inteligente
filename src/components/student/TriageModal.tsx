@@ -127,6 +127,32 @@ export function TriageModal({ open, onOpenChange }: TriageModalProps) {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-5 mt-2">
+              {/* Birth Date */}
+              <div className="space-y-2">
+                <Label htmlFor="birthDate">Data de Nascimento</Label>
+                <Input
+                  id="birthDate"
+                  type="text"
+                  placeholder="DD/MM/AAAA"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(formatBirthDate(e.target.value))}
+                  maxLength={10}
+                />
+              </div>
+
+              {/* Height */}
+              <div className="space-y-2">
+                <Label htmlFor="height">Altura (ex: 1.75m)</Label>
+                <Input
+                  id="height"
+                  type="text"
+                  placeholder="1.75"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  maxLength={10}
+                />
+              </div>
+
               {/* Phone */}
               <div className="space-y-2">
                 <Label htmlFor="phone">Telefone / WhatsApp</Label>
