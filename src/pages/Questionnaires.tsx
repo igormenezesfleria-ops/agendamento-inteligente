@@ -84,6 +84,7 @@ export default function Questionnaires() {
       case 'PAR-Q': return 'PAR-Q+';
       case 'HOOPER': return 'Índice de Hooper';
       case 'SARC-F': return 'SARC-F';
+      case 'FES-I': return 'FES-I Curto';
       default: return type;
     }
   };
