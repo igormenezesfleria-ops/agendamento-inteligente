@@ -193,6 +193,45 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_plans: {
+        Row: {
+          admin_id: string
+          created_at: string
+          credits_amount: number | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          plan_type: Database["public"]["Enums"]["plan_type"]
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          credits_amount?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          credits_amount?: number | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          plan_type?: Database["public"]["Enums"]["plan_type"]
+          price?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -228,6 +267,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          asaas_api_key: string | null
+          available_credits: number
           base_rate: number | null
           birth_date: string | null
           business_owner_id: string | null
@@ -250,6 +291,7 @@ export type Database = {
           name: string | null
           no_show_rate: number | null
           pay_type: string | null
+          payments_enabled: boolean
           phone: string | null
           photo_url: string | null
           profile_completed: boolean | null
@@ -262,6 +304,8 @@ export type Database = {
           vip_code_used: boolean
         }
         Insert: {
+          asaas_api_key?: string | null
+          available_credits?: number
           base_rate?: number | null
           birth_date?: string | null
           business_owner_id?: string | null
@@ -284,6 +328,7 @@ export type Database = {
           name?: string | null
           no_show_rate?: number | null
           pay_type?: string | null
+          payments_enabled?: boolean
           phone?: string | null
           photo_url?: string | null
           profile_completed?: boolean | null
@@ -296,6 +341,8 @@ export type Database = {
           vip_code_used?: boolean
         }
         Update: {
+          asaas_api_key?: string | null
+          available_credits?: number
           base_rate?: number | null
           birth_date?: string | null
           business_owner_id?: string | null
@@ -318,6 +365,7 @@ export type Database = {
           name?: string | null
           no_show_rate?: number | null
           pay_type?: string | null
+          payments_enabled?: boolean
           phone?: string | null
           photo_url?: string | null
           profile_completed?: boolean | null
@@ -492,6 +540,7 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "rejected"
+      plan_type: "monthly" | "yearly" | "class_pack"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -628,6 +677,7 @@ export const Constants = {
         "cancelled",
         "rejected",
       ],
+      plan_type: ["monthly", "yearly", "class_pack"],
     },
   },
 } as const
