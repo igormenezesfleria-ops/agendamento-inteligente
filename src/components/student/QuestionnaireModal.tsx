@@ -201,6 +201,7 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     if (type === 'HOOPER') return true;
     if (type === 'SARC-F') return Object.keys(sarcfAnswers).length === 5;
     if (type === 'FES-I') return Object.keys(fesiAnswers).length === FESI_QUESTIONS.length;
+    if (type === 'ANAMNESE') return anamneseLocation !== '' && anamnesePain >= 0 && Object.keys(anamneseYn).length === 2 && anamneseTriple !== '';
     return false;
   };
 
