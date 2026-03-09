@@ -44,6 +44,10 @@ const emptyForm = {
   price: '',
   plan_type: 'monthly' as PlanType,
   credits_amount: '',
+  classes_per_week: '',
+  validity_months: '',
+  accepts_pix: true,
+  accepts_credit: true,
   is_active: true,
 };
 
