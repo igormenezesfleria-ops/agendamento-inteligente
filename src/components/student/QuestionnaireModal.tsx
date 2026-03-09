@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { cn } from '@/lib/utils';
+import { CheckCircle2, AlertTriangle, Heart, Brain, Zap, Activity } from 'lucide-react';
 
 interface QuestionnaireModalProps {
   open: boolean;
@@ -15,20 +14,19 @@ interface QuestionnaireModalProps {
 }
 
 const PAR_Q_QUESTIONS = [
-  'Algum médico já disse que você possui algum problema de coração e recomendou que você só fizesse atividade física sob supervisão médica?',
-  'Você sente dor no peito quando faz atividade física?',
-  'No último mês, você sentiu dor no peito quando não estava fazendo atividade física?',
-  'Você perde o equilíbrio por causa de tontura ou alguma vez perdeu a consciência?',
-  'Você possui algum problema ósseo ou articular que poderia piorar com a prática de atividade física?',
-  'Algum médico já prescreveu medicamentos para a sua pressão arterial ou problema cardíaco?',
-  'Você conhece alguma outra razão pela qual não deveria praticar atividade física?',
+  'O seu médico já lhe disse que você tem um problema cardíaco ou pressão alta?',
+  'Você sente dor no peito em repouso ou durante suas atividades diárias?',
+  'Você perde o equilíbrio por causa de tontura ou perdeu a consciência nos últimos 12 meses?',
+  'Você tem algum problema ósseo ou articular que poderia piorar com a atividade física?',
+  'Você toma medicamentos prescritos para a pressão arterial ou problemas cardíacos?',
+  'Você tem alguma outra razão pela qual não deveria fazer atividade física?',
 ];
 
 const HOOPER_SCALES = [
-  { key: 'sleep', label: 'Qualidade do Sono', low: 'Muito boa', high: 'Muito ruim' },
-  { key: 'stress', label: 'Nível de Estresse', low: 'Muito baixo', high: 'Muito alto' },
-  { key: 'fatigue', label: 'Fadiga Geral', low: 'Nenhuma', high: 'Muito alta' },
-  { key: 'pain', label: 'Dor Muscular', low: 'Nenhuma', high: 'Muita dor' },
+  { key: 'sleep', label: 'Qualidade do Sono', icon: Heart, low: 'Excelente', high: 'Péssima' },
+  { key: 'stress', label: 'Nível de Estresse', icon: Brain, low: 'Muito Baixo', high: 'Muito Alto' },
+  { key: 'fatigue', label: 'Nível de Fadiga', icon: Zap, low: 'Muito Baixa', high: 'Muito Alta' },
+  { key: 'pain', label: 'Dor Muscular Tardia', icon: Activity, low: 'Nenhuma', high: 'Muito Intensa' },
 ];
 
 const SARCF_QUESTIONS = [
@@ -54,19 +52,110 @@ const SARCF_QUESTIONS = [
   },
 ];
 
+function OptionCard({
+  selected,
+  onClick,
+  children,
+  variant = 'default',
+}: {
+  selected: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  variant?: 'default' | 'yes' | 'no';
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'w-full rounded-xl border-2 px-4 py-3 text-left font-semibold transition-all duration-200',
+        'hover:scale-[1.02] active:scale-[0.98]',
+        selected
+          ? 'border-accent bg-accent/10 text-accent shadow-md shadow-accent/20'
+          : 'border-border bg-card text-foreground hover:border-accent/40 hover:bg-accent/5',
+        variant === 'yes' && selected && 'border-warning bg-warning/10 text-warning shadow-warning/20',
+        variant === 'no' && selected && 'border-success bg-success/10 text-success shadow-success/20',
+      )}
+    >
+      <div className="flex items-center gap-3">
+        <div
+          className={cn(
+            'flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-all',
+            selected
+              ? variant === 'yes'
+                ? 'border-warning bg-warning text-warning-foreground'
+                : variant === 'no'
+                ? 'border-success bg-success text-success-foreground'
+                : 'border-accent bg-accent text-accent-foreground'
+              : 'border-muted-foreground/30'
+          )}
+        >
+          {selected && <CheckCircle2 className="h-4 w-4" />}
+        </div>
+        <span className="text-sm">{children}</span>
+      </div>
+    </button>
+  );
+}
+
+function HooperScale({
+  scale,
+  value,
+  onChange,
+}: {
+  scale: typeof HOOPER_SCALES[number];
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  const Icon = scale.icon;
+  return (
+    <div className="space-y-3 rounded-xl border-2 border-border bg-card p-4">
+      <div className="flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+          <Icon className="h-4 w-4 text-accent" />
+        </div>
+        <h4 className="font-bold text-foreground">{scale.label}</h4>
+        <span className="ml-auto rounded-full bg-primary px-2.5 py-0.5 text-xs font-bold text-primary-foreground">
+          {value}/7
+        </span>
+      </div>
+      <div className="flex gap-1.5">
+        {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            className={cn(
+              'flex h-10 w-full items-center justify-center rounded-lg border-2 text-sm font-bold transition-all duration-200',
+              'hover:scale-105 active:scale-95',
+              n === value
+                ? n <= 3
+                  ? 'border-success bg-success text-success-foreground shadow-md'
+                  : n <= 5
+                  ? 'border-warning bg-warning text-warning-foreground shadow-md'
+                  : 'border-destructive bg-destructive text-destructive-foreground shadow-md'
+                : 'border-border bg-secondary text-muted-foreground hover:border-accent/40'
+            )}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+      <div className="flex justify-between text-xs text-muted-foreground">
+        <span>1 — {scale.low}</span>
+        <span>7 — {scale.high}</span>
+      </div>
+    </div>
+  );
+}
+
 export function QuestionnaireModal({ open, onOpenChange, questionnaire }: QuestionnaireModalProps) {
   const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
-
-  // PAR-Q state
   const [parqAnswers, setParqAnswers] = useState<Record<number, string>>({});
-
-  // HOOPER state
   const [hooperValues, setHooperValues] = useState<Record<string, number>>({
     sleep: 1, stress: 1, fatigue: 1, pain: 1,
   });
-
-  // SARC-F state
   const [sarcfAnswers, setSarcfAnswers] = useState<Record<number, number>>({});
 
   if (!questionnaire) return null;
@@ -74,7 +163,7 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
   const type = questionnaire.type;
 
   const canSubmit = () => {
-    if (type === 'PAR-Q') return Object.keys(parqAnswers).length === 7;
+    if (type === 'PAR-Q') return Object.keys(parqAnswers).length === PAR_Q_QUESTIONS.length;
     if (type === 'HOOPER') return true;
     if (type === 'SARC-F') return Object.keys(sarcfAnswers).length === 5;
     return false;
@@ -94,7 +183,7 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     if (type === 'PAR-Q') {
       answersData = { questions: PAR_Q_QUESTIONS.map((q, i) => ({ question: q, answer: parqAnswers[i] })) };
       const yesCount = Object.values(parqAnswers).filter(a => a === 'sim').length;
-      resultScore = `${yesCount}/7 SIM`;
+      resultScore = yesCount > 0 ? `${yesCount}/6 SIM — Necessita Liberação Médica` : '0/6 SIM — Apto';
     } else if (type === 'HOOPER') {
       answersData = { scales: hooperValues };
       const total = Object.values(hooperValues).reduce((s, v) => s + v, 0);
@@ -125,92 +214,136 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     queryClient.invalidateQueries({ queryKey: ['pending-questionnaires'] });
     onOpenChange(false);
 
-    // Reset
     setParqAnswers({});
     setHooperValues({ sleep: 1, stress: 1, fatigue: 1, pain: 1 });
     setSarcfAnswers({});
   };
 
-  const typeLabel = type === 'PAR-Q' ? 'PAR-Q+' : type === 'HOOPER' ? 'Índice de Hooper' : 'SARC-F';
+  const typeLabel = type === 'PAR-Q' ? 'PAR-Q+ — Liberação Médica' : type === 'HOOPER' ? 'Índice de Hooper — Recuperação' : 'SARC-F — Rastreio de Sarcopenia';
+  const footerText = type === 'PAR-Q'
+    ? 'Referência: PAR-Q+ Collaboration (Warburton et al.)'
+    : type === 'HOOPER'
+    ? 'Referência: Hooper et al., 1995'
+    : 'Referência: Malmstrom & Morley, 2013';
+
+  const hasYes = type === 'PAR-Q' && Object.values(parqAnswers).some(a => a === 'sim');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-lg">{typeLabel}</DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-6 py-2">
-          {type === 'PAR-Q' && (
-            PAR_Q_QUESTIONS.map((q, i) => (
-              <div key={i} className="space-y-2">
-                <p className="text-sm font-medium">{i + 1}. {q}</p>
-                <RadioGroup
-                  value={parqAnswers[i] || ''}
-                  onValueChange={(v) => setParqAnswers(prev => ({ ...prev, [i]: v }))}
-                  className="flex gap-4"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <RadioGroupItem value="sim" id={`parq-${i}-sim`} />
-                    <Label htmlFor={`parq-${i}-sim`} className="text-sm">Sim</Label>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <RadioGroupItem value="nao" id={`parq-${i}-nao`} />
-                    <Label htmlFor={`parq-${i}-nao`} className="text-sm">Não</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            ))
-          )}
-
-          {type === 'HOOPER' && (
-            HOOPER_SCALES.map((scale) => (
-              <div key={scale.key} className="space-y-3">
-                <div className="flex justify-between items-baseline">
-                  <p className="text-sm font-medium">{scale.label}</p>
-                  <span className="text-xs font-bold text-primary">{hooperValues[scale.key]}/7</span>
-                </div>
-                <Slider
-                  min={1}
-                  max={7}
-                  step={1}
-                  value={[hooperValues[scale.key]]}
-                  onValueChange={([v]) => setHooperValues(prev => ({ ...prev, [scale.key]: v }))}
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>1 – {scale.low}</span>
-                  <span>7 – {scale.high}</span>
-                </div>
-              </div>
-            ))
-          )}
-
-          {type === 'SARC-F' && (
-            SARCF_QUESTIONS.map((q, i) => (
-              <div key={i} className="space-y-2">
-                <p className="text-sm font-medium">{i + 1}. {q.question}</p>
-                <RadioGroup
-                  value={sarcfAnswers[i]?.toString() || ''}
-                  onValueChange={(v) => setSarcfAnswers(prev => ({ ...prev, [i]: parseInt(v) }))}
-                  className="space-y-1.5"
-                >
-                  {q.options.map((opt, oi) => (
-                    <div key={oi} className="flex items-center gap-2">
-                      <RadioGroupItem value={oi.toString()} id={`sarcf-${i}-${oi}`} />
-                      <Label htmlFor={`sarcf-${i}-${oi}`} className="text-sm">
-                        {opt} ({oi} pt{oi !== 1 ? 's' : ''})
-                      </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            ))
-          )}
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0">
+        {/* Header */}
+        <div className="sticky top-0 z-10 border-b border-border bg-primary px-6 py-4">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-primary-foreground">{typeLabel}</DialogTitle>
+          </DialogHeader>
         </div>
 
-        <Button onClick={handleSubmit} disabled={submitting || !canSubmit()} className="w-full">
-          {submitting ? 'Enviando...' : 'Enviar Respostas'}
-        </Button>
+        <div className="space-y-5 px-6 py-5">
+          {/* PAR-Q */}
+          {type === 'PAR-Q' &&
+            PAR_Q_QUESTIONS.map((q, i) => (
+              <div key={i} className="space-y-2.5">
+                <p className="text-sm font-bold text-foreground leading-snug">
+                  <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  {q}
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <OptionCard
+                    selected={parqAnswers[i] === 'sim'}
+                    onClick={() => setParqAnswers(prev => ({ ...prev, [i]: 'sim' }))}
+                    variant="yes"
+                  >
+                    Sim
+                  </OptionCard>
+                  <OptionCard
+                    selected={parqAnswers[i] === 'nao'}
+                    onClick={() => setParqAnswers(prev => ({ ...prev, [i]: 'nao' }))}
+                    variant="no"
+                  >
+                    Não
+                  </OptionCard>
+                </div>
+              </div>
+            ))}
+
+          {/* PAR-Q alert */}
+          {type === 'PAR-Q' && hasYes && (
+            <div className="flex items-start gap-3 rounded-xl border-2 border-warning bg-warning/10 p-4">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
+              <div>
+                <p className="text-sm font-bold text-warning">Atenção: Liberação Médica Necessária</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Você respondeu "Sim" a uma ou mais perguntas. Recomendamos apresentar uma liberação médica ao seu Personal antes de iniciar atividades físicas.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* HOOPER */}
+          {type === 'HOOPER' &&
+            HOOPER_SCALES.map((scale) => (
+              <HooperScale
+                key={scale.key}
+                scale={scale}
+                value={hooperValues[scale.key]}
+                onChange={(v) => setHooperValues(prev => ({ ...prev, [scale.key]: v }))}
+              />
+            ))}
+
+          {/* Hooper total */}
+          {type === 'HOOPER' && (
+            <div className="flex items-center justify-between rounded-xl border-2 border-primary bg-primary/5 p-4">
+              <span className="text-sm font-bold text-foreground">Score Total</span>
+              <span className="text-2xl font-black text-primary">
+                {Object.values(hooperValues).reduce((s, v) => s + v, 0)}/28
+              </span>
+            </div>
+          )}
+
+          {/* SARC-F */}
+          {type === 'SARC-F' &&
+            SARCF_QUESTIONS.map((q, i) => (
+              <div key={i} className="space-y-2.5">
+                <p className="text-sm font-bold text-foreground leading-snug">
+                  <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                    {i + 1}
+                  </span>
+                  {q.question}
+                </p>
+                <div className="space-y-1.5">
+                  {q.options.map((opt, oi) => (
+                    <OptionCard
+                      key={oi}
+                      selected={sarcfAnswers[i] === oi}
+                      onClick={() => setSarcfAnswers(prev => ({ ...prev, [i]: oi }))}
+                    >
+                      {opt} ({oi} pt{oi !== 1 ? 's' : ''})
+                    </OptionCard>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+          {/* Footer reference */}
+          <p className="text-[11px] italic text-muted-foreground pt-2 border-t border-border">
+            {footerText}
+          </p>
+        </div>
+
+        {/* Submit */}
+        <div className="sticky bottom-0 border-t border-border bg-card px-6 py-4">
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting || !canSubmit()}
+            variant="accent"
+            size="lg"
+            className="w-full"
+          >
+            {submitting ? 'Enviando...' : 'Enviar Respostas'}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
