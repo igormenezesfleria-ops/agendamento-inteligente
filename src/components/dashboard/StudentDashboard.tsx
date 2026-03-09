@@ -6,13 +6,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Calendar, Clock, ArrowRight, Dumbbell, Info, BarChart3 } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Dumbbell, Info, BarChart3, AlertTriangle } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
 import { PerformanceReceipt } from '@/components/student/PerformanceReceipt';
 import { TriageModal } from '@/components/student/TriageModal';
-import { format, parseISO } from 'date-fns';
+import { QuestionnaireModal } from '@/components/student/QuestionnaireModal';
+import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function StudentDashboard() {
