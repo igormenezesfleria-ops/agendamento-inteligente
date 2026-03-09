@@ -243,12 +243,20 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     setFesiAnswers({});
   };
 
-  const typeLabel = type === 'PAR-Q' ? 'PAR-Q+ — Liberação Médica' : type === 'HOOPER' ? 'Índice de Hooper — Recuperação' : 'SARC-F — Rastreio de Sarcopenia';
-  const footerText = type === 'PAR-Q'
-    ? 'Referência: PAR-Q+ Collaboration (Warburton et al.)'
-    : type === 'HOOPER'
-    ? 'Referência: Hooper et al., 1995'
-    : 'Referência: Malmstrom & Morley, 2013';
+  const typeLabelMap: Record<string, string> = {
+    'PAR-Q': 'PAR-Q+ — Liberação Médica',
+    'HOOPER': 'Índice de Hooper — Recuperação',
+    'SARC-F': 'SARC-F — Risco de Sarcopenia',
+    'FES-I': 'FES-I Curto — Preocupação com Quedas',
+  };
+  const footerMap: Record<string, string> = {
+    'PAR-Q': 'Referência: PAR-Q+ Collaboration (Warburton et al.)',
+    'HOOPER': 'Referência: Hooper et al., 1995',
+    'SARC-F': 'Referência: Malmstrom & Morley, 2013',
+    'FES-I': 'Referência: Yardley et al., 2005',
+  };
+  const typeLabel = typeLabelMap[type] || type;
+  const footerText = footerMap[type] || '';
 
   const hasYes = type === 'PAR-Q' && Object.values(parqAnswers).some(a => a === 'sim');
 
