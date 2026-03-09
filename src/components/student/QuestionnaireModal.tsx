@@ -240,6 +240,7 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     setParqAnswers({});
     setHooperValues({ sleep: 1, stress: 1, fatigue: 1, pain: 1 });
     setSarcfAnswers({});
+    setFesiAnswers({});
   };
 
   const typeLabel = type === 'PAR-Q' ? 'PAR-Q+ — Liberação Médica' : type === 'HOOPER' ? 'Índice de Hooper — Recuperação' : 'SARC-F — Rastreio de Sarcopenia';
