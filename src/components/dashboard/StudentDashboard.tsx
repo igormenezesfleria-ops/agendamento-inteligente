@@ -74,6 +74,21 @@ export function StudentDashboard() {
     enabled: !!user?.id && !!profile?.business_owner_id,
   });
 
+  const { data: pendingQuestionnaires } = useQuery({
+    queryKey: ['pending-questionnaires', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data } = await supabase
+        .from('sent_questionnaires')
+        .select('id, type, created_at')
+        .eq('student_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      return data || [];
+    },
+    enabled: !!user?.id,
+  });
+
   if (profile && !profile.business_owner_id) {
     return <StudioLinkCard />;
   }
@@ -86,6 +101,29 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Pending Questionnaire Alert */}
+      {pendingQuestionnaires && pendingQuestionnaires.length > 0 && (
+        <Card className="border-destructive/40 bg-destructive/5">
+          <CardContent className="p-4 space-y-3">
+            {pendingQuestionnaires.map((q) => (
+              <div key={q.id} className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
+                <p className="text-sm font-medium flex-1">
+                  Aviso: Seu Personal enviou uma avaliação <strong>{q.type === 'PAR-Q' ? 'PAR-Q+' : q.type === 'HOOPER' ? 'Índice de Hooper' : q.type}</strong> para você.
+                </p>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setSelectedQuestionnaire({ id: q.id, type: q.type })}
+                >
+                  Responder Agora
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Welcome */}
       <div className="space-y-1">
         <h1 className="font-display text-3xl text-foreground">
