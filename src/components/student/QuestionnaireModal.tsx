@@ -210,7 +210,11 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     } else if (type === 'SARC-F') {
       answersData = { questions: SARCF_QUESTIONS.map((q, i) => ({ question: q.question, score: sarcfAnswers[i] ?? 0 })) };
       const total = Object.values(sarcfAnswers).reduce((s, v) => s + v, 0);
-      resultScore = `${total}/10`;
+      resultScore = total >= 4 ? `${total}/10 — Risco de Sarcopenia Sugerido` : `${total}/10 — Sem risco identificado`;
+    } else if (type === 'FES-I') {
+      answersData = { questions: FESI_QUESTIONS.map((q, i) => ({ question: q, score: fesiAnswers[i] ?? 1 })) };
+      const total = Object.values(fesiAnswers).reduce((s, v) => s + v, 0);
+      resultScore = total > 10 ? `${total}/28 — Alta preocupação com quedas` : `${total}/28 — Baixa preocupação`;
     }
 
     const { error } = await supabase
