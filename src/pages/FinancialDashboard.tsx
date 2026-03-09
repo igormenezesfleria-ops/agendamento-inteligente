@@ -432,7 +432,7 @@ export default function FinancialDashboard() {
                   return (
                     <div
                       key={expense.id}
-                      className={`flex items-center gap-4 p-4 rounded-xl border transition-colors ${
+                      className={`flex flex-row items-center justify-between w-full gap-3 p-4 rounded-xl border transition-colors ${
                         expense.is_paid
                           ? 'bg-accent/5 border-accent/20'
                           : 'bg-background border-border'
@@ -440,6 +440,7 @@ export default function FinancialDashboard() {
                     >
                       <Switch
                         checked={expense.is_paid}
+                        className="shrink-0"
                         onCheckedChange={(checked) =>
                           togglePaidMutation.mutate({ id: expense.id, is_paid: checked })
                         }
@@ -448,20 +449,20 @@ export default function FinancialDashboard() {
                         <p className={`font-medium truncate ${expense.is_paid ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                           {expense.name}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="secondary" className="text-[10px]">{expense.category}</Badge>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          <Badge variant="secondary" className="text-[10px] shrink-0">{expense.category}</Badge>
+                          {expense.is_fixed && (
+                            <Badge variant="outline" className="text-[10px] shrink-0">Fixa</Badge>
+                          )}
+                          {expense.is_paid && (
+                            <Badge variant="default" className="text-[10px] bg-accent text-accent-foreground shrink-0">Pago</Badge>
+                          )}
                           <span className="text-xs text-muted-foreground">Vence: {displayDate}</span>
                         </div>
                       </div>
-                      <p className={`font-bold text-sm sm:text-base whitespace-nowrap ${expense.is_paid ? 'text-accent' : 'text-foreground'}`}>
+                      <p className={`font-bold text-sm sm:text-base whitespace-nowrap shrink-0 ${expense.is_paid ? 'text-accent' : 'text-foreground'}`}>
                         {formatCurrency(Number(expense.amount))}
                       </p>
-                      {expense.is_fixed && (
-                        <Badge variant="outline" className="text-[10px] shrink-0">Fixa</Badge>
-                      )}
-                      {expense.is_paid && (
-                        <Badge variant="default" className="text-[10px] bg-accent text-accent-foreground shrink-0">Pago</Badge>
-                      )}
                       <Button
                         variant="ghost"
                         size="icon"
