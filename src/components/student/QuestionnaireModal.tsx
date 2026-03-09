@@ -31,25 +31,42 @@ const HOOPER_SCALES = [
 
 const SARCF_QUESTIONS = [
   {
-    question: 'Força: Quanta dificuldade você tem para levantar e carregar 5 kg?',
-    options: ['Nenhuma', 'Alguma', 'Muita ou incapaz'],
+    question: 'Força: Quanta dificuldade você tem para levantar e carregar 4,5 kg?',
+    options: ['Nenhuma dificuldade (0)', 'Alguma dificuldade (1)', 'Muita dificuldade ou incapaz (2)'],
   },
   {
-    question: 'Caminhada: Quanta dificuldade você tem para atravessar um cômodo?',
-    options: ['Nenhuma', 'Alguma', 'Muita, precisa de ajuda ou incapaz'],
+    question: 'Assistência para andar: Quanta dificuldade você tem para caminhar pelo cômodo?',
+    options: ['Nenhuma (0)', 'Alguma (1)', 'Muita ou usa ajuda (2)'],
   },
   {
-    question: 'Levantar-se: Quanta dificuldade você tem para se levantar de uma cadeira ou cama?',
-    options: ['Nenhuma', 'Alguma', 'Muita ou incapaz sem ajuda'],
+    question: 'Levantar de uma cadeira: Quanta dificuldade você tem para se transferir de uma cadeira ou cama?',
+    options: ['Nenhuma dificuldade (0)', 'Alguma dificuldade (1)', 'Muita dificuldade ou incapaz (2)'],
   },
   {
     question: 'Subir escadas: Quanta dificuldade você tem para subir um lance de 10 degraus?',
-    options: ['Nenhuma', 'Alguma', 'Muita ou incapaz'],
+    options: ['Nenhuma (0)', 'Alguma (1)', 'Muita ou incapaz (2)'],
   },
   {
     question: 'Quedas: Quantas vezes você caiu no último ano?',
-    options: ['Nenhuma', '1 a 3 quedas', '4 ou mais quedas'],
+    options: ['Nenhuma (0)', '1 a 3 quedas (1)', '4 ou mais quedas (2)'],
   },
+];
+
+const FESI_QUESTIONS = [
+  'Vestir-se ou despir-se',
+  'Tomar banho',
+  'Levantar-se de uma cadeira',
+  'Subir ou descer escadas',
+  'Pegar algo acima da cabeça ou do chão',
+  'Andar em superfície escorregadia (ex.: molhada ou com gelo)',
+  'Andar em superfície irregular (ex.: pedras, buracos)',
+];
+
+const FESI_OPTIONS = [
+  { label: 'Nem um pouco preocupado', score: 1 },
+  { label: 'Um pouco preocupado', score: 2 },
+  { label: 'Muito preocupado', score: 3 },
+  { label: 'Extremamente preocupado', score: 4 },
 ];
 
 function OptionCard({
@@ -157,6 +174,7 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     sleep: 1, stress: 1, fatigue: 1, pain: 1,
   });
   const [sarcfAnswers, setSarcfAnswers] = useState<Record<number, number>>({});
+  const [fesiAnswers, setFesiAnswers] = useState<Record<number, number>>({});
 
   if (!questionnaire) return null;
 
@@ -166,6 +184,7 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     if (type === 'PAR-Q') return Object.keys(parqAnswers).length === PAR_Q_QUESTIONS.length;
     if (type === 'HOOPER') return true;
     if (type === 'SARC-F') return Object.keys(sarcfAnswers).length === 5;
+    if (type === 'FES-I') return Object.keys(fesiAnswers).length === FESI_QUESTIONS.length;
     return false;
   };
 
@@ -191,7 +210,11 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     } else if (type === 'SARC-F') {
       answersData = { questions: SARCF_QUESTIONS.map((q, i) => ({ question: q.question, score: sarcfAnswers[i] ?? 0 })) };
       const total = Object.values(sarcfAnswers).reduce((s, v) => s + v, 0);
-      resultScore = `${total}/10`;
+      resultScore = total >= 4 ? `${total}/10 — Risco de Sarcopenia Sugerido` : `${total}/10 — Sem risco identificado`;
+    } else if (type === 'FES-I') {
+      answersData = { questions: FESI_QUESTIONS.map((q, i) => ({ question: q, score: fesiAnswers[i] ?? 1 })) };
+      const total = Object.values(fesiAnswers).reduce((s, v) => s + v, 0);
+      resultScore = total > 10 ? `${total}/28 — Alta preocupação com quedas` : `${total}/28 — Baixa preocupação`;
     }
 
     const { error } = await supabase
@@ -217,14 +240,23 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     setParqAnswers({});
     setHooperValues({ sleep: 1, stress: 1, fatigue: 1, pain: 1 });
     setSarcfAnswers({});
+    setFesiAnswers({});
   };
 
-  const typeLabel = type === 'PAR-Q' ? 'PAR-Q+ — Liberação Médica' : type === 'HOOPER' ? 'Índice de Hooper — Recuperação' : 'SARC-F — Rastreio de Sarcopenia';
-  const footerText = type === 'PAR-Q'
-    ? 'Referência: PAR-Q+ Collaboration (Warburton et al.)'
-    : type === 'HOOPER'
-    ? 'Referência: Hooper et al., 1995'
-    : 'Referência: Malmstrom & Morley, 2013';
+  const typeLabelMap: Record<string, string> = {
+    'PAR-Q': 'PAR-Q+ — Liberação Médica',
+    'HOOPER': 'Índice de Hooper — Recuperação',
+    'SARC-F': 'SARC-F — Risco de Sarcopenia',
+    'FES-I': 'FES-I Curto — Preocupação com Quedas',
+  };
+  const footerMap: Record<string, string> = {
+    'PAR-Q': 'Referência: PAR-Q+ Collaboration (Warburton et al.)',
+    'HOOPER': 'Referência: Hooper et al., 1995',
+    'SARC-F': 'Referência: Malmstrom & Morley, 2013',
+    'FES-I': 'Referência: Yardley et al., 2005',
+  };
+  const typeLabel = typeLabelMap[type] || type;
+  const footerText = footerMap[type] || '';
 
   const hasYes = type === 'PAR-Q' && Object.values(parqAnswers).some(a => a === 'sim');
 
@@ -319,12 +351,90 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
                       selected={sarcfAnswers[i] === oi}
                       onClick={() => setSarcfAnswers(prev => ({ ...prev, [i]: oi }))}
                     >
-                      {opt} ({oi} pt{oi !== 1 ? 's' : ''})
+                      {opt}
                     </OptionCard>
                   ))}
                 </div>
               </div>
             ))}
+
+          {/* SARC-F score alert */}
+          {type === 'SARC-F' && Object.keys(sarcfAnswers).length === 5 && (
+            (() => {
+              const total = Object.values(sarcfAnswers).reduce((s, v) => s + v, 0);
+              return total >= 4 ? (
+                <div className="flex items-start gap-3 rounded-xl border-2 border-destructive bg-destructive/10 p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                  <div>
+                    <p className="text-sm font-bold text-destructive">Risco de Sarcopenia Sugerido (Score: {total}/10)</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Score ≥ 4 indica necessidade de avaliação complementar para sarcopenia.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border-2 border-success bg-success/10 p-4">
+                  <span className="text-sm font-bold text-success">Sem risco identificado</span>
+                  <span className="text-lg font-black text-success">{total}/10</span>
+                </div>
+              );
+            })()
+          )}
+
+          {/* FES-I */}
+          {type === 'FES-I' && (
+            <>
+              <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm font-semibold text-foreground">
+                  Ao realizar as seguintes atividades, qual sua preocupação em cair?
+                </p>
+              </div>
+              {FESI_QUESTIONS.map((q, i) => (
+                <div key={i} className="space-y-2.5">
+                  <p className="text-sm font-bold text-foreground leading-snug">
+                    <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                      {i + 1}
+                    </span>
+                    {q}
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {FESI_OPTIONS.map((opt) => (
+                      <OptionCard
+                        key={opt.score}
+                        selected={fesiAnswers[i] === opt.score}
+                        onClick={() => setFesiAnswers(prev => ({ ...prev, [i]: opt.score }))}
+                      >
+                        {opt.label}
+                      </OptionCard>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* FES-I score alert */}
+          {type === 'FES-I' && Object.keys(fesiAnswers).length === FESI_QUESTIONS.length && (
+            (() => {
+              const total = Object.values(fesiAnswers).reduce((s, v) => s + v, 0);
+              return total > 10 ? (
+                <div className="flex items-start gap-3 rounded-xl border-2 border-destructive bg-destructive/10 p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                  <div>
+                    <p className="text-sm font-bold text-destructive">Alta preocupação com quedas (Score: {total}/28)</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Score &gt; 10 sugere risco elevado e necessidade de intervenção preventiva.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border-2 border-success bg-success/10 p-4">
+                  <span className="text-sm font-bold text-success">Baixa preocupação com quedas</span>
+                  <span className="text-lg font-black text-success">{total}/28</span>
+                </div>
+              );
+            })()
+          )}
 
           {/* Footer reference */}
           <p className="text-[11px] italic text-muted-foreground pt-2 border-t border-border">

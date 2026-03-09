@@ -84,6 +84,7 @@ export default function Questionnaires() {
       case 'PAR-Q': return 'PAR-Q+';
       case 'HOOPER': return 'Índice de Hooper';
       case 'SARC-F': return 'SARC-F';
+      case 'FES-I': return 'FES-I Curto';
       default: return type;
     }
   };
@@ -115,7 +116,7 @@ export default function Questionnaires() {
       );
     }
 
-    if ((type === 'PAR-Q' || type === 'SARC-F') && Array.isArray(obj.questions)) {
+    if ((type === 'PAR-Q' || type === 'SARC-F' || type === 'FES-I') && Array.isArray(obj.questions)) {
       const questions = obj.questions as Array<Record<string, Json | undefined>>;
       return (
         <div className="space-y-3">
@@ -123,7 +124,7 @@ export default function Questionnaires() {
             <div key={i} className="border-b border-border pb-3">
               <p className="text-sm font-medium mb-1">{i + 1}. {String(q.question || '')}</p>
               <Badge variant={
-                (type === 'PAR-Q' && q.answer === 'sim') || (type === 'SARC-F' && Number(q.score) > 0)
+                (type === 'PAR-Q' && q.answer === 'sim') || ((type === 'SARC-F' || type === 'FES-I') && Number(q.score) > 0)
                   ? 'destructive'
                   : 'secondary'
               }>
