@@ -264,6 +264,31 @@ export default function PlansManagement() {
                   <Input type="number" min="1" value={form.credits_amount} onChange={(e) => setForm({ ...form, credits_amount: e.target.value })} placeholder="Ex: 10" />
                 </div>
               )}
+              {(form.plan_type === 'monthly' || form.plan_type === 'yearly') && (
+                <div>
+                  <Label>Aulas por semana</Label>
+                  <Input type="number" min="1" value={form.classes_per_week} onChange={(e) => setForm({ ...form, classes_per_week: e.target.value })} placeholder="Ex: 2" />
+                  <p className="text-xs text-muted-foreground mt-1">Limitará quantas vezes o aluno pode agendar na semana.</p>
+                </div>
+              )}
+              {form.plan_type === 'class_pack' && (
+                <div>
+                  <Label>Validade do Pacote (em meses)</Label>
+                  <Input type="number" min="1" value={form.validity_months} onChange={(e) => setForm({ ...form, validity_months: e.target.value })} placeholder="Ex: 3" />
+                  <p className="text-xs text-muted-foreground mt-1">Tempo máximo para o aluno consumir os créditos.</p>
+                </div>
+              )}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Formas de Recebimento</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="font-normal">Aceitar PIX</Label>
+                  <Switch checked={form.accepts_pix} onCheckedChange={(v) => setForm({ ...form, accepts_pix: v })} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="font-normal">Aceitar Cartão de Crédito</Label>
+                  <Switch checked={form.accepts_credit} onCheckedChange={(v) => setForm({ ...form, accepts_credit: v })} />
+                </div>
+              </div>
               <div className="flex items-center justify-between">
                 <Label>Plano Ativo</Label>
                 <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
