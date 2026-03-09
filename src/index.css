@@ -270,7 +270,7 @@
     margin-bottom: 1rem;
   }
 
-  /* Individual receipt print mode */
+  /* Strict receipt print isolation */
   body.printing-receipt * {
     visibility: hidden !important;
   }
@@ -283,11 +283,29 @@
     left: 0;
     top: 0;
     width: 100%;
+    height: auto;
     padding: 2rem;
     background: white;
     z-index: 9999;
+    overflow: visible;
   }
   body.printing-receipt .receipt-print-area .no-print {
     display: none !important;
+  }
+  /* Hide dialog overlay/backdrop when printing receipt */
+  body.printing-receipt [data-radix-portal],
+  body.printing-receipt [data-radix-portal] > [role="dialog"] {
+    position: static !important;
+    background: transparent !important;
+  }
+  body.printing-receipt [data-radix-portal] > div[data-state] {
+    background: transparent !important;
+  }
+  body.printing-receipt .receipt-print-area {
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 }
