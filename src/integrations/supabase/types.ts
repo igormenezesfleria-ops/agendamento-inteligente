@@ -386,6 +386,44 @@ export type Database = {
           },
         ]
       }
+      sent_questionnaires: {
+        Row: {
+          answers_data: Json | null
+          created_at: string
+          id: string
+          result_score: string | null
+          status: string
+          student_id: string
+          type: string
+        }
+        Insert: {
+          answers_data?: Json | null
+          created_at?: string
+          id?: string
+          result_score?: string | null
+          status?: string
+          student_id: string
+          type: string
+        }
+        Update: {
+          answers_data?: Json | null
+          created_at?: string
+          id?: string
+          result_score?: string | null
+          status?: string
+          student_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sent_questionnaires_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
