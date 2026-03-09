@@ -174,6 +174,7 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     sleep: 1, stress: 1, fatigue: 1, pain: 1,
   });
   const [sarcfAnswers, setSarcfAnswers] = useState<Record<number, number>>({});
+  const [fesiAnswers, setFesiAnswers] = useState<Record<number, number>>({});
 
   if (!questionnaire) return null;
 
