@@ -5,8 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Package, ShoppingBag, CreditCard, Sparkles } from 'lucide-react';
-import { toast } from '@/components/ui/sonner';
+import { Loader2, Package, ShoppingBag, CreditCard, Sparkles, QrCode, CalendarCheck } from 'lucide-react';
+import CheckoutModal from '@/components/subscription/CheckoutModal';
 
 interface MembershipPlan {
   id: string;
@@ -15,6 +15,10 @@ interface MembershipPlan {
   price: number;
   plan_type: 'monthly' | 'yearly' | 'class_pack';
   credits_amount: number | null;
+  classes_per_week: number | null;
+  validity_months: number | null;
+  accepts_pix: boolean;
+  accepts_credit: boolean;
   is_active: boolean;
 }
 
@@ -29,6 +33,8 @@ export default function StudentPlans() {
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [paymentsEnabled, setPaymentsEnabled] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<MembershipPlan | null>(null);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   useEffect(() => {
     if (!profile?.business_owner_id) return;
@@ -50,8 +56,7 @@ export default function StudentPlans() {
           .eq('id', profile!.business_owner_id!)
           .single(),
       ]);
-
-      if (plansRes.data) setPlans(plansRes.data);
+      if (plansRes.data) setPlans(plansRes.data as MembershipPlan[]);
       if (adminRes.data) setPaymentsEnabled(adminRes.data.payments_enabled);
     } catch (err) {
       console.error(err);
@@ -61,7 +66,8 @@ export default function StudentPlans() {
   };
 
   const handleBuy = (plan: MembershipPlan) => {
-    toast.info('Redirecionando para o checkout...');
+    setSelectedPlan(plan);
+    setCheckoutOpen(true);
   };
 
   const credits = profile?.available_credits ?? 0;
@@ -69,7 +75,6 @@ export default function StudentPlans() {
   return (
     <DashboardLayout>
       <div className="max-w-5xl mx-auto space-y-8">
-        {/* Header */}
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">Planos e Pacotes</h1>
           <p className="text-muted-foreground mt-1">Escolha o plano ideal para seus treinos</p>
@@ -103,7 +108,7 @@ export default function StudentPlans() {
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-foreground">Nenhum plano disponível no momento</h3>
-                <p className="text-muted-foreground mt-1">Seu personal ainda não cadastrou planos. Consulte-o para mais informações.</p>
+                <p className="text-muted-foreground mt-1">Seu personal ainda não cadastrou planos.</p>
               </div>
             </CardContent>
           </Card>
@@ -117,9 +122,7 @@ export default function StudentPlans() {
                       {PLAN_TYPE_LABELS[plan.plan_type] || plan.plan_type}
                     </Badge>
                     {plan.plan_type === 'class_pack' && plan.credits_amount && (
-                      <Badge variant="outline" className="text-xs">
-                        {plan.credits_amount} aulas
-                      </Badge>
+                      <Badge variant="outline" className="text-xs">{plan.credits_amount} aulas</Badge>
                     )}
                   </div>
                   <CardTitle className="text-xl mt-2">{plan.name}</CardTitle>
@@ -128,16 +131,30 @@ export default function StudentPlans() {
                   )}
                 </CardHeader>
 
-                <CardContent className="flex-1">
+                <CardContent className="flex-1 space-y-2">
                   <div className="flex items-baseline gap-1">
                     <span className="text-3xl font-bold text-foreground">
                       R$ {plan.price.toFixed(2).replace('.', ',')}
                     </span>
-                    {plan.plan_type === 'monthly' && (
-                      <span className="text-sm text-muted-foreground">/mês</span>
+                    {plan.plan_type === 'monthly' && <span className="text-sm text-muted-foreground">/mês</span>}
+                    {plan.plan_type === 'yearly' && <span className="text-sm text-muted-foreground">/ano</span>}
+                  </div>
+
+                  {/* Metadata badges */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {(plan.plan_type === 'monthly' || plan.plan_type === 'yearly') && plan.classes_per_week && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <CalendarCheck className="w-3 h-3" /> {plan.classes_per_week}x/semana
+                      </Badge>
                     )}
-                    {plan.plan_type === 'yearly' && (
-                      <span className="text-sm text-muted-foreground">/ano</span>
+                    {plan.plan_type === 'class_pack' && plan.validity_months && (
+                      <Badge variant="outline" className="text-xs">{plan.validity_months} meses validade</Badge>
+                    )}
+                    {plan.accepts_pix && (
+                      <Badge variant="outline" className="text-xs gap-1"><QrCode className="w-3 h-3" /> PIX</Badge>
+                    )}
+                    {plan.accepts_credit && (
+                      <Badge variant="outline" className="text-xs gap-1"><CreditCard className="w-3 h-3" /> Cartão</Badge>
                     )}
                   </div>
                 </CardContent>
@@ -145,13 +162,11 @@ export default function StudentPlans() {
                 <CardFooter>
                   {paymentsEnabled ? (
                     <Button className="w-full gap-2" onClick={() => handleBuy(plan)}>
-                      <ShoppingBag className="w-4 h-4" />
-                      Comprar via Asaas
+                      <ShoppingBag className="w-4 h-4" /> Comprar
                     </Button>
                   ) : (
                     <Button className="w-full gap-2" variant="outline" disabled>
-                      <CreditCard className="w-4 h-4" />
-                      Pagamentos online desativados
+                      <CreditCard className="w-4 h-4" /> Pagamentos desativados
                     </Button>
                   )}
                 </CardFooter>
@@ -160,6 +175,12 @@ export default function StudentPlans() {
           </div>
         )}
       </div>
+
+      <CheckoutModal
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        plan={selectedPlan}
+      />
     </DashboardLayout>
   );
 }
