@@ -185,6 +185,10 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
   });
   const [sarcfAnswers, setSarcfAnswers] = useState<Record<number, number>>({});
   const [fesiAnswers, setFesiAnswers] = useState<Record<number, number>>({});
+  const [anamneseLocation, setAnamneseLocation] = useState<string>('');
+  const [anamnesePain, setAnamnesePain] = useState<number>(-1);
+  const [anamneseYn, setAnamneseYn] = useState<Record<number, string>>({});
+  const [anamneseTriple, setAnamneseTriple] = useState<string>('');
 
   if (!questionnaire) return null;
 
