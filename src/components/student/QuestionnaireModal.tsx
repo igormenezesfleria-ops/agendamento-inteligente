@@ -473,6 +473,134 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
             })()
           )}
 
+          {/* ANAMNESE ORTOPÉDICA */}
+          {type === 'ANAMNESE' && (
+            <>
+              {/* Q1: Location */}
+              <div className="space-y-2.5">
+                <p className="text-sm font-bold text-foreground leading-snug">
+                  <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">1</span>
+                  Qual é o local principal da sua dor ou lesão?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {ANAMNESE_LOCATIONS.map((loc) => (
+                    <OptionCard
+                      key={loc}
+                      selected={anamneseLocation === loc}
+                      onClick={() => setAnamneseLocation(loc)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        {loc}
+                      </div>
+                    </OptionCard>
+                  ))}
+                </div>
+              </div>
+
+              {/* Q2: Pain scale 0-10 */}
+              <div className="space-y-3 rounded-xl border-2 border-border bg-card p-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+                    <Activity className="h-4 w-4 text-accent" />
+                  </div>
+                  <h4 className="font-bold text-foreground">
+                    <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span>
+                    Qual o seu nível de dor atual?
+                  </h4>
+                  {anamnesePain >= 0 && (
+                    <span className={cn(
+                      'ml-auto rounded-full px-2.5 py-0.5 text-xs font-bold',
+                      anamnesePain >= 5 ? 'bg-destructive text-destructive-foreground' : 'bg-success text-success-foreground'
+                    )}>
+                      {anamnesePain}/10
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {Array.from({ length: 11 }, (_, n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setAnamnesePain(n)}
+                      className={cn(
+                        'flex h-10 w-full items-center justify-center rounded-lg border-2 text-xs font-bold transition-all duration-200',
+                        'hover:scale-105 active:scale-95',
+                        n === anamnesePain
+                          ? n <= 3
+                            ? 'border-success bg-success text-success-foreground shadow-md'
+                            : n <= 6
+                            ? 'border-warning bg-warning text-warning-foreground shadow-md'
+                            : 'border-destructive bg-destructive text-destructive-foreground shadow-md'
+                          : 'border-border bg-secondary text-muted-foreground hover:border-accent/40'
+                      )}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0 — Sem dor</span>
+                  <span>10 — Dor insuportável</span>
+                </div>
+              </div>
+
+              {/* Q3 & Q4: Yes/No */}
+              {ANAMNESE_YN_QUESTIONS.map((q, i) => (
+                <div key={i} className="space-y-2.5">
+                  <p className="text-sm font-bold text-foreground leading-snug">
+                    <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{i + 3}</span>
+                    {q}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <OptionCard selected={anamneseYn[i] === 'sim'} onClick={() => setAnamneseYn(prev => ({ ...prev, [i]: 'sim' }))} variant="yes">Sim</OptionCard>
+                    <OptionCard selected={anamneseYn[i] === 'nao'} onClick={() => setAnamneseYn(prev => ({ ...prev, [i]: 'nao' }))} variant="no">Não</OptionCard>
+                  </div>
+                </div>
+              ))}
+
+              {/* Q5: Triple option */}
+              <div className="space-y-2.5">
+                <p className="text-sm font-bold text-foreground leading-snug">
+                  <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">5</span>
+                  {ANAMNESE_TRIPLE_QUESTION}
+                </p>
+                <div className="space-y-1.5">
+                  {ANAMNESE_TRIPLE_OPTIONS.map((opt) => (
+                    <OptionCard key={opt} selected={anamneseTriple === opt} onClick={() => setAnamneseTriple(opt)}>
+                      {opt}
+                    </OptionCard>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Anamnese alert */}
+          {type === 'ANAMNESE' && anamneseLocation && anamnesePain >= 0 && Object.keys(anamneseYn).length === 2 && anamneseTriple && (
+            (() => {
+              const hasFlag = anamnesePain >= 5 || anamneseYn[1] === 'sim';
+              return hasFlag ? (
+                <div className="flex items-start gap-3 rounded-xl border-2 border-destructive bg-destructive/10 p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                  <div>
+                    <p className="text-sm font-bold text-destructive">Atenção Ortopédica</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {anamnesePain >= 5 && `Nível de dor elevado (${anamnesePain}/10). `}
+                      {anamneseYn[1] === 'sim' && 'Cirurgia prévia relatada. '}
+                      Recomenda-se acompanhamento especializado.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border-2 border-success bg-success/10 p-4">
+                  <span className="text-sm font-bold text-success">Sem alerta ortopédico</span>
+                  <span className="text-lg font-black text-success">Dor {anamnesePain}/10</span>
+                </div>
+              );
+            })()
+          )}
+
           {/* Footer reference */}
           <p className="text-[11px] italic text-muted-foreground pt-2 border-t border-border">
             {footerText}
