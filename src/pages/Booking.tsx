@@ -6,14 +6,19 @@ import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DateSelector } from '@/components/booking/DateSelector';
 import { SlotCard } from '@/components/booking/SlotCard';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { Loader2, Inbox } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Loader2, Inbox, ShoppingBag, AlertTriangle } from 'lucide-react';
 
 export default function Booking() {
   const { user, profile } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [bookingSlot, setBookingSlot] = useState<string | null>(null);
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
   const dayOfWeek = selectedDate ? getDay(selectedDate) : null;
@@ -36,9 +41,7 @@ export default function Booking() {
     enabled: !!trainerId && dayOfWeek !== null,
   });
 
-  // 2. Fetch existing appointments for the selected date (global capacity + visibility)
-  // CAPACITY: counts ALL rows (pending + confirmed + delegated)
-  // VISIBILITY: only confirmed/delegated/fixed names are shown (filtered separately)
+  // 2. Fetch existing appointments for the selected date
   const { data: dateAppointments, isLoading: isLoadingCounts } = useQuery({
     queryKey: ['dateAppointments', formattedDate],
     queryFn: async () => {
@@ -55,7 +58,6 @@ export default function Booking() {
     refetchInterval: 2000,
   });
 
-  // Derive slot counts from dateAppointments
   const slotCounts = (() => {
     const counts: Record<string, number> = {};
     dateAppointments?.forEach((apt) => {
@@ -65,7 +67,7 @@ export default function Booking() {
     return counts;
   })();
 
-  // 3. Fetch ALL fixed students for this trainer + dayOfWeek (for capacity math)
+  // 3. Fetch ALL fixed students for this trainer + dayOfWeek
   const { data: allFixedForDay } = useQuery({
     queryKey: ['allFixedForDay', trainerId, dayOfWeek],
     queryFn: async () => {
@@ -83,9 +85,7 @@ export default function Booking() {
     refetchInterval: 2000,
   });
 
-  // 4. VISIBILITY ONLY: Fetch classmate profiles (confirmed/delegated/fixed names shown, pending stays anonymous)
-  // Only fetch profiles for students whose names will actually be shown (confirmed/delegated + fixed)
-  // Pending students count toward capacity but remain anonymous
+  // 4. Classmate profiles
   const allRelevantStudentIds = [
     ...new Set([
       ...(dateAppointments || [])
@@ -109,13 +109,11 @@ export default function Booking() {
     enabled: allRelevantStudentIds.length > 0,
   });
 
-  // Build classmate names for a slot (appointments + fixed students without duplicates)
   const getClassmateNames = (classId: string, timeSlot: string): string[] => {
     const profileMap = new Map((classmateProfiles || []).map((p) => [p.id, p.name || 'Aluno']));
     const seen = new Set<string>();
     const names: string[] = [];
 
-    // From active appointments
     (dateAppointments || []).forEach((a) => {
       if (
         (a.class_schedule_id === classId || a.time_slot === timeSlot) &&
@@ -129,7 +127,6 @@ export default function Booking() {
       }
     });
 
-    // From fixed students not yet in appointments
     (allFixedForDay || []).forEach((f) => {
       if (
         (f.class_schedule_id === classId || f.time_slot === timeSlot) &&
@@ -145,7 +142,7 @@ export default function Booking() {
     return names;
   };
 
-  // 5. Fetch THIS student's fixed schedules for this day (for button state)
+  // 5. This student's fixed schedules
   const { data: myFixedSchedules } = useQuery({
     queryKey: ['myFixedSchedules', user?.id, trainerId, dayOfWeek],
     queryFn: async () => {
@@ -163,7 +160,7 @@ export default function Booking() {
     enabled: !!user?.id && !!trainerId && dayOfWeek !== null,
   });
 
-  // 6. Fetch locked slots
+  // 6. Locked slots
   const { data: lockedSlots } = useQuery({
     queryKey: ['lockedSlots', formattedDate],
     queryFn: async () => {
@@ -178,7 +175,7 @@ export default function Booking() {
     enabled: !!formattedDate,
   });
 
-  // 7. Fetch user's existing bookings for conflict detection
+  // 7. User's existing bookings for conflict detection
   const { data: userBookings } = useQuery({
     queryKey: ['userBookings', formattedDate, user?.id],
     queryFn: async () => {
@@ -211,7 +208,6 @@ export default function Booking() {
     userBookings?.map((b) => b.time_slot) || []
   );
 
-  // Count of ALL fixed students per class_schedule_id (for capacity subtraction)
   const fixedCountByClassId: Record<string, number> = {};
   allFixedForDay?.forEach((s) => {
     const key = s.class_schedule_id || s.time_slot;
@@ -229,11 +225,6 @@ export default function Booking() {
     return bookedTimeSlots.has(slotKey);
   };
 
-  /**
-   * Global capacity: availableSpots = maxCapacity - max(appointmentCount, totalFixed)
-   * This ensures fixed students always reserve a spot even before their
-   * appointment row is auto-generated.
-   */
   const getEffectiveRemaining = (classId: string, maxCapacity: number) => {
     const appointmentCount = slotCounts?.[classId] || 0;
     const totalFixed = fixedCountByClassId[classId] || 0;
@@ -247,6 +238,25 @@ export default function Booking() {
 
       if (bookedTimeSlots.has(timeSlot)) {
         throw new Error('TIME_CONFLICT');
+      }
+
+      // --- TURNSTILE: Check credits / active plan ---
+      const { data: freshProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('available_credits, subscription_status')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      const hasActivePlan = freshProfile?.subscription_status === 'active';
+      const credits = freshProfile?.available_credits ?? 0;
+
+      // Check if student is a fixed student for this slot (bypass turnstile)
+      const isFixed = isStudentFixed(classScheduleId, timeSlot);
+
+      if (!isFixed && !hasActivePlan && credits <= 0) {
+        throw new Error('NO_CREDITS');
       }
 
       const matchingSlot = classSlots?.find(s => s.id === classScheduleId);
@@ -268,16 +278,34 @@ export default function Booking() {
 
       const { error } = await supabase.from('appointments').insert(insertData);
       if (error) throw error;
+
+      // --- AUTO-DEDUCTION: Only for credit-based (no active plan, not fixed) ---
+      if (!isFixed && !hasActivePlan && credits > 0) {
+        const newCredits = credits - 1;
+        await supabase
+          .from('profiles')
+          .update({ available_credits: newCredits })
+          .eq('id', user.id);
+        return { creditsRemaining: newCredits };
+      }
+
+      return { creditsRemaining: null };
     },
-    onSuccess: () => {
-      toast.success('Agendamento realizado com sucesso!');
+    onSuccess: (result) => {
+      if (result?.creditsRemaining !== null && result?.creditsRemaining !== undefined) {
+        toast.success(`Aula agendada! Você tem ${result.creditsRemaining} crédito${result.creditsRemaining !== 1 ? 's' : ''} restante${result.creditsRemaining !== 1 ? 's' : ''}.`);
+      } else {
+        toast.success('Agendamento realizado com sucesso!');
+      }
       queryClient.invalidateQueries({ queryKey: ['dateAppointments', formattedDate] });
       queryClient.invalidateQueries({ queryKey: ['userBookings', formattedDate, user?.id] });
       queryClient.invalidateQueries({ queryKey: ['myAppointments'] });
       setBookingSlot(null);
     },
     onError: (error: any) => {
-      if (error.message === 'TIME_CONFLICT') {
+      if (error.message === 'NO_CREDITS') {
+        setUpsellOpen(true);
+      } else if (error.message === 'TIME_CONFLICT') {
         toast.error('Você já possui um agendamento para este horário.');
       } else if (error.message?.includes('duplicate')) {
         toast.error('Você já tem um agendamento neste horário');
@@ -380,6 +408,36 @@ export default function Booking() {
           </div>
         )}
       </div>
+
+      {/* Upsell Modal */}
+      <Dialog open={upsellOpen} onOpenChange={setUpsellOpen}>
+        <DialogContent className="sm:max-w-md text-center">
+          <DialogHeader className="items-center">
+            <div className="mx-auto w-14 h-14 rounded-2xl bg-destructive/10 flex items-center justify-center mb-2">
+              <AlertTriangle className="w-7 h-7 text-destructive" />
+            </div>
+            <DialogTitle className="text-xl">Ops! Você está sem aulas disponíveis.</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Você não possui créditos na carteira ou um plano ativo para agendar este horário.
+          </p>
+          <DialogFooter className="flex-col sm:flex-col gap-2 pt-2">
+            <Button
+              className="w-full gap-2"
+              onClick={() => {
+                setUpsellOpen(false);
+                navigate('/dashboard/student/plans');
+              }}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Ver Planos e Pacotes
+            </Button>
+            <Button variant="ghost" className="w-full" onClick={() => setUpsellOpen(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
