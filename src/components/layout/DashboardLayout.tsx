@@ -152,6 +152,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/student', label: 'Início', icon: Home },
     { href: '/dashboard/agendar', label: 'Agendar Treino', icon: Calendar },
     { href: '/dashboard/meus-agendamentos', label: 'Meus Agendamentos', icon: ClipboardList },
+    { href: '/dashboard/questionarios', label: 'Questionários', icon: GraduationCap },
     { href: '/dashboard/historico-treinos', label: 'Histórico de Treinos', icon: History },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
@@ -164,6 +165,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/agenda', label: 'Agenda Completa', icon: Calendar },
     { section: 'Gestão' },
     { href: '/dashboard/meus-alunos', label: 'Meus Alunos', icon: GraduationCap },
+    { href: '/dashboard/questionarios', label: 'Questionários', icon: ClipboardList },
     { href: '/dashboard/equipe', label: 'Equipe', icon: Users },
     { href: '/dashboard/historico', label: 'Histórico', icon: History },
     { href: '/dashboard/admin/financeiro', label: 'Gestão Financeira', icon: DollarSign },
