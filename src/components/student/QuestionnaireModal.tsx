@@ -351,12 +351,90 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
                       selected={sarcfAnswers[i] === oi}
                       onClick={() => setSarcfAnswers(prev => ({ ...prev, [i]: oi }))}
                     >
-                      {opt} ({oi} pt{oi !== 1 ? 's' : ''})
+                      {opt}
                     </OptionCard>
                   ))}
                 </div>
               </div>
             ))}
+
+          {/* SARC-F score alert */}
+          {type === 'SARC-F' && Object.keys(sarcfAnswers).length === 5 && (
+            (() => {
+              const total = Object.values(sarcfAnswers).reduce((s, v) => s + v, 0);
+              return total >= 4 ? (
+                <div className="flex items-start gap-3 rounded-xl border-2 border-destructive bg-destructive/10 p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                  <div>
+                    <p className="text-sm font-bold text-destructive">Risco de Sarcopenia Sugerido (Score: {total}/10)</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Score ≥ 4 indica necessidade de avaliação complementar para sarcopenia.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border-2 border-success bg-success/10 p-4">
+                  <span className="text-sm font-bold text-success">Sem risco identificado</span>
+                  <span className="text-lg font-black text-success">{total}/10</span>
+                </div>
+              );
+            })()
+          )}
+
+          {/* FES-I */}
+          {type === 'FES-I' && (
+            <>
+              <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm font-semibold text-foreground">
+                  Ao realizar as seguintes atividades, qual sua preocupação em cair?
+                </p>
+              </div>
+              {FESI_QUESTIONS.map((q, i) => (
+                <div key={i} className="space-y-2.5">
+                  <p className="text-sm font-bold text-foreground leading-snug">
+                    <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                      {i + 1}
+                    </span>
+                    {q}
+                  </p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {FESI_OPTIONS.map((opt) => (
+                      <OptionCard
+                        key={opt.score}
+                        selected={fesiAnswers[i] === opt.score}
+                        onClick={() => setFesiAnswers(prev => ({ ...prev, [i]: opt.score }))}
+                      >
+                        {opt.label}
+                      </OptionCard>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* FES-I score alert */}
+          {type === 'FES-I' && Object.keys(fesiAnswers).length === FESI_QUESTIONS.length && (
+            (() => {
+              const total = Object.values(fesiAnswers).reduce((s, v) => s + v, 0);
+              return total > 10 ? (
+                <div className="flex items-start gap-3 rounded-xl border-2 border-destructive bg-destructive/10 p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                  <div>
+                    <p className="text-sm font-bold text-destructive">Alta preocupação com quedas (Score: {total}/28)</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Score &gt; 10 sugere risco elevado e necessidade de intervenção preventiva.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border-2 border-success bg-success/10 p-4">
+                  <span className="text-sm font-bold text-success">Baixa preocupação com quedas</span>
+                  <span className="text-lg font-black text-success">{total}/28</span>
+                </div>
+              );
+            })()
+          )}
 
           {/* Footer reference */}
           <p className="text-[11px] italic text-muted-foreground pt-2 border-t border-border">

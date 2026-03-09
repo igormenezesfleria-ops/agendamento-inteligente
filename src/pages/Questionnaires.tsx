@@ -124,7 +124,7 @@ export default function Questionnaires() {
             <div key={i} className="border-b border-border pb-3">
               <p className="text-sm font-medium mb-1">{i + 1}. {String(q.question || '')}</p>
               <Badge variant={
-                (type === 'PAR-Q' && q.answer === 'sim') || (type === 'SARC-F' && Number(q.score) > 0)
+                (type === 'PAR-Q' && q.answer === 'sim') || ((type === 'SARC-F' || type === 'FES-I') && Number(q.score) > 0)
                   ? 'destructive'
                   : 'secondary'
               }>
