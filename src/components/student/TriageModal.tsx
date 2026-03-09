@@ -36,6 +36,15 @@ export function TriageModal({ open, onOpenChange }: TriageModalProps) {
   const [hasInjury, setHasInjury] = useState(false);
   const [injuryDetails, setInjuryDetails] = useState('');
   const [isActivePhysical, setIsActivePhysical] = useState(false);
+  const [height, setHeight] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+
+  const formatBirthDate = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  };
 
   const handleSubmit = async () => {
     if (!user) return;
