@@ -13,7 +13,9 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Loader2, Package, DollarSign } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Pencil, Trash2, Loader2, Package, DollarSign, Ticket } from 'lucide-react';
+import { PromoCouponsTab } from '@/components/admin/PromoCouponsTab';
 
 type PlanType = 'monthly' | 'yearly' | 'class_pack';
 
