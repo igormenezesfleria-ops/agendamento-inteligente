@@ -32,6 +32,22 @@ interface Student {
   injury_details: string | null;
   is_active: boolean;
   profile_completed: boolean;
+  height: string | null;
+  birth_date: string | null;
+}
+
+function calculateAge(birthDateStr: string | null): number | null {
+  if (!birthDateStr) return null;
+  const parts = birthDateStr.split('/');
+  if (parts.length !== 3) return null;
+  const [day, month, year] = parts.map(Number);
+  if (!day || !month || !year || year < 1900) return null;
+  const birth = new Date(year, month - 1, day);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age >= 0 ? age : null;
 }
 
 export default function MyStudents() {
