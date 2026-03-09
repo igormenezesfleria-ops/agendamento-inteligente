@@ -25,6 +25,10 @@ interface Plan {
   price: number;
   plan_type: PlanType;
   credits_amount: number | null;
+  classes_per_week: number | null;
+  validity_months: number | null;
+  accepts_pix: boolean;
+  accepts_credit: boolean;
   is_active: boolean;
 }
 
@@ -40,6 +44,10 @@ const emptyForm = {
   price: '',
   plan_type: 'monthly' as PlanType,
   credits_amount: '',
+  classes_per_week: '',
+  validity_months: '',
+  accepts_pix: true,
+  accepts_credit: true,
   is_active: true,
 };
 
@@ -74,6 +82,10 @@ export default function PlansManagement() {
         price: parseFloat(form.price) || 0,
         plan_type: form.plan_type as PlanType,
         credits_amount: form.plan_type === 'class_pack' ? (parseInt(form.credits_amount) || null) : null,
+        classes_per_week: (form.plan_type === 'monthly' || form.plan_type === 'yearly') ? (parseInt(form.classes_per_week) || null) : null,
+        validity_months: form.plan_type === 'class_pack' ? (parseInt(form.validity_months) || null) : null,
+        accepts_pix: form.accepts_pix,
+        accepts_credit: form.accepts_credit,
         is_active: form.is_active,
       };
       if (editingId) {
@@ -123,6 +135,10 @@ export default function PlansManagement() {
       price: String(p.price),
       plan_type: p.plan_type,
       credits_amount: p.credits_amount ? String(p.credits_amount) : '',
+      classes_per_week: p.classes_per_week ? String(p.classes_per_week) : '',
+      validity_months: p.validity_months ? String(p.validity_months) : '',
+      accepts_pix: p.accepts_pix,
+      accepts_credit: p.accepts_credit,
       is_active: p.is_active,
     });
     setEditingId(p.id);
@@ -190,6 +206,12 @@ export default function PlansManagement() {
                   {p.plan_type === 'class_pack' && p.credits_amount && (
                     <Badge variant="secondary">{p.credits_amount} aulas</Badge>
                   )}
+                  {(p.plan_type === 'monthly' || p.plan_type === 'yearly') && p.classes_per_week && (
+                    <Badge variant="secondary">{p.classes_per_week}x por semana</Badge>
+                  )}
+                  {p.plan_type === 'class_pack' && p.validity_months && (
+                    <Badge variant="outline">{p.validity_months} meses de validade</Badge>
+                  )}
                   <div className="flex gap-2 pt-2">
                     <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => openEdit(p)}>
                       <Pencil className="w-3.5 h-3.5" /> Editar
@@ -242,6 +264,31 @@ export default function PlansManagement() {
                   <Input type="number" min="1" value={form.credits_amount} onChange={(e) => setForm({ ...form, credits_amount: e.target.value })} placeholder="Ex: 10" />
                 </div>
               )}
+              {(form.plan_type === 'monthly' || form.plan_type === 'yearly') && (
+                <div>
+                  <Label>Aulas por semana</Label>
+                  <Input type="number" min="1" value={form.classes_per_week} onChange={(e) => setForm({ ...form, classes_per_week: e.target.value })} placeholder="Ex: 2" />
+                  <p className="text-xs text-muted-foreground mt-1">Limitará quantas vezes o aluno pode agendar na semana.</p>
+                </div>
+              )}
+              {form.plan_type === 'class_pack' && (
+                <div>
+                  <Label>Validade do Pacote (em meses)</Label>
+                  <Input type="number" min="1" value={form.validity_months} onChange={(e) => setForm({ ...form, validity_months: e.target.value })} placeholder="Ex: 3" />
+                  <p className="text-xs text-muted-foreground mt-1">Tempo máximo para o aluno consumir os créditos.</p>
+                </div>
+              )}
+              <div className="space-y-3">
+                <Label className="text-sm font-semibold">Formas de Recebimento</Label>
+                <div className="flex items-center justify-between">
+                  <Label className="font-normal">Aceitar PIX</Label>
+                  <Switch checked={form.accepts_pix} onCheckedChange={(v) => setForm({ ...form, accepts_pix: v })} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="font-normal">Aceitar Cartão de Crédito</Label>
+                  <Switch checked={form.accepts_credit} onCheckedChange={(v) => setForm({ ...form, accepts_credit: v })} />
+                </div>
+              </div>
               <div className="flex items-center justify-between">
                 <Label>Plano Ativo</Label>
                 <Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
