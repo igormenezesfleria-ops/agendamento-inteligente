@@ -236,6 +236,23 @@ const App = () => (
               }
             />
 
+            <Route
+              path="/dashboard/admin/pagamentos"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <PaymentSettings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/admin/plans"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <PlansManagement />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Shared routes (admin + student) */}
             <Route
               path="/dashboard/questionarios"
