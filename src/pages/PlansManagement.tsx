@@ -135,6 +135,10 @@ export default function PlansManagement() {
       price: String(p.price),
       plan_type: p.plan_type,
       credits_amount: p.credits_amount ? String(p.credits_amount) : '',
+      classes_per_week: p.classes_per_week ? String(p.classes_per_week) : '',
+      validity_months: p.validity_months ? String(p.validity_months) : '',
+      accepts_pix: p.accepts_pix,
+      accepts_credit: p.accepts_credit,
       is_active: p.is_active,
     });
     setEditingId(p.id);
