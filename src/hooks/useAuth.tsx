@@ -28,6 +28,8 @@ interface Profile {
   injury_details: string | null;
   is_active: boolean;
   profile_completed: boolean;
+  available_credits: number;
+  payments_enabled: boolean;
 }
 
 interface AuthContextType {

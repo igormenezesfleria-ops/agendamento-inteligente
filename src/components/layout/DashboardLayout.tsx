@@ -154,6 +154,7 @@ function getNavItems(role: string) {
     { href: '/dashboard/meus-agendamentos', label: 'Meus Agendamentos', icon: ClipboardList },
     { href: '/dashboard/questionarios', label: 'Questionários', icon: GraduationCap },
     { href: '/dashboard/historico-treinos', label: 'Histórico de Treinos', icon: History },
+    { href: '/dashboard/student/plans', label: 'Planos e Pacotes', icon: Package },
     { href: '/dashboard/perfil', label: 'Meu Perfil', icon: User },
   ];
 

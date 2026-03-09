@@ -33,6 +33,7 @@ import PayrollDashboard from "./pages/PayrollDashboard";
 import FinancialDashboard from "./pages/FinancialDashboard";
 import PaymentSettings from "./pages/PaymentSettings";
 import PlansManagement from "./pages/PlansManagement";
+import StudentPlans from "./pages/StudentPlans";
 import Questionnaires from "./pages/Questionnaires";
 import NotFound from "./pages/NotFound";
 
