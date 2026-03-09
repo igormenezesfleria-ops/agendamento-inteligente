@@ -283,12 +283,14 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     'HOOPER': 'Índice de Hooper — Recuperação',
     'SARC-F': 'SARC-F — Risco de Sarcopenia',
     'FES-I': 'FES-I Curto — Preocupação com Quedas',
+    'ANAMNESE': 'Anamnese Ortopédica — Avaliação de Lesão',
   };
   const footerMap: Record<string, string> = {
     'PAR-Q': 'Referência: PAR-Q+ Collaboration (Warburton et al.)',
     'HOOPER': 'Referência: Hooper et al., 1995',
     'SARC-F': 'Referência: Malmstrom & Morley, 2013',
     'FES-I': 'Referência: Yardley et al., 2005',
+    'ANAMNESE': 'Referência: Avaliação Ortopédica Básica',
   };
   const typeLabel = typeLabelMap[type] || type;
   const footerText = footerMap[type] || '';
