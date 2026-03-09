@@ -272,6 +272,10 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     setHooperValues({ sleep: 1, stress: 1, fatigue: 1, pain: 1 });
     setSarcfAnswers({});
     setFesiAnswers({});
+    setAnamneseLocation('');
+    setAnamnesePain(-1);
+    setAnamneseYn({});
+    setAnamneseTriple('');
   };
 
   const typeLabelMap: Record<string, string> = {
