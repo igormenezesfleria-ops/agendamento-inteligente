@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS height text, ADD COLUMN IF NOT EXISTS birth_date text;

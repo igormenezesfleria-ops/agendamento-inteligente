@@ -14,7 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
 import { format, parseISO } from 'date-fns';
@@ -32,6 +32,22 @@ interface Student {
   injury_details: string | null;
   is_active: boolean;
   profile_completed: boolean;
+  height: string | null;
+  birth_date: string | null;
+}
+
+function calculateAge(birthDateStr: string | null): number | null {
+  if (!birthDateStr) return null;
+  const parts = birthDateStr.split('/');
+  if (parts.length !== 3) return null;
+  const [day, month, year] = parts.map(Number);
+  if (!day || !month || !year || year < 1900) return null;
+  const birth = new Date(year, month - 1, day);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age >= 0 ? age : null;
 }
 
 export default function MyStudents() {
@@ -48,7 +64,7 @@ export default function MyStudents() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, created_at, phone, emergency_contact, main_objective, has_injury, injury_details, is_active, profile_completed')
+        .select('id, name, created_at, phone, emergency_contact, main_objective, has_injury, injury_details, is_active, profile_completed, height, birth_date')
         .eq('business_owner_id', user!.id)
         .eq('role', 'student')
         .order('name');
@@ -244,6 +260,33 @@ export default function MyStudents() {
                       {selectedStudent.injury_details || 'Não especificada'}
                     </AlertDescription>
                   </Alert>
+                )}
+
+                {/* Age & Height highlight */}
+                {(selectedStudent.birth_date || selectedStudent.height) && (
+                  <div className="flex gap-3">
+                    {selectedStudent.birth_date && (() => {
+                      const age = calculateAge(selectedStudent.birth_date);
+                      return age !== null ? (
+                        <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                          <Cake className="w-4 h-4 text-accent shrink-0" />
+                          <div>
+                            <p className="text-xs text-muted-foreground">Idade</p>
+                            <p className="text-lg font-bold text-accent">{age} anos</p>
+                          </div>
+                        </div>
+                      ) : null;
+                    })()}
+                    {selectedStudent.height && (
+                      <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                        <Ruler className="w-4 h-4 text-accent shrink-0" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Altura</p>
+                          <p className="text-lg font-bold text-accent">{selectedStudent.height}m</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <div className="grid gap-3">

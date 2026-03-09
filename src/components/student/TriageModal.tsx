@@ -36,6 +36,15 @@ export function TriageModal({ open, onOpenChange }: TriageModalProps) {
   const [hasInjury, setHasInjury] = useState(false);
   const [injuryDetails, setInjuryDetails] = useState('');
   const [isActivePhysical, setIsActivePhysical] = useState(false);
+  const [height, setHeight] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+
+  const formatBirthDate = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+  };
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -49,6 +58,8 @@ export function TriageModal({ open, onOpenChange }: TriageModalProps) {
         has_injury: hasInjury,
         injury_details: hasInjury ? injuryDetails.trim() || null : null,
         is_active: isActivePhysical,
+        height: height.trim() || null,
+        birth_date: birthDate.trim() || null,
         profile_completed: true,
       })
       .eq('id', user.id);
@@ -116,6 +127,32 @@ export function TriageModal({ open, onOpenChange }: TriageModalProps) {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-5 mt-2">
+              {/* Birth Date */}
+              <div className="space-y-2">
+                <Label htmlFor="birthDate">Data de Nascimento</Label>
+                <Input
+                  id="birthDate"
+                  type="text"
+                  placeholder="DD/MM/AAAA"
+                  value={birthDate}
+                  onChange={(e) => setBirthDate(formatBirthDate(e.target.value))}
+                  maxLength={10}
+                />
+              </div>
+
+              {/* Height */}
+              <div className="space-y-2">
+                <Label htmlFor="height">Altura (ex: 1.75m)</Label>
+                <Input
+                  id="height"
+                  type="text"
+                  placeholder="1.75"
+                  value={height}
+                  onChange={(e) => setHeight(e.target.value)}
+                  maxLength={10}
+                />
+              </div>
+
               {/* Phone */}
               <div className="space-y-2">
                 <Label htmlFor="phone">Telefone / WhatsApp</Label>
