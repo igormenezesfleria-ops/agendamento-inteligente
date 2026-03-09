@@ -20,6 +20,7 @@ export function StudentDashboard() {
   const { profile, user } = useAuth();
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [triageOpen, setTriageOpen] = useState(false);
+  const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
   useEffect(() => {
     if (profile && profile.profile_completed === false && profile.business_owner_id) {

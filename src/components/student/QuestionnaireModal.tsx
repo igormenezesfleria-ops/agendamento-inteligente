@@ -107,7 +107,11 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
 
     const { error } = await supabase
       .from('sent_questionnaires')
-      .update({ status: 'completed', answers_data: answersData, result_score: resultScore })
+      .update({
+        status: 'completed',
+        answers_data: answersData as unknown as import('@/integrations/supabase/types').Json,
+        result_score: resultScore,
+      })
       .eq('id', questionnaire.id);
 
     setSubmitting(false);
