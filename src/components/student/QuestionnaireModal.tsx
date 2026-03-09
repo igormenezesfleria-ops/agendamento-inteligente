@@ -232,6 +232,20 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
       answersData = { questions: FESI_QUESTIONS.map((q, i) => ({ question: q, score: fesiAnswers[i] ?? 1 })) };
       const total = Object.values(fesiAnswers).reduce((s, v) => s + v, 0);
       resultScore = total > 10 ? `${total}/28 — Alta preocupação com quedas` : `${total}/28 — Baixa preocupação`;
+    } else if (type === 'ANAMNESE') {
+      answersData = {
+        location: anamneseLocation,
+        pain_level: anamnesePain,
+        pain_worsens_with_movement: anamneseYn[0],
+        previous_surgery: anamneseYn[1],
+        medical_clearance: anamneseTriple,
+      };
+      const flags: string[] = [];
+      if (anamnesePain >= 5) flags.push(`Dor ${anamnesePain}/10`);
+      if (anamneseYn[1] === 'sim') flags.push('Cirurgia prévia');
+      resultScore = flags.length > 0
+        ? `Atenção Ortopédica — ${flags.join(', ')}`
+        : 'Sem alerta ortopédico';
     }
 
     const { error } = await supabase
