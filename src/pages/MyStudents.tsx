@@ -19,6 +19,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
 import { StudentAssessmentsTab } from '@/components/admin/StudentAssessmentsTab';
+import { StudentDevTools } from '@/components/admin/StudentDevTools';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
@@ -252,6 +253,7 @@ export default function MyStudents() {
                 <p className="text-muted-foreground text-sm">O aluno ainda não preencheu a ficha de triagem.</p>
               </div>
             ) : selectedStudent ? (
+              <>
               <Tabs defaultValue="ficha" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="ficha">
@@ -345,6 +347,8 @@ export default function MyStudents() {
                   />
                 </TabsContent>
               </Tabs>
+              <StudentDevTools studentId={selectedStudent.id} studentName={selectedStudent.name} />
+              </>
             ) : null}
           </DialogContent>
         </Dialog>
