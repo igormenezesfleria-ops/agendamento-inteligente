@@ -229,6 +229,7 @@ export type Database = {
       profiles: {
         Row: {
           base_rate: number | null
+          birth_date: string | null
           business_owner_id: string | null
           collaborator_rate: number | null
           cpf: string | null
@@ -238,6 +239,7 @@ export type Database = {
           emergency_contact: string | null
           fixed_monthly_rate: number | null
           has_injury: boolean | null
+          height: string | null
           hourly_rate: number | null
           id: string
           injury_details: string | null
@@ -261,6 +263,7 @@ export type Database = {
         }
         Insert: {
           base_rate?: number | null
+          birth_date?: string | null
           business_owner_id?: string | null
           collaborator_rate?: number | null
           cpf?: string | null
@@ -270,6 +273,7 @@ export type Database = {
           emergency_contact?: string | null
           fixed_monthly_rate?: number | null
           has_injury?: boolean | null
+          height?: string | null
           hourly_rate?: number | null
           id: string
           injury_details?: string | null
@@ -293,6 +297,7 @@ export type Database = {
         }
         Update: {
           base_rate?: number | null
+          birth_date?: string | null
           business_owner_id?: string | null
           collaborator_rate?: number | null
           cpf?: string | null
@@ -302,6 +307,7 @@ export type Database = {
           emergency_contact?: string | null
           fixed_monthly_rate?: number | null
           has_injury?: boolean | null
+          height?: string | null
           hourly_rate?: number | null
           id?: string
           injury_details?: string | null
