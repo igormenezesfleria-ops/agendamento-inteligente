@@ -206,6 +206,12 @@ export default function PlansManagement() {
                   {p.plan_type === 'class_pack' && p.credits_amount && (
                     <Badge variant="secondary">{p.credits_amount} aulas</Badge>
                   )}
+                  {(p.plan_type === 'monthly' || p.plan_type === 'yearly') && p.classes_per_week && (
+                    <Badge variant="secondary">{p.classes_per_week}x por semana</Badge>
+                  )}
+                  {p.plan_type === 'class_pack' && p.validity_months && (
+                    <Badge variant="outline">{p.validity_months} meses de validade</Badge>
+                  )}
                   <div className="flex gap-2 pt-2">
                     <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => openEdit(p)}>
                       <Pencil className="w-3.5 h-3.5" /> Editar
