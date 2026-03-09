@@ -194,7 +194,7 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
 
   const rawType = questionnaire.type;
   // Normalize: admin sends 'PAR-Q+' but engine uses 'PAR-Q'
-  const type = rawType === 'PAR-Q+' ? 'PAR-Q' : rawType;
+  const type = rawType === 'PAR-Q+' ? 'PAR-Q' : rawType === 'ANAMNESE_ORTO' ? 'ANAMNESE' : rawType;
 
   const canSubmit = () => {
     if (type === 'PAR-Q') return Object.keys(parqAnswers).length === PAR_Q_QUESTIONS.length;
