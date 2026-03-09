@@ -399,6 +399,80 @@ export type Database = {
           },
         ]
       }
+      promo_code_usages: {
+        Row: {
+          id: string
+          promo_code_id: string
+          student_id: string
+          used_at: string
+        }
+        Insert: {
+          id?: string
+          promo_code_id: string
+          student_id: string
+          used_at?: string
+        }
+        Update: {
+          id?: string
+          promo_code_id?: string
+          student_id?: string
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_code_usages_promo_code_id_fkey"
+            columns: ["promo_code_id"]
+            isOneToOne: false
+            referencedRelation: "promo_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promo_code_usages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      promo_codes: {
+        Row: {
+          admin_id: string
+          code: string
+          created_at: string
+          discount_percentage: number
+          id: string
+          is_active: boolean
+          max_uses_per_student: number
+        }
+        Insert: {
+          admin_id: string
+          code: string
+          created_at?: string
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean
+          max_uses_per_student?: number
+        }
+        Update: {
+          admin_id?: string
+          code?: string
+          created_at?: string
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean
+          max_uses_per_student?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promo_codes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurring_student_schedules: {
         Row: {
           business_owner_id: string
