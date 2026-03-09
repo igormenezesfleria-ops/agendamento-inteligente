@@ -156,77 +156,95 @@ export default function PlansManagement() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="font-display text-2xl sm:text-3xl text-foreground">Planos & Preços</h1>
-            <p className="text-muted-foreground text-sm">Gerencie os planos oferecidos aos seus alunos.</p>
-          </div>
-          <Button onClick={openCreate} className="gap-2">
-            <Plus className="w-4 h-4" /> Novo Plano
-          </Button>
+        <div>
+          <h1 className="font-display text-2xl sm:text-3xl text-foreground">Planos & Preços</h1>
+          <p className="text-muted-foreground text-sm">Gerencie os planos e cupons oferecidos aos seus alunos.</p>
         </div>
 
-        {isLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
-          </div>
-        ) : plans.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center py-16 text-center">
-              <Package className="w-12 h-12 text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">Nenhum plano cadastrado ainda.</p>
-              <Button variant="outline" className="mt-4" onClick={openCreate}>
-                Criar Primeiro Plano
+        <Tabs defaultValue="plans" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="plans" className="gap-1.5">
+              <Package className="w-4 h-4" /> Planos
+            </TabsTrigger>
+            <TabsTrigger value="coupons" className="gap-1.5">
+              <Ticket className="w-4 h-4" /> Cupons
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="plans" className="space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={openCreate} className="gap-2">
+                <Plus className="w-4 h-4" /> Novo Plano
               </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {plans.map((p) => (
-              <Card key={p.id} className={!p.is_active ? 'opacity-60' : ''}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-lg">{p.name}</CardTitle>
-                    <Badge variant={p.is_active ? 'default' : 'outline'} className="shrink-0 text-xs">
-                      {p.is_active ? 'Ativo' : 'Inativo'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {p.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>
-                  )}
-                  <div className="flex items-baseline gap-1">
-                    <DollarSign className="w-4 h-4 text-accent" />
-                    <span className="text-2xl font-bold text-foreground">
-                      R$ {Number(p.price).toFixed(2)}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      / {PLAN_TYPE_LABELS[p.plan_type]}
-                    </span>
-                  </div>
-                  {p.plan_type === 'class_pack' && p.credits_amount && (
-                    <Badge variant="secondary">{p.credits_amount} aulas</Badge>
-                  )}
-                  {(p.plan_type === 'monthly' || p.plan_type === 'yearly') && p.classes_per_week && (
-                    <Badge variant="secondary">{p.classes_per_week}x por semana</Badge>
-                  )}
-                  {p.plan_type === 'class_pack' && p.validity_months && (
-                    <Badge variant="outline">{p.validity_months} meses de validade</Badge>
-                  )}
-                  <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => openEdit(p)}>
-                      <Pencil className="w-3.5 h-3.5" /> Editar
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(p.id)}>
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="w-8 h-8 animate-spin text-accent" />
+              </div>
+            ) : plans.length === 0 ? (
+              <Card>
+                <CardContent className="flex flex-col items-center py-16 text-center">
+                  <Package className="w-12 h-12 text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">Nenhum plano cadastrado ainda.</p>
+                  <Button variant="outline" className="mt-4" onClick={openCreate}>
+                    Criar Primeiro Plano
+                  </Button>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {plans.map((p) => (
+                  <Card key={p.id} className={!p.is_active ? 'opacity-60' : ''}>
+                    <CardHeader className="pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <CardTitle className="text-lg">{p.name}</CardTitle>
+                        <Badge variant={p.is_active ? 'default' : 'outline'} className="shrink-0 text-xs">
+                          {p.is_active ? 'Ativo' : 'Inativo'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {p.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{p.description}</p>
+                      )}
+                      <div className="flex items-baseline gap-1">
+                        <DollarSign className="w-4 h-4 text-accent" />
+                        <span className="text-2xl font-bold text-foreground">
+                          R$ {Number(p.price).toFixed(2)}
+                        </span>
+                        <span className="text-sm text-muted-foreground">
+                          / {PLAN_TYPE_LABELS[p.plan_type]}
+                        </span>
+                      </div>
+                      {p.plan_type === 'class_pack' && p.credits_amount && (
+                        <Badge variant="secondary">{p.credits_amount} aulas</Badge>
+                      )}
+                      {(p.plan_type === 'monthly' || p.plan_type === 'yearly') && p.classes_per_week && (
+                        <Badge variant="secondary">{p.classes_per_week}x por semana</Badge>
+                      )}
+                      {p.plan_type === 'class_pack' && p.validity_months && (
+                        <Badge variant="outline">{p.validity_months} meses de validade</Badge>
+                      )}
+                      <div className="flex gap-2 pt-2">
+                        <Button variant="outline" size="sm" className="flex-1 gap-1" onClick={() => openEdit(p)}>
+                          <Pencil className="w-3.5 h-3.5" /> Editar
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(p.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="coupons">
+            <PromoCouponsTab />
+          </TabsContent>
+        </Tabs>
 
         {/* Create/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
