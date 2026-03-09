@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, AlertTriangle, Heart, Brain, Zap, Activity } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Heart, Brain, Zap, Activity, MapPin } from 'lucide-react';
 
 interface QuestionnaireModalProps {
   open: boolean;
@@ -68,6 +68,16 @@ const FESI_OPTIONS = [
   { label: 'Muito preocupado', score: 3 },
   { label: 'Extremamente preocupado', score: 4 },
 ];
+
+const ANAMNESE_LOCATIONS = ['Ombro', 'Coluna', 'Quadril', 'Joelho', 'Tornozelo/Pé', 'Outro'];
+
+const ANAMNESE_YN_QUESTIONS = [
+  'A dor piora durante o movimento ou esforço físico?',
+  'Você já realizou alguma cirurgia neste local?',
+];
+
+const ANAMNESE_TRIPLE_QUESTION = 'Você possui liberação médica ou laudo de imagem para este problema?';
+const ANAMNESE_TRIPLE_OPTIONS = ['Sim', 'Não', 'Ainda não fui ao médico'];
 
 function OptionCard({
   selected,
@@ -175,18 +185,23 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
   });
   const [sarcfAnswers, setSarcfAnswers] = useState<Record<number, number>>({});
   const [fesiAnswers, setFesiAnswers] = useState<Record<number, number>>({});
+  const [anamneseLocation, setAnamneseLocation] = useState<string>('');
+  const [anamnesePain, setAnamnesePain] = useState<number>(-1);
+  const [anamneseYn, setAnamneseYn] = useState<Record<number, string>>({});
+  const [anamneseTriple, setAnamneseTriple] = useState<string>('');
 
   if (!questionnaire) return null;
 
   const rawType = questionnaire.type;
   // Normalize: admin sends 'PAR-Q+' but engine uses 'PAR-Q'
-  const type = rawType === 'PAR-Q+' ? 'PAR-Q' : rawType;
+  const type = rawType === 'PAR-Q+' ? 'PAR-Q' : rawType === 'ANAMNESE_ORTO' ? 'ANAMNESE' : rawType;
 
   const canSubmit = () => {
     if (type === 'PAR-Q') return Object.keys(parqAnswers).length === PAR_Q_QUESTIONS.length;
     if (type === 'HOOPER') return true;
     if (type === 'SARC-F') return Object.keys(sarcfAnswers).length === 5;
     if (type === 'FES-I') return Object.keys(fesiAnswers).length === FESI_QUESTIONS.length;
+    if (type === 'ANAMNESE') return anamneseLocation !== '' && anamnesePain >= 0 && Object.keys(anamneseYn).length === 2 && anamneseTriple !== '';
     return false;
   };
 
@@ -217,6 +232,20 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
       answersData = { questions: FESI_QUESTIONS.map((q, i) => ({ question: q, score: fesiAnswers[i] ?? 1 })) };
       const total = Object.values(fesiAnswers).reduce((s, v) => s + v, 0);
       resultScore = total > 10 ? `${total}/28 — Alta preocupação com quedas` : `${total}/28 — Baixa preocupação`;
+    } else if (type === 'ANAMNESE') {
+      answersData = {
+        location: anamneseLocation,
+        pain_level: anamnesePain,
+        pain_worsens_with_movement: anamneseYn[0],
+        previous_surgery: anamneseYn[1],
+        medical_clearance: anamneseTriple,
+      };
+      const flags: string[] = [];
+      if (anamnesePain >= 5) flags.push(`Dor ${anamnesePain}/10`);
+      if (anamneseYn[1] === 'sim') flags.push('Cirurgia prévia');
+      resultScore = flags.length > 0
+        ? `Atenção Ortopédica — ${flags.join(', ')}`
+        : 'Sem alerta ortopédico';
     }
 
     const { error } = await supabase
@@ -243,6 +272,10 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     setHooperValues({ sleep: 1, stress: 1, fatigue: 1, pain: 1 });
     setSarcfAnswers({});
     setFesiAnswers({});
+    setAnamneseLocation('');
+    setAnamnesePain(-1);
+    setAnamneseYn({});
+    setAnamneseTriple('');
   };
 
   const typeLabelMap: Record<string, string> = {
@@ -250,12 +283,14 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
     'HOOPER': 'Índice de Hooper — Recuperação',
     'SARC-F': 'SARC-F — Risco de Sarcopenia',
     'FES-I': 'FES-I Curto — Preocupação com Quedas',
+    'ANAMNESE': 'Anamnese Ortopédica — Avaliação de Lesão',
   };
   const footerMap: Record<string, string> = {
     'PAR-Q': 'Referência: PAR-Q+ Collaboration (Warburton et al.)',
     'HOOPER': 'Referência: Hooper et al., 1995',
     'SARC-F': 'Referência: Malmstrom & Morley, 2013',
     'FES-I': 'Referência: Yardley et al., 2005',
+    'ANAMNESE': 'Referência: Avaliação Ortopédica Básica',
   };
   const typeLabel = typeLabelMap[type] || type;
   const footerText = footerMap[type] || '';
@@ -433,6 +468,134 @@ export function QuestionnaireModal({ open, onOpenChange, questionnaire }: Questi
                 <div className="flex items-center justify-between rounded-xl border-2 border-success bg-success/10 p-4">
                   <span className="text-sm font-bold text-success">Baixa preocupação com quedas</span>
                   <span className="text-lg font-black text-success">{total}/28</span>
+                </div>
+              );
+            })()
+          )}
+
+          {/* ANAMNESE ORTOPÉDICA */}
+          {type === 'ANAMNESE' && (
+            <>
+              {/* Q1: Location */}
+              <div className="space-y-2.5">
+                <p className="text-sm font-bold text-foreground leading-snug">
+                  <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">1</span>
+                  Qual é o local principal da sua dor ou lesão?
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {ANAMNESE_LOCATIONS.map((loc) => (
+                    <OptionCard
+                      key={loc}
+                      selected={anamneseLocation === loc}
+                      onClick={() => setAnamneseLocation(loc)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        {loc}
+                      </div>
+                    </OptionCard>
+                  ))}
+                </div>
+              </div>
+
+              {/* Q2: Pain scale 0-10 */}
+              <div className="space-y-3 rounded-xl border-2 border-border bg-card p-4">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/10">
+                    <Activity className="h-4 w-4 text-accent" />
+                  </div>
+                  <h4 className="font-bold text-foreground">
+                    <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">2</span>
+                    Qual o seu nível de dor atual?
+                  </h4>
+                  {anamnesePain >= 0 && (
+                    <span className={cn(
+                      'ml-auto rounded-full px-2.5 py-0.5 text-xs font-bold',
+                      anamnesePain >= 5 ? 'bg-destructive text-destructive-foreground' : 'bg-success text-success-foreground'
+                    )}>
+                      {anamnesePain}/10
+                    </span>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {Array.from({ length: 11 }, (_, n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => setAnamnesePain(n)}
+                      className={cn(
+                        'flex h-10 w-full items-center justify-center rounded-lg border-2 text-xs font-bold transition-all duration-200',
+                        'hover:scale-105 active:scale-95',
+                        n === anamnesePain
+                          ? n <= 3
+                            ? 'border-success bg-success text-success-foreground shadow-md'
+                            : n <= 6
+                            ? 'border-warning bg-warning text-warning-foreground shadow-md'
+                            : 'border-destructive bg-destructive text-destructive-foreground shadow-md'
+                          : 'border-border bg-secondary text-muted-foreground hover:border-accent/40'
+                      )}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>0 — Sem dor</span>
+                  <span>10 — Dor insuportável</span>
+                </div>
+              </div>
+
+              {/* Q3 & Q4: Yes/No */}
+              {ANAMNESE_YN_QUESTIONS.map((q, i) => (
+                <div key={i} className="space-y-2.5">
+                  <p className="text-sm font-bold text-foreground leading-snug">
+                    <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{i + 3}</span>
+                    {q}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <OptionCard selected={anamneseYn[i] === 'sim'} onClick={() => setAnamneseYn(prev => ({ ...prev, [i]: 'sim' }))} variant="yes">Sim</OptionCard>
+                    <OptionCard selected={anamneseYn[i] === 'nao'} onClick={() => setAnamneseYn(prev => ({ ...prev, [i]: 'nao' }))} variant="no">Não</OptionCard>
+                  </div>
+                </div>
+              ))}
+
+              {/* Q5: Triple option */}
+              <div className="space-y-2.5">
+                <p className="text-sm font-bold text-foreground leading-snug">
+                  <span className="mr-1.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">5</span>
+                  {ANAMNESE_TRIPLE_QUESTION}
+                </p>
+                <div className="space-y-1.5">
+                  {ANAMNESE_TRIPLE_OPTIONS.map((opt) => (
+                    <OptionCard key={opt} selected={anamneseTriple === opt} onClick={() => setAnamneseTriple(opt)}>
+                      {opt}
+                    </OptionCard>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Anamnese alert */}
+          {type === 'ANAMNESE' && anamneseLocation && anamnesePain >= 0 && Object.keys(anamneseYn).length === 2 && anamneseTriple && (
+            (() => {
+              const hasFlag = anamnesePain >= 5 || anamneseYn[1] === 'sim';
+              return hasFlag ? (
+                <div className="flex items-start gap-3 rounded-xl border-2 border-destructive bg-destructive/10 p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+                  <div>
+                    <p className="text-sm font-bold text-destructive">Atenção Ortopédica</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {anamnesePain >= 5 && `Nível de dor elevado (${anamnesePain}/10). `}
+                      {anamneseYn[1] === 'sim' && 'Cirurgia prévia relatada. '}
+                      Recomenda-se acompanhamento especializado.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between rounded-xl border-2 border-success bg-success/10 p-4">
+                  <span className="text-sm font-bold text-success">Sem alerta ortopédico</span>
+                  <span className="text-lg font-black text-success">Dor {anamnesePain}/10</span>
                 </div>
               );
             })()

@@ -138,6 +138,46 @@ export default function Questionnaires() {
       );
     }
 
+    // Anamnese Ortopédica
+    if ((type === 'ANAMNESE_ORTO' || type === 'ANAMNESE') && obj.location !== undefined) {
+      const locationLabels: Record<string, string> = {
+        'Ombro': '💪 Ombro',
+        'Coluna': '🦴 Coluna',
+        'Quadril': '🦵 Quadril',
+        'Joelho': '🦿 Joelho',
+        'Tornozelo/Pé': '🦶 Tornozelo/Pé',
+        'Outro': '📍 Outro',
+      };
+      return (
+        <div className="space-y-3">
+          <div className="flex justify-between items-center border-b border-border pb-2">
+            <span className="text-sm font-medium">Local da dor/lesão</span>
+            <Badge variant="secondary">{locationLabels[String(obj.location)] || String(obj.location)}</Badge>
+          </div>
+          <div className="flex justify-between items-center border-b border-border pb-2">
+            <span className="text-sm font-medium">Nível de dor</span>
+            <Badge variant={Number(obj.pain_level) >= 5 ? 'destructive' : 'secondary'}>{String(obj.pain_level)}/10</Badge>
+          </div>
+          <div className="flex justify-between items-center border-b border-border pb-2">
+            <span className="text-sm font-medium">Dor piora com movimento?</span>
+            <Badge variant={obj.pain_worsens_with_movement === 'sim' ? 'destructive' : 'secondary'}>
+              {obj.pain_worsens_with_movement === 'sim' ? 'Sim ⚠️' : 'Não ✅'}
+            </Badge>
+          </div>
+          <div className="flex justify-between items-center border-b border-border pb-2">
+            <span className="text-sm font-medium">Cirurgia prévia?</span>
+            <Badge variant={obj.previous_surgery === 'sim' ? 'destructive' : 'secondary'}>
+              {obj.previous_surgery === 'sim' ? 'Sim ⚠️' : 'Não ✅'}
+            </Badge>
+          </div>
+          <div className="flex justify-between items-center border-b border-border pb-2">
+            <span className="text-sm font-medium">Liberação médica/laudo?</span>
+            <Badge variant="secondary">{String(obj.medical_clearance)}</Badge>
+          </div>
+        </div>
+      );
+    }
+
     return <pre className="text-xs bg-muted p-3 rounded-lg overflow-auto max-h-60">{JSON.stringify(data, null, 2)}</pre>;
   };
 
