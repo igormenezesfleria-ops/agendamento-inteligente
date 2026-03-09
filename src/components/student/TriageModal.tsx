@@ -58,6 +58,8 @@ export function TriageModal({ open, onOpenChange }: TriageModalProps) {
         has_injury: hasInjury,
         injury_details: hasInjury ? injuryDetails.trim() || null : null,
         is_active: isActivePhysical,
+        height: height.trim() || null,
+        birth_date: birthDate.trim() || null,
         profile_completed: true,
       })
       .eq('id', user.id);
