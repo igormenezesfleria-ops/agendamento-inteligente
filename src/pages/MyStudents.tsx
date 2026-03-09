@@ -244,7 +244,7 @@ export default function MyStudents() {
         <Dialog open={triageOpen} onOpenChange={setTriageOpen}>
           <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Ficha de Triagem - {selectedStudent?.name}</DialogTitle>
+              <DialogTitle>Dossiê - {selectedStudent?.name}</DialogTitle>
             </DialogHeader>
             {selectedStudent && !selectedStudent.profile_completed ? (
               <div className="text-center py-8">
@@ -252,78 +252,99 @@ export default function MyStudents() {
                 <p className="text-muted-foreground text-sm">O aluno ainda não preencheu a ficha de triagem.</p>
               </div>
             ) : selectedStudent ? (
-              <div className="space-y-4">
-                {/* Injury Alert */}
-                {selectedStudent.has_injury && (
-                  <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>⚠️ Lesão / Limitação</AlertTitle>
-                    <AlertDescription className="font-medium">
-                      {selectedStudent.injury_details || 'Não especificada'}
-                    </AlertDescription>
-                  </Alert>
-                )}
+              <Tabs defaultValue="ficha" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="ficha">
+                    <ClipboardList className="w-3.5 h-3.5 mr-1.5" /> Ficha
+                  </TabsTrigger>
+                  <TabsTrigger value="avaliacoes">
+                    <FileText className="w-3.5 h-3.5 mr-1.5" /> Avaliações
+                  </TabsTrigger>
+                </TabsList>
 
-                {/* Age & Height highlight */}
-                {(selectedStudent.birth_date || selectedStudent.height) && (
-                  <div className="flex gap-3">
-                    {selectedStudent.birth_date && (() => {
-                      const age = calculateAge(selectedStudent.birth_date);
-                      return age !== null ? (
+                <TabsContent value="ficha" className="space-y-4 mt-4">
+                  {/* Injury Alert */}
+                  {selectedStudent.has_injury && (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>⚠️ Lesão / Limitação</AlertTitle>
+                      <AlertDescription className="font-medium">
+                        {selectedStudent.injury_details || 'Não especificada'}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Age & Height highlight */}
+                  {(selectedStudent.birth_date || selectedStudent.height) && (
+                    <div className="flex gap-3">
+                      {selectedStudent.birth_date && (() => {
+                        const age = calculateAge(selectedStudent.birth_date);
+                        return age !== null ? (
+                          <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
+                            <Cake className="w-4 h-4 text-accent shrink-0" />
+                            <div>
+                              <p className="text-xs text-muted-foreground">Idade</p>
+                              <p className="text-lg font-bold text-accent">{age} anos</p>
+                            </div>
+                          </div>
+                        ) : null;
+                      })()}
+                      {selectedStudent.height && (
                         <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
-                          <Cake className="w-4 h-4 text-accent shrink-0" />
+                          <Ruler className="w-4 h-4 text-accent shrink-0" />
                           <div>
-                            <p className="text-xs text-muted-foreground">Idade</p>
-                            <p className="text-lg font-bold text-accent">{age} anos</p>
+                            <p className="text-xs text-muted-foreground">Altura</p>
+                            <p className="text-lg font-bold text-accent">{selectedStudent.height}m</p>
                           </div>
                         </div>
-                      ) : null;
-                    })()}
-                    {selectedStudent.height && (
-                      <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
-                        <Ruler className="w-4 h-4 text-accent shrink-0" />
-                        <div>
-                          <p className="text-xs text-muted-foreground">Altura</p>
-                          <p className="text-lg font-bold text-accent">{selectedStudent.height}m</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )}
 
-                <div className="grid gap-3">
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Telefone / WhatsApp</p>
-                      <p className="text-sm font-medium text-foreground">{selectedStudent.phone || '—'}</p>
+                  <div className="grid gap-3">
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Telefone / WhatsApp</p>
+                        <p className="text-sm font-medium text-foreground">{selectedStudent.phone || '—'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Contato de Emergência</p>
+                        <p className="text-sm font-medium text-foreground">{selectedStudent.emergency_contact || '—'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Target className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Objetivo Principal</p>
+                        <p className="text-sm font-medium text-foreground">
+                          {selectedStudent.main_objective ? objectiveLabels[selectedStudent.main_objective] || selectedStudent.main_objective : '—'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                      <Activity className="w-4 h-4 text-muted-foreground mt-0.5" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Pratica atividade física?</p>
+                        <p className="text-sm font-medium text-foreground">{selectedStudent.is_active ? 'Sim' : 'Não'}</p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Contato de Emergência</p>
-                      <p className="text-sm font-medium text-foreground">{selectedStudent.emergency_contact || '—'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <Target className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Objetivo Principal</p>
-                      <p className="text-sm font-medium text-foreground">
-                        {selectedStudent.main_objective ? objectiveLabels[selectedStudent.main_objective] || selectedStudent.main_objective : '—'}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <Activity className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <div>
-                      <p className="text-xs text-muted-foreground">Pratica atividade física?</p>
-                      <p className="text-sm font-medium text-foreground">{selectedStudent.is_active ? 'Sim' : 'Não'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                </TabsContent>
+
+                <TabsContent value="avaliacoes" className="mt-4">
+                  <StudentAssessmentsTab
+                    studentId={selectedStudent.id}
+                    studentName={selectedStudent.name}
+                    age={calculateAge(selectedStudent.birth_date)}
+                    hasInjury={selectedStudent.has_injury}
+                    injuryDetails={selectedStudent.injury_details}
+                  />
+                </TabsContent>
+              </Tabs>
             ) : null}
           </DialogContent>
         </Dialog>
