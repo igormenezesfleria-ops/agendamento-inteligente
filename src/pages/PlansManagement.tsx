@@ -82,6 +82,10 @@ export default function PlansManagement() {
         price: parseFloat(form.price) || 0,
         plan_type: form.plan_type as PlanType,
         credits_amount: form.plan_type === 'class_pack' ? (parseInt(form.credits_amount) || null) : null,
+        classes_per_week: (form.plan_type === 'monthly' || form.plan_type === 'yearly') ? (parseInt(form.classes_per_week) || null) : null,
+        validity_months: form.plan_type === 'class_pack' ? (parseInt(form.validity_months) || null) : null,
+        accepts_pix: form.accepts_pix,
+        accepts_credit: form.accepts_credit,
         is_active: form.is_active,
       };
       if (editingId) {
