@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, AlertTriangle, Heart, Brain, Zap, Activity } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, Heart, Brain, Zap, Activity, MapPin } from 'lucide-react';
 
 interface QuestionnaireModalProps {
   open: boolean;
