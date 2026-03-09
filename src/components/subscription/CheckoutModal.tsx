@@ -14,23 +14,53 @@ import {
   Ticket, X, Sparkles, Gift,
 } from 'lucide-react';
 
+// Legacy plan shape from Subscription page
+interface LegacyPlan {
+  id: string;
+  name: string;
+  days: number;
+  price: string;
+  priceValue: number;
+}
+
+// New membership plan shape
 interface MembershipPlan {
   id: string;
   name: string;
-  description: string | null;
+  description?: string | null;
   price: number;
   plan_type: 'monthly' | 'yearly' | 'class_pack';
-  credits_amount: number | null;
-  classes_per_week: number | null;
-  validity_months: number | null;
-  accepts_pix: boolean;
-  accepts_credit: boolean;
+  credits_amount?: number | null;
+  classes_per_week?: number | null;
+  validity_months?: number | null;
+  accepts_pix?: boolean;
+  accepts_credit?: boolean;
+}
+
+type AnyPlan = LegacyPlan | MembershipPlan;
+
+function isLegacyPlan(p: AnyPlan): p is LegacyPlan {
+  return 'priceValue' in p;
+}
+
+function normalizePlan(p: AnyPlan): MembershipPlan {
+  if (isLegacyPlan(p)) {
+    return {
+      id: p.id,
+      name: p.name,
+      price: p.priceValue,
+      plan_type: p.days >= 365 ? 'yearly' : 'monthly',
+      accepts_pix: true,
+      accepts_credit: true,
+    };
+  }
+  return p;
 }
 
 interface CheckoutModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  plan: MembershipPlan | null;
+  plan: AnyPlan | null;
 }
 
 export default function CheckoutModal({ open, onOpenChange, plan }: CheckoutModalProps) {
