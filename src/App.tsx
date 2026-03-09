@@ -234,6 +234,16 @@ const App = () => (
               }
             />
 
+            {/* Shared routes (admin + student) */}
+            <Route
+              path="/dashboard/questionarios"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'student']}>
+                  <Questionnaires />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Collaborator routes */}
             <Route
               path="/dashboard/minhas-tarefas"
