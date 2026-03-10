@@ -341,6 +341,10 @@ export default function MyStudents() {
                   </div>
                 </TabsContent>
 
+                <TabsContent value="treinos" className="mt-4">
+                  <StudentWorkoutsTab studentId={selectedStudent.id} studentName={selectedStudent.name} />
+                </TabsContent>
+
                 <TabsContent value="avaliacoes" className="mt-4">
                   <StudentAssessmentsTab
                     studentId={selectedStudent.id}
