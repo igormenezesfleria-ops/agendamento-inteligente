@@ -233,6 +233,9 @@ export function StudentDashboard() {
         </AccordionItem>
       </Accordion>
 
+      {/* Active Workout */}
+      <ActiveWorkoutCard />
+
       {/* Workout History */}
       <StudentWorkoutHistory />
 
