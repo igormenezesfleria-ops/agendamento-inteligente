@@ -34,9 +34,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Mobile header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border print:hidden">
         <div className="flex items-center justify-between px-4 h-16">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <img src="/logo.png" alt="X AXIS" className="h-8 w-auto" />
-            <span className="font-display text-lg text-sidebar-foreground">X AXIS</span>
+          <div className="w-10" />
+          <Link to="/dashboard" className="bg-white rounded-full px-6 py-1.5 shadow-sm flex items-center justify-center">
+            <img src="/logo-synton.png" alt="Synton" className="h-6 w-auto object-contain" />
           </Link>
           <Button
             variant="ghost"
@@ -58,9 +58,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="hidden lg:flex items-center gap-3 px-6 h-16 border-b border-sidebar-border">
-            <img src="/logo.png" alt="X AXIS" className="h-10 w-auto" />
-            <span className="font-display text-xl text-sidebar-foreground">X AXIS</span>
+          <div className="hidden lg:flex items-center justify-center px-6 h-16 border-b border-sidebar-border">
+            <Link to="/dashboard" className="bg-white rounded-full px-6 py-1.5 shadow-sm flex items-center justify-center">
+              <img src="/logo-synton.png" alt="Synton" className="h-7 w-auto object-contain" />
+            </Link>
           </div>
 
           {/* User info */}

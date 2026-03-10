@@ -253,7 +253,7 @@ export function PersonalImpactReceipt({ open, onOpenChange }: Props) {
               {/* Footer */}
               <div className="text-center space-y-1 pt-2">
                 <p className="text-[9px] text-slate-500 leading-relaxed">
-                  Gestão de resultados por X AXIS.
+                  Gestão de resultados por Synton.
                 </p>
                 <p className="text-[9px] text-slate-500">
                   App oficial: <span className="text-orange-500 font-bold">@xaxis.app</span>

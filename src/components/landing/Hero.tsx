@@ -19,10 +19,9 @@ export function Hero() {
       <div className="container relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-20 text-center">
         {/* Logo/Brand */}
         <div className="mb-8 animate-fade-in">
-          <img src="/logo.png" alt="X AXIS" className="h-20 w-auto mx-auto mb-4" />
-          <h2 className="text-accent font-display text-xl font-bold tracking-wider uppercase">
-            X AXIS
-          </h2>
+          <div className="bg-white rounded-full px-8 py-3 shadow-sm inline-flex items-center justify-center mb-4">
+            <img src="/logo-synton.png" alt="Synton" className="h-10 w-auto object-contain" />
+          </div>
         </div>
 
         {/* Main headline */}
@@ -33,7 +32,7 @@ export function Hero() {
 
         {/* Subtitle */}
         <p className="text-primary-foreground/70 text-lg md:text-xl max-w-2xl mb-10 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          O app definitivo para conectar Personal Trainers e alunos. Simplifique seus agendamentos, acesse históricos de aulas e tenha a gestão completa do seu desempenho em um só lugar.
+          O app de agendamentos e gestão do Personal. Simplifique seus agendamentos, acesse históricos de aulas e tenha a gestão completa do seu desempenho em um só lugar.
         </p>
 
         {/* CTA Buttons */}

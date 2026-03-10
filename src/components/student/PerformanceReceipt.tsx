@@ -204,7 +204,7 @@ export function PerformanceReceipt({ open, onOpenChange }: Props) {
               {/* Footer */}
               <div className="text-center space-y-1 pt-2">
                 <p className="text-[9px] text-slate-500 leading-relaxed">
-                  Avaliado e aprovado pela análise de desempenho X AXIS.
+                  Avaliado e aprovado pela análise de desempenho Synton.
                 </p>
                 <p className="text-[9px] text-slate-500">
                   App oficial: <span className="text-orange-500 font-bold">@xaxis.app</span>
