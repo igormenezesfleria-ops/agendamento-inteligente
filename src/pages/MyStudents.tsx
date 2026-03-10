@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
 import { StudentAssessmentsTab } from '@/components/admin/StudentAssessmentsTab';
 import { StudentDevTools } from '@/components/admin/StudentDevTools';
+import { StudentWorkoutsTab } from '@/components/admin/StudentWorkoutsTab';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
