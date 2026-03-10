@@ -160,15 +160,9 @@ export default function StudentPlans() {
                 </CardContent>
 
                 <CardFooter>
-                  {paymentsEnabled ? (
-                    <Button className="w-full gap-2" onClick={() => handleBuy(plan)}>
-                      <ShoppingBag className="w-4 h-4" /> Comprar
-                    </Button>
-                  ) : (
-                    <Button className="w-full gap-2" variant="outline" disabled>
-                      <CreditCard className="w-4 h-4" /> Pagamentos desativados
-                    </Button>
-                  )}
+                  <Button className="w-full gap-2" onClick={() => handleBuy(plan)}>
+                    <ShoppingBag className="w-4 h-4" /> Comprar
+                  </Button>
                 </CardFooter>
               </Card>
             ))}

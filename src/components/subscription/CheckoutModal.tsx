@@ -396,98 +396,19 @@ export default function CheckoutModal({ open, onOpenChange, plan: rawPlan }: Che
             </Button>
           </div>
         ) : (
-          /* Payment tabs */
-          <Tabs value={tab} onValueChange={setTab} className="mt-1">
-            {showPix && showCard ? (
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="pix" className="gap-2">
-                  <QrCode className="w-4 h-4" /> PIX
-                </TabsTrigger>
-                <TabsTrigger value="card" className="gap-2">
-                  <CreditCard className="w-4 h-4" /> Cartão
-                </TabsTrigger>
-              </TabsList>
-            ) : null}
-
-            {showPix && (
-              <TabsContent value="pix" className="space-y-4 mt-4">
-                {!pixData ? (
-                  <div className="text-center space-y-4">
-                    <div className="w-32 h-32 mx-auto rounded-xl border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-                      <QrCode className="w-12 h-12 text-muted-foreground/40" />
-                    </div>
-                    <p className="text-sm text-muted-foreground">Clique para gerar o QR Code PIX</p>
-                    <Button onClick={handlePixPayment} disabled={loading} className="w-full">
-                      {loading && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                      Gerar PIX
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center space-y-4">
-                    {pixData.encodedImage && (
-                      <img
-                        src={`data:image/png;base64,${pixData.encodedImage}`}
-                        alt="QR Code PIX"
-                        className="w-48 h-48 mx-auto rounded-lg"
-                      />
-                    )}
-                    {pixData.payload && (
-                      <div className="space-y-2">
-                        <Label className="text-xs text-muted-foreground">Pix Copia e Cola</Label>
-                        <div className="flex gap-2">
-                          <Input readOnly value={pixData.payload} className="text-xs font-mono" />
-                          <Button variant="outline" size="icon" onClick={copyPixCode}>
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Aguardando confirmação...
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-            )}
-
-            {showCard && (
-              <TabsContent value="card" className="space-y-4 mt-4">
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="card-name">Nome no Cartão</Label>
-                    <Input id="card-name" placeholder="Nome completo" value={cardForm.name}
-                      onChange={(e) => setCardForm(f => ({ ...f, name: e.target.value }))} />
-                  </div>
-                  <div>
-                    <Label htmlFor="card-number">Número do Cartão</Label>
-                    <Input id="card-number" placeholder="0000 0000 0000 0000" value={cardForm.number}
-                      onChange={(e) => setCardForm(f => ({ ...f, number: e.target.value }))} maxLength={19} />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="card-expiry">Validade</Label>
-                      <Input id="card-expiry" placeholder="MM/AA" value={cardForm.expiry}
-                        onChange={(e) => setCardForm(f => ({ ...f, expiry: e.target.value }))} maxLength={5} />
-                    </div>
-                    <div>
-                      <Label htmlFor="card-cvv">CVV</Label>
-                      <Input id="card-cvv" placeholder="123" value={cardForm.cvv}
-                        onChange={(e) => setCardForm(f => ({ ...f, cvv: e.target.value }))} maxLength={4} />
-                    </div>
-                  </div>
-                </div>
-                <Button onClick={handleCardPayment} disabled={loading} className="w-full" variant="accent">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                  Pagar R$ {finalPrice.toFixed(2).replace('.', ',')}
-                </Button>
-              </TabsContent>
-            )}
-
-            {/* Auto-select if only one method */}
-            {showPix && !showCard && tab !== 'pix' ? <>{setTab('pix')}</> : null}
-            {!showPix && showCard && tab !== 'card' ? <>{setTab('card')}</> : null}
-          </Tabs>
+          /* Sandbox mock payment */
+          <div className="pt-2">
+            <Button
+              className="w-full gap-2"
+              variant="outline"
+              onClick={() => {
+                toast.info('Simulação: Integração Asaas em breve!');
+              }}
+            >
+              <CreditCard className="w-4 h-4" />
+              Simular Pagamento (Modo Teste)
+            </Button>
+          </div>
         )}
       </DialogContent>
     </Dialog>
