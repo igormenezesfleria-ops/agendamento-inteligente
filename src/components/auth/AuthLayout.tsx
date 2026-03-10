@@ -14,11 +14,8 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
         <div className="w-full max-w-md mx-auto">
           {/* Logo */}
-          <Link to="/" className="inline-flex items-center gap-3 mb-10 group">
-            <img src="/logo.png" alt="X AXIS" className="h-12 w-auto group-hover:scale-105 transition-transform" />
-            <span className="font-display text-xl font-bold text-foreground">
-              X AXIS
-            </span>
+          <Link to="/" className="inline-flex items-center mb-10 group">
+            <img src="/logo-synton.png" alt="Synton" className="h-10 w-auto group-hover:scale-105 transition-transform" />
           </Link>
 
           {/* Header */}
