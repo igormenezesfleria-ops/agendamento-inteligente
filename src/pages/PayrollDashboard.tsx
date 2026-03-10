@@ -236,7 +236,7 @@ export default function PayrollDashboard() {
           <div ref={printRef} className="space-y-6">
             {/* Print header (hidden on screen) */}
             <div className="hidden print:block mb-6 print:border-b print:pb-4">
-              <h2 className="text-2xl font-bold">X AXIS</h2>
+              <h2 className="text-2xl font-bold">Synton</h2>
               <h3 className="text-xl mt-1">Extrato de Pagamento</h3>
               <p className="text-sm mt-2">Colaborador: <strong>{selectedCollab?.name}</strong></p>
               <p className="text-sm">Período: <strong>{MONTHS[selectedMonth]} / {selectedYear}</strong></p>

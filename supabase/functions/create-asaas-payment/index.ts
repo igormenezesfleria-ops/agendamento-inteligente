@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       billingType,
       value,
       dueDate,
-      description: `Plano ${planId} - X AXIS`,
+      description: `Plano ${planId} - Synton`,
       externalReference,
     };
 
