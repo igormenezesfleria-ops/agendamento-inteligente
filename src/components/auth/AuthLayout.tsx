@@ -43,7 +43,9 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-accent/10 rounded-full blur-[120px] animate-pulse-subtle" style={{ animationDelay: '1s' }} />
 
         <div className="relative z-10 text-center px-12">
-          <img src="/logo.png" alt="X AXIS" className="h-24 w-auto mx-auto mb-8" />
+          <div className="bg-white rounded-full px-8 py-3 shadow-sm flex items-center justify-center mb-8">
+            <img src="/logo-synton.png" alt="Synton" className="h-10 w-auto object-contain" />
+          </div>
           <h2 className="font-display text-4xl text-primary-foreground mb-4">
             Resultados Reais
           </h2>

@@ -32,7 +32,7 @@ export function Hero() {
 
         {/* Subtitle */}
         <p className="text-primary-foreground/70 text-lg md:text-xl max-w-2xl mb-10 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          O app definitivo para conectar Personal Trainers e alunos. Simplifique seus agendamentos, acesse históricos de aulas e tenha a gestão completa do seu desempenho em um só lugar.
+          O app de agendamentos e gestão do Personal. Simplifique seus agendamentos, acesse históricos de aulas e tenha a gestão completa do seu desempenho em um só lugar.
         </p>
 
         {/* CTA Buttons */}
