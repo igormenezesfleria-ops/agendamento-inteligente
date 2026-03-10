@@ -11,6 +11,7 @@ import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
 import { PerformanceReceipt } from '@/components/student/PerformanceReceipt';
+import { ActiveWorkoutCard } from '@/components/student/ActiveWorkoutCard';
 import { TriageModal } from '@/components/student/TriageModal';
 import { QuestionnaireModal } from '@/components/student/QuestionnaireModal';
 import { format } from 'date-fns';
@@ -231,6 +232,9 @@ export function StudentDashboard() {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* Active Workout */}
+      <ActiveWorkoutCard />
 
       {/* Workout History */}
       <StudentWorkoutHistory />

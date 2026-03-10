@@ -579,6 +579,95 @@ export type Database = {
         }
         Relationships: []
       }
+      workout_exercises: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          reps: string
+          rest: string
+          sets: string
+          sort_order: number
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          reps?: string
+          rest?: string
+          sets?: string
+          sort_order?: number
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          reps?: string
+          rest?: string
+          sets?: string
+          sort_order?: number
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_exercises_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workouts: {
+        Row: {
+          admin_id: string
+          created_at: string
+          end_date: string
+          id: string
+          is_active: boolean
+          start_date: string
+          student_id: string
+          title: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          start_date: string
+          student_id: string
+          title: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          start_date?: string
+          student_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workouts_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workouts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
