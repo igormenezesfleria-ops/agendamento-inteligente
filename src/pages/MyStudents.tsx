@@ -256,9 +256,12 @@ export default function MyStudents() {
             ) : selectedStudent ? (
               <>
               <Tabs defaultValue="ficha" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="ficha">
                     <ClipboardList className="w-3.5 h-3.5 mr-1.5" /> Ficha
+                  </TabsTrigger>
+                  <TabsTrigger value="treinos">
+                    <Dumbbell className="w-3.5 h-3.5 mr-1.5" /> Treinos
                   </TabsTrigger>
                   <TabsTrigger value="avaliacoes">
                     <FileText className="w-3.5 h-3.5 mr-1.5" /> Avaliações
