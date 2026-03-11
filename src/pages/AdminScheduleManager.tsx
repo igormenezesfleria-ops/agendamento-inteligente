@@ -87,15 +87,9 @@ export default function AdminScheduleManager() {
       }
     },
     onSuccess: () => {
-      toast.success('Horário adicionado!');
+      toast.success(editingId ? 'Horário atualizado!' : 'Horário adicionado!');
       queryClient.invalidateQueries({ queryKey: ['admin-class-schedules'] });
-      setOpen(false);
-      setStartTime('09:00');
-      setEndTime('10:00');
-      setCapacity('10');
-      setRequiresApproval(true);
-      setActionWindowHours('2');
-      setDefaultCollaboratorId('none');
+      resetAndClose();
     },
     onError: () => toast.error('Erro ao adicionar horário.'),
   });
