@@ -86,6 +86,7 @@ export type Database = {
           instructor_id: string
           requires_approval: boolean
           start_time: string
+          waitlist_enabled: boolean
         }
         Insert: {
           action_window_hours?: number
@@ -99,6 +100,7 @@ export type Database = {
           instructor_id: string
           requires_approval?: boolean
           start_time: string
+          waitlist_enabled?: boolean
         }
         Update: {
           action_window_hours?: number
@@ -112,6 +114,7 @@ export type Database = {
           instructor_id?: string
           requires_approval?: boolean
           start_time?: string
+          waitlist_enabled?: boolean
         }
         Relationships: [
           {
@@ -578,6 +581,48 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      waitlist: {
+        Row: {
+          class_schedule_id: string
+          created_at: string
+          date: string
+          id: string
+          status: string
+          student_id: string
+        }
+        Insert: {
+          class_schedule_id: string
+          created_at?: string
+          date: string
+          id?: string
+          status?: string
+          student_id: string
+        }
+        Update: {
+          class_schedule_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_class_schedule_id_fkey"
+            columns: ["class_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "waitlist_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workout_exercises: {
         Row: {

@@ -85,6 +85,27 @@ export default function Booking() {
     refetchInterval: 2000,
   });
 
+  // Fetch waitlist entries for this student on selected date
+  const { data: myWaitlistEntries } = useQuery({
+    queryKey: ['myWaitlist', formattedDate, user?.id],
+    queryFn: async () => {
+      if (!formattedDate || !user?.id) return [];
+      const { data, error } = await supabase
+        .from('waitlist')
+        .select('class_schedule_id')
+        .eq('student_id', user.id)
+        .eq('date', formattedDate)
+        .eq('status', 'waiting');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!formattedDate && !!user?.id,
+  });
+
+  const myWaitlistClassIds = new Set(
+    myWaitlistEntries?.map((w) => w.class_schedule_id) || []
+  );
+
   // 4. Classmate profiles
   const allRelevantStudentIds = [
     ...new Set([
@@ -316,6 +337,28 @@ export default function Booking() {
     },
   });
 
+  const [waitlistSlot, setWaitlistSlot] = useState<string | null>(null);
+  const joinWaitlistMutation = useMutation({
+    mutationFn: async (classScheduleId: string) => {
+      if (!user?.id || !formattedDate) throw new Error('Missing data');
+      const { error } = await supabase.from('waitlist').insert({
+        class_schedule_id: classScheduleId,
+        date: formattedDate,
+        student_id: user.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Você entrou na fila de espera!');
+      queryClient.invalidateQueries({ queryKey: ['myWaitlist', formattedDate, user?.id] });
+      setWaitlistSlot(null);
+    },
+    onError: () => {
+      toast.error('Erro ao entrar na fila.');
+      setWaitlistSlot(null);
+    },
+  });
+
   const canBookSlot = (startTime: string, actionWindowHours?: number) => {
     if (!selectedDate) return false;
     const [hours, mins] = startTime.split(':').map(Number);
@@ -400,6 +443,13 @@ export default function Booking() {
                       onBook={() => handleBook(slotKey, classId)}
                       actionWindowHours={slot.action_window_hours ?? 2}
                       classmateNames={getClassmateNames(classId, slotKey)}
+                      waitlistEnabled={(slot as any).waitlist_enabled ?? true}
+                      isOnWaitlist={myWaitlistClassIds.has(classId)}
+                      waitlistLoading={waitlistSlot === classId}
+                      onJoinWaitlist={() => {
+                        setWaitlistSlot(classId);
+                        joinWaitlistMutation.mutate(classId);
+                      }}
                     />
                   );
                 })}

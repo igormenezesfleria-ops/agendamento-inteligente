@@ -18,6 +18,10 @@ interface SlotCardProps {
   onBook: () => void;
   actionWindowHours?: number;
   classmateNames?: string[];
+  waitlistEnabled?: boolean;
+  isOnWaitlist?: boolean;
+  waitlistLoading?: boolean;
+  onJoinWaitlist?: () => void;
 }
 
 export function SlotCard({
@@ -34,6 +38,10 @@ export function SlotCard({
   onBook,
   actionWindowHours = 2,
   classmateNames = [],
+  waitlistEnabled = false,
+  isOnWaitlist = false,
+  waitlistLoading = false,
+  onJoinWaitlist,
 }: SlotCardProps) {
   const [expanded, setExpanded] = useState(false);
   const isFull = effectiveRemaining <= 0;
@@ -60,16 +68,47 @@ export function SlotCard({
     if (isBooked) return 'Já Agendado';
     if (hasTimeConflict) return 'Conflito de Horário';
     if (isLocked) return 'Horário Bloqueado';
-    if (isFull) return 'Lotado';
-    if (!canBook) return 'Prazo Esgotado';
+    if (!canBook && !isFull) return 'Prazo Esgotado';
+    if (isFull) return null; // handled separately
     return 'Solicitar Agendamento';
   };
 
   const confirmedCount = classmateNames.length;
 
+  // Determine what to render for the full-slot case
+  const renderFullSlotButton = () => {
+    if (isOnWaitlist) {
+      return (
+        <Button variant="secondary" className="w-full opacity-70 cursor-not-allowed" disabled>
+          Na Fila
+        </Button>
+      );
+    }
+    if (waitlistEnabled && onJoinWaitlist && canBook && !forceDisabled) {
+      return (
+        <Button
+          variant="outline"
+          className="w-full border-accent text-accent hover:bg-accent/10"
+          disabled={waitlistLoading}
+          onClick={(e) => { e.stopPropagation(); onJoinWaitlist(); }}
+        >
+          {waitlistLoading ? (
+            <><Loader2 className="w-4 h-4 animate-spin mr-1" /> Entrando...</>
+          ) : (
+            'Entrar na Fila de Espera'
+          )}
+        </Button>
+      );
+    }
+    return (
+      <Button variant="secondary" className="w-full opacity-70 cursor-not-allowed" disabled>
+        Esgotado
+      </Button>
+    );
+  };
+
   return (
     <div className="bg-card rounded-xl border overflow-hidden card-hover">
-      {/* Clickable header area — expands/collapses the card */}
       <button
         type="button"
         className="w-full p-4 text-left focus:outline-none"
@@ -101,7 +140,6 @@ export function SlotCard({
         </div>
       </button>
 
-      {/* Expanded content — classmate names */}
       <div
         className={cn(
           'overflow-hidden transition-all duration-200 ease-in-out',
@@ -132,9 +170,10 @@ export function SlotCard({
         </div>
       </div>
 
-      {/* Booking button */}
       <div className="px-4 pb-4">
-        {forceDisabled ? (
+        {isFull && !forceDisabled ? (
+          renderFullSlotButton()
+        ) : forceDisabled ? (
           <Button
             variant="secondary"
             className="w-full bg-muted text-muted-foreground cursor-not-allowed opacity-70"

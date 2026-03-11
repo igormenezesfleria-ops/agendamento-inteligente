@@ -11,7 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Loader2, Plus, Trash2, Clock, Inbox, UserCheck } from 'lucide-react';
+import { Loader2, Plus, Trash2, Clock, Inbox, UserCheck, Pencil, ListOrdered } from 'lucide-react';
 import { DAYS_OF_WEEK } from '@/lib/constants';
 
 export default function AdminScheduleManager() {
@@ -26,6 +26,10 @@ export default function AdminScheduleManager() {
   const [requiresApproval, setRequiresApproval] = useState(true);
   const [actionWindowHours, setActionWindowHours] = useState('2');
   const [defaultCollaboratorId, setDefaultCollaboratorId] = useState<string>('none');
+  const [waitlistEnabled, setWaitlistEnabled] = useState(true);
+
+  // Edit mode state
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ['admin-class-schedules', user?.id],
@@ -69,25 +73,54 @@ export default function AdminScheduleManager() {
         requires_approval: requiresApproval,
         action_window_hours: parseInt(actionWindowHours) || 2,
       };
+      insertData.waitlist_enabled = waitlistEnabled;
       if (defaultCollaboratorId && defaultCollaboratorId !== 'none') {
         insertData.default_collaborator_id = defaultCollaboratorId;
       }
-      const { error } = await supabase.from('class_schedules').insert(insertData);
-      if (error) throw error;
+
+      if (editingId) {
+        const { error } = await supabase.from('class_schedules').update(insertData).eq('id', editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('class_schedules').insert(insertData);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success('Horário adicionado!');
+      toast.success(editingId ? 'Horário atualizado!' : 'Horário adicionado!');
       queryClient.invalidateQueries({ queryKey: ['admin-class-schedules'] });
-      setOpen(false);
-      setStartTime('09:00');
-      setEndTime('10:00');
-      setCapacity('10');
-      setRequiresApproval(true);
-      setActionWindowHours('2');
-      setDefaultCollaboratorId('none');
+      resetAndClose();
     },
     onError: () => toast.error('Erro ao adicionar horário.'),
   });
+
+  const resetAndClose = () => {
+    setOpen(false);
+    setEditingId(null);
+    setDayOfWeek('1');
+    setStartTime('09:00');
+    setEndTime('10:00');
+    setCapacity('10');
+    setClassName('Musculação');
+    setRequiresApproval(true);
+    setActionWindowHours('2');
+    setDefaultCollaboratorId('none');
+    setWaitlistEnabled(true);
+  };
+
+  const openEdit = (slot: any) => {
+    setEditingId(slot.id);
+    setDayOfWeek(String(slot.day_of_week));
+    setStartTime(slot.start_time?.slice(0, 5) || '09:00');
+    setEndTime(slot.end_time?.slice(0, 5) || '10:00');
+    setCapacity(String(slot.capacity));
+    setClassName(slot.class_name || 'Musculação');
+    setRequiresApproval(slot.requires_approval);
+    setActionWindowHours(String(slot.action_window_hours || 2));
+    setDefaultCollaboratorId(slot.default_collaborator_id || 'none');
+    setWaitlistEnabled(slot.waitlist_enabled ?? true);
+    setOpen(true);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
@@ -118,12 +151,12 @@ export default function AdminScheduleManager() {
             <h1 className="font-display text-3xl text-foreground">Configurar Horários</h1>
             <p className="text-muted-foreground">Defina os horários semanais disponíveis para agendamento.</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { if (!v) resetAndClose(); else setOpen(true); }}>
             <DialogTrigger asChild>
-              <Button variant="accent"><Plus className="w-4 h-4 mr-2" />Novo Horário</Button>
+              <Button variant="accent" onClick={() => { resetAndClose(); setOpen(true); }}><Plus className="w-4 h-4 mr-2" />Novo Horário</Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Adicionar Horário</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingId ? 'Editar Horário' : 'Adicionar Horário'}</DialogTitle></DialogHeader>
               <form onSubmit={(e) => { e.preventDefault(); addMutation.mutate(); }} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Dia da Semana</Label>
@@ -187,9 +220,16 @@ export default function AdminScheduleManager() {
                   </div>
                   <Switch checked={requiresApproval} onCheckedChange={setRequiresApproval} />
                 </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <Label>Fila de Espera</Label>
+                    <p className="text-xs text-muted-foreground">Quando lotado, alunos podem entrar na fila.</p>
+                  </div>
+                  <Switch checked={waitlistEnabled} onCheckedChange={setWaitlistEnabled} />
+                </div>
                 <Button type="submit" variant="accent" className="w-full" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                  Adicionar
+                  {editingId ? 'Salvar Alterações' : 'Adicionar'}
                 </Button>
               </form>
             </DialogContent>
@@ -233,10 +273,20 @@ export default function AdminScheduleManager() {
                                 {collabMap.get(slot.default_collaborator_id) || 'Colaborador'}
                               </span>
                             )}
+                            {slot.waitlist_enabled && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <ListOrdered className="w-3 h-3" /> Fila
+                              </span>
+                            )}
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(slot.id)} disabled={deleteMutation.isPending}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(slot)}>
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(slot.id)} disabled={deleteMutation.isPending}>
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
