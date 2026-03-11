@@ -151,12 +151,12 @@ export default function AdminScheduleManager() {
             <h1 className="font-display text-3xl text-foreground">Configurar Horários</h1>
             <p className="text-muted-foreground">Defina os horários semanais disponíveis para agendamento.</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { if (!v) resetAndClose(); else setOpen(true); }}>
             <DialogTrigger asChild>
-              <Button variant="accent"><Plus className="w-4 h-4 mr-2" />Novo Horário</Button>
+              <Button variant="accent" onClick={() => { resetAndClose(); setOpen(true); }}><Plus className="w-4 h-4 mr-2" />Novo Horário</Button>
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle>Adicionar Horário</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{editingId ? 'Editar Horário' : 'Adicionar Horário'}</DialogTitle></DialogHeader>
               <form onSubmit={(e) => { e.preventDefault(); addMutation.mutate(); }} className="space-y-4">
                 <div className="space-y-2">
                   <Label>Dia da Semana</Label>
