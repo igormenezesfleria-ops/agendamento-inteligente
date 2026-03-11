@@ -273,10 +273,20 @@ export default function AdminScheduleManager() {
                                 {collabMap.get(slot.default_collaborator_id) || 'Colaborador'}
                               </span>
                             )}
+                            {slot.waitlist_enabled && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <ListOrdered className="w-3 h-3" /> Fila
+                              </span>
+                            )}
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(slot.id)} disabled={deleteMutation.isPending}>
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEdit(slot)}>
+                              <Pencil className="w-4 h-4 text-muted-foreground" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(slot.id)} disabled={deleteMutation.isPending}>
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}
