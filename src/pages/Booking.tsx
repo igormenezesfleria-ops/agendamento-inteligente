@@ -337,6 +337,28 @@ export default function Booking() {
     },
   });
 
+  const [waitlistSlot, setWaitlistSlot] = useState<string | null>(null);
+  const joinWaitlistMutation = useMutation({
+    mutationFn: async (classScheduleId: string) => {
+      if (!user?.id || !formattedDate) throw new Error('Missing data');
+      const { error } = await supabase.from('waitlist').insert({
+        class_schedule_id: classScheduleId,
+        date: formattedDate,
+        student_id: user.id,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Você entrou na fila de espera!');
+      queryClient.invalidateQueries({ queryKey: ['myWaitlist', formattedDate, user?.id] });
+      setWaitlistSlot(null);
+    },
+    onError: () => {
+      toast.error('Erro ao entrar na fila.');
+      setWaitlistSlot(null);
+    },
+  });
+
   const canBookSlot = (startTime: string, actionWindowHours?: number) => {
     if (!selectedDate) return false;
     const [hours, mins] = startTime.split(':').map(Number);
