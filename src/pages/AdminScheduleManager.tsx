@@ -220,9 +220,16 @@ export default function AdminScheduleManager() {
                   </div>
                   <Switch checked={requiresApproval} onCheckedChange={setRequiresApproval} />
                 </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <Label>Fila de Espera</Label>
+                    <p className="text-xs text-muted-foreground">Quando lotado, alunos podem entrar na fila.</p>
+                  </div>
+                  <Switch checked={waitlistEnabled} onCheckedChange={setWaitlistEnabled} />
+                </div>
                 <Button type="submit" variant="accent" className="w-full" disabled={addMutation.isPending}>
                   {addMutation.isPending && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
-                  Adicionar
+                  {editingId ? 'Salvar Alterações' : 'Adicionar'}
                 </Button>
               </form>
             </DialogContent>
