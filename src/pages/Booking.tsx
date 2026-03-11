@@ -85,6 +85,27 @@ export default function Booking() {
     refetchInterval: 2000,
   });
 
+  // Fetch waitlist entries for this student on selected date
+  const { data: myWaitlistEntries } = useQuery({
+    queryKey: ['myWaitlist', formattedDate, user?.id],
+    queryFn: async () => {
+      if (!formattedDate || !user?.id) return [];
+      const { data, error } = await supabase
+        .from('waitlist')
+        .select('class_schedule_id')
+        .eq('student_id', user.id)
+        .eq('date', formattedDate)
+        .eq('status', 'waiting');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!formattedDate && !!user?.id,
+  });
+
+  const myWaitlistClassIds = new Set(
+    myWaitlistEntries?.map((w) => w.class_schedule_id) || []
+  );
+
   // 4. Classmate profiles
   const allRelevantStudentIds = [
     ...new Set([
