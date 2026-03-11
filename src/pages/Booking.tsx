@@ -443,6 +443,13 @@ export default function Booking() {
                       onBook={() => handleBook(slotKey, classId)}
                       actionWindowHours={slot.action_window_hours ?? 2}
                       classmateNames={getClassmateNames(classId, slotKey)}
+                      waitlistEnabled={(slot as any).waitlist_enabled ?? true}
+                      isOnWaitlist={myWaitlistClassIds.has(classId)}
+                      waitlistLoading={waitlistSlot === classId}
+                      onJoinWaitlist={() => {
+                        setWaitlistSlot(classId);
+                        joinWaitlistMutation.mutate(classId);
+                      }}
                     />
                   );
                 })}
