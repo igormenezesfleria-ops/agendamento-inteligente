@@ -73,11 +73,18 @@ export default function AdminScheduleManager() {
         requires_approval: requiresApproval,
         action_window_hours: parseInt(actionWindowHours) || 2,
       };
+      insertData.waitlist_enabled = waitlistEnabled;
       if (defaultCollaboratorId && defaultCollaboratorId !== 'none') {
         insertData.default_collaborator_id = defaultCollaboratorId;
       }
-      const { error } = await supabase.from('class_schedules').insert(insertData);
-      if (error) throw error;
+
+      if (editingId) {
+        const { error } = await supabase.from('class_schedules').update(insertData).eq('id', editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('class_schedules').insert(insertData);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       toast.success('Horário adicionado!');
