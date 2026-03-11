@@ -94,6 +94,34 @@ export default function AdminScheduleManager() {
     onError: () => toast.error('Erro ao adicionar horário.'),
   });
 
+  const resetAndClose = () => {
+    setOpen(false);
+    setEditingId(null);
+    setDayOfWeek('1');
+    setStartTime('09:00');
+    setEndTime('10:00');
+    setCapacity('10');
+    setClassName('Musculação');
+    setRequiresApproval(true);
+    setActionWindowHours('2');
+    setDefaultCollaboratorId('none');
+    setWaitlistEnabled(true);
+  };
+
+  const openEdit = (slot: any) => {
+    setEditingId(slot.id);
+    setDayOfWeek(String(slot.day_of_week));
+    setStartTime(slot.start_time?.slice(0, 5) || '09:00');
+    setEndTime(slot.end_time?.slice(0, 5) || '10:00');
+    setCapacity(String(slot.capacity));
+    setClassName(slot.class_name || 'Musculação');
+    setRequiresApproval(slot.requires_approval);
+    setActionWindowHours(String(slot.action_window_hours || 2));
+    setDefaultCollaboratorId(slot.default_collaborator_id || 'none');
+    setWaitlistEnabled(slot.waitlist_enabled ?? true);
+    setOpen(true);
+  };
+
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('class_schedules').delete().eq('id', id);
