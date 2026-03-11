@@ -26,6 +26,10 @@ export default function AdminScheduleManager() {
   const [requiresApproval, setRequiresApproval] = useState(true);
   const [actionWindowHours, setActionWindowHours] = useState('2');
   const [defaultCollaboratorId, setDefaultCollaboratorId] = useState<string>('none');
+  const [waitlistEnabled, setWaitlistEnabled] = useState(true);
+
+  // Edit mode state
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ['admin-class-schedules', user?.id],
