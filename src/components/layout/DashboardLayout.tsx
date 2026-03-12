@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ROLE_LABELS } from '@/lib/constants';
 import {
-  Dumbbell, Calendar, User, LogOut, Menu, X, Home, Users,
+  Dumbbell, Calendar, User, LogOut, Menu, X, Home, Users, Bell,
   ClipboardList, Lock, History, MessageSquare, Settings, CalendarCheck, GraduationCap, DollarSign, CreditCard, Package, ShoppingBag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
