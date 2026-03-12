@@ -327,6 +327,7 @@ export default function MyStudents() {
                     </div>
                   </div>
 
+                  <div className="grid gap-3">
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
                       <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
                       <div>
