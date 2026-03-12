@@ -22,6 +22,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  usePushPermission();
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
