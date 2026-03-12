@@ -38,6 +38,8 @@ interface Student {
   profile_completed: boolean;
   height: string | null;
   birth_date: string | null;
+  current_streak: number;
+  longest_streak: number;
 }
 
 function calculateAge(birthDateStr: string | null): number | null {
