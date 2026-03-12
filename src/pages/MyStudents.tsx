@@ -14,7 +14,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
@@ -38,6 +38,8 @@ interface Student {
   profile_completed: boolean;
   height: string | null;
   birth_date: string | null;
+  current_streak: number;
+  longest_streak: number;
 }
 
 function calculateAge(birthDateStr: string | null): number | null {
@@ -306,6 +308,24 @@ export default function MyStudents() {
                       )}
                     </div>
                   )}
+
+                  {/* Streak badge */}
+                  <div className="flex gap-3">
+                    <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                      <Flame className="w-4 h-4 text-orange-500 shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Ofensiva Atual</p>
+                        <p className="text-lg font-bold text-orange-500">{selectedStudent.current_streak} sem.</p>
+                      </div>
+                    </div>
+                    <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                      <Flame className="w-4 h-4 text-orange-400 shrink-0" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Recorde</p>
+                        <p className="text-lg font-bold text-orange-400">{selectedStudent.longest_streak} sem.</p>
+                      </div>
+                    </div>
+                  </div>
 
                   <div className="grid gap-3">
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">

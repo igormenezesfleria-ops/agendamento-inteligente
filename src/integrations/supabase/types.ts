@@ -293,6 +293,7 @@ export type Database = {
           collaborator_rate: number | null
           cpf: string | null
           created_at: string
+          current_streak: number
           date_of_birth: string | null
           default_capacity: number
           emergency_contact: string | null
@@ -305,6 +306,8 @@ export type Database = {
           instagram_handle: string | null
           is_active: boolean | null
           is_onboarded: boolean
+          last_attendance_week: string | null
+          longest_streak: number
           main_objective: string | null
           name: string | null
           no_show_rate: number | null
@@ -330,6 +333,7 @@ export type Database = {
           collaborator_rate?: number | null
           cpf?: string | null
           created_at?: string
+          current_streak?: number
           date_of_birth?: string | null
           default_capacity?: number
           emergency_contact?: string | null
@@ -342,6 +346,8 @@ export type Database = {
           instagram_handle?: string | null
           is_active?: boolean | null
           is_onboarded?: boolean
+          last_attendance_week?: string | null
+          longest_streak?: number
           main_objective?: string | null
           name?: string | null
           no_show_rate?: number | null
@@ -367,6 +373,7 @@ export type Database = {
           collaborator_rate?: number | null
           cpf?: string | null
           created_at?: string
+          current_streak?: number
           date_of_birth?: string | null
           default_capacity?: number
           emergency_contact?: string | null
@@ -379,6 +386,8 @@ export type Database = {
           instagram_handle?: string | null
           is_active?: boolean | null
           is_onboarded?: boolean
+          last_attendance_week?: string | null
+          longest_streak?: number
           main_objective?: string | null
           name?: string | null
           no_show_rate?: number | null
