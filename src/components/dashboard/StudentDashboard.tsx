@@ -136,6 +136,9 @@ export function StudentDashboard() {
         </p>
       </div>
 
+      {/* Streak Badge */}
+      <StreakBadge />
+
       {/* Performance Receipt Card */}
       <Card className="border-0 bg-slate-900 text-white overflow-hidden relative">
         <CardContent className="p-5 flex items-center gap-4">
