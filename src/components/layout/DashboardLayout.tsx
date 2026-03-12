@@ -9,6 +9,8 @@ import {
   ClipboardList, Lock, History, MessageSquare, Settings, CalendarCheck, GraduationCap, DollarSign, CreditCard, Package, ShoppingBag,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NotificationBell } from '@/components/layout/NotificationBell';
+import { usePushPermission } from '@/hooks/usePushPermission';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -19,6 +21,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  usePushPermission();
 
   const handleSignOut = async () => {
     await signOut();
@@ -34,7 +38,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Mobile header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border print:hidden">
         <div className="flex items-center justify-between px-4 h-16">
-          <div className="w-10" />
+          <NotificationBell />
           <Link to="/dashboard" className="bg-white rounded-full px-6 py-1.5 shadow-sm flex items-center justify-center">
             <img src="/logo-synton.png" alt="Synton" className="h-6 w-auto object-contain" />
           </Link>
@@ -58,10 +62,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="hidden lg:flex items-center justify-center px-6 h-16 border-b border-sidebar-border">
+          <div className="hidden lg:flex items-center justify-between px-6 h-16 border-b border-sidebar-border">
             <Link to="/dashboard" className="bg-white rounded-full px-6 py-1.5 shadow-sm flex items-center justify-center">
               <img src="/logo-synton.png" alt="Synton" className="h-7 w-auto object-contain" />
             </Link>
+            <NotificationBell />
           </div>
 
           {/* User info */}
