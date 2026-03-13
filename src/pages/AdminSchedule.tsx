@@ -155,6 +155,9 @@ export default function AdminSchedule() {
     const slotFixed = fixedStudents?.filter((f) =>
       f.class_schedule_id === slot.id || f.time_slot === slotKey
     ) || [];
+    const slotWaitlist = waitlistEntries?.filter((w) =>
+      w.class_schedule_id === slot.id
+    ) || [];
     const instructorName = slot.default_collaborator_id
       ? collaboratorProfiles?.get(slot.default_collaborator_id) || null
       : null;
@@ -163,6 +166,7 @@ export default function AdminSchedule() {
       classSlot: slot,
       appointments: slotAppts,
       fixedStudents: slotFixed,
+      waitlistStudents: slotWaitlist,
       instructorName,
     });
   };
