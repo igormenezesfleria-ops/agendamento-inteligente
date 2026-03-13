@@ -22,6 +22,7 @@ interface SlotDetail {
   classSlot: any;
   appointments: any[];
   fixedStudents: any[];
+  waitlistStudents: any[];
   instructorName: string | null;
 }
 
