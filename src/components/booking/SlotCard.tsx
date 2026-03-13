@@ -20,6 +20,7 @@ interface SlotCardProps {
   classmateNames?: string[];
   waitlistEnabled?: boolean;
   isOnWaitlist?: boolean;
+  waitlistPosition?: number | null;
   waitlistLoading?: boolean;
   onJoinWaitlist?: () => void;
 }

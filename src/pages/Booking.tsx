@@ -85,19 +85,30 @@ export default function Booking() {
     refetchInterval: 2000,
   });
 
-  // Fetch waitlist entries for this student on selected date
+  // Fetch waitlist entries for this student on selected date (with position)
   const { data: myWaitlistEntries } = useQuery({
     queryKey: ['myWaitlist', formattedDate, user?.id],
     queryFn: async () => {
       if (!formattedDate || !user?.id) return [];
-      const { data, error } = await supabase
+      // Get all waiting entries for this date to calculate position
+      const { data: allWaiting, error: allErr } = await supabase
         .from('waitlist')
-        .select('class_schedule_id')
-        .eq('student_id', user.id)
+        .select('id, class_schedule_id, student_id, created_at')
         .eq('date', formattedDate)
-        .eq('status', 'waiting');
-      if (error) throw error;
-      return data || [];
+        .eq('status', 'waiting')
+        .order('created_at', { ascending: true });
+      if (allErr) throw allErr;
+
+      // Filter to only this student's entries and compute position per class
+      const result: { class_schedule_id: string; position: number }[] = [];
+      const myEntries = (allWaiting || []).filter(w => w.student_id === user.id);
+      for (const entry of myEntries) {
+        const position = (allWaiting || [])
+          .filter(w => w.class_schedule_id === entry.class_schedule_id)
+          .findIndex(w => w.student_id === user.id) + 1;
+        result.push({ class_schedule_id: entry.class_schedule_id, position });
+      }
+      return result;
     },
     enabled: !!formattedDate && !!user?.id,
   });
@@ -105,6 +116,10 @@ export default function Booking() {
   const myWaitlistClassIds = new Set(
     myWaitlistEntries?.map((w) => w.class_schedule_id) || []
   );
+  const myWaitlistPositions: Record<string, number> = {};
+  myWaitlistEntries?.forEach(w => {
+    myWaitlistPositions[w.class_schedule_id] = w.position;
+  });
 
   // 4. Classmate profiles
   const allRelevantStudentIds = [
