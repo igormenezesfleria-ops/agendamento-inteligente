@@ -105,6 +105,31 @@ export default function AdminSchedule() {
     enabled: !!user?.id && dayOfWeek !== null,
   });
 
+  // Fetch waitlist entries for selected date
+  const { data: waitlistEntries } = useQuery({
+    queryKey: ['admin-waitlist', formattedDate],
+    queryFn: async () => {
+      if (!formattedDate) return [];
+      const { data, error } = await supabase
+        .from('waitlist')
+        .select('id, class_schedule_id, student_id, status, created_at')
+        .eq('date', formattedDate)
+        .eq('status', 'waiting')
+        .order('created_at');
+      if (error) throw error;
+      if (!data || data.length === 0) return [];
+
+      const sIds = [...new Set(data.map(d => d.student_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', sIds);
+      const pMap = new Map((profiles || []).map(p => [p.id, p.name || 'Aluno']));
+      return data.map(d => ({ ...d, studentName: pMap.get(d.student_id) || 'Aluno' }));
+    },
+    enabled: !!formattedDate,
+  });
+
   // Fetch collaborator profiles for instructor names
   const { data: collaboratorProfiles } = useQuery({
     queryKey: ['collaborator-profiles', user?.id],
