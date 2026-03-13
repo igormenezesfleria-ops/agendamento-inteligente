@@ -41,6 +41,7 @@ export function SlotCard({
   classmateNames = [],
   waitlistEnabled = false,
   isOnWaitlist = false,
+  waitlistPosition = null,
   waitlistLoading = false,
   onJoinWaitlist,
 }: SlotCardProps) {
