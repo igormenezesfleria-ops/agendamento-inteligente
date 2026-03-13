@@ -139,22 +139,22 @@ export function StudentDashboard() {
       {/* Streak Badge */}
       <StreakBadge />
 
-      {/* Performance Receipt Card */}
+      {/* Gamification Infographic Card */}
       <Card className="border-0 bg-slate-900 text-white overflow-hidden relative">
         <CardContent className="p-5 flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
             <BarChart3 className="w-6 h-6 text-orange-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm text-white">Extrato de Desempenho</p>
-            <p className="text-xs text-slate-400">Mostre sua evolução nos Stories!</p>
+            <p className="font-bold text-sm text-white">Infográfico de Impacto</p>
+            <p className="text-xs text-slate-400">Gere e compartilhe nos Stories!</p>
           </div>
           <Button
             onClick={() => setReceiptOpen(true)}
             className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shrink-0"
             size="sm"
           >
-            📊 Compartilhar
+            🔥 Gerar
           </Button>
         </CardContent>
       </Card>
