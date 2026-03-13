@@ -348,6 +348,27 @@ export default function AdminSchedule() {
                   })
                 )}
               </div>
+
+              {/* Waitlist */}
+              {selectedSlot && selectedSlot.waitlistStudents.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <ListOrdered className="w-3.5 h-3.5 text-orange-500" />
+                    Fila de Espera ({selectedSlot.waitlistStudents.length})
+                  </p>
+                  {selectedSlot.waitlistStudents.map((w: any, i: number) => (
+                    <div key={w.id} className="flex items-center justify-between p-2 rounded-lg bg-orange-500/5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-orange-500 w-5">{i + 1}º</span>
+                        <span className="text-sm text-foreground">{w.studentName}</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                        Aguardando
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
