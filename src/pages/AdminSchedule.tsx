@@ -357,12 +357,12 @@ export default function AdminSchedule() {
                     Fila de Espera ({selectedSlot.waitlistStudents.length})
                   </p>
                   {selectedSlot.waitlistStudents.map((w: any, i: number) => (
-                    <div key={w.id} className="flex items-center justify-between p-2 rounded-lg bg-orange-500/5">
+                    <div key={w.id} className="flex items-center justify-between p-2 rounded-lg bg-accent/5">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-orange-500 w-5">{i + 1}º</span>
+                        <span className="text-xs font-bold text-accent w-5">{i + 1}º</span>
                         <span className="text-sm text-foreground">{w.studentName}</span>
                       </div>
-                      <Badge variant="outline" className="text-xs text-orange-600 border-orange-300">
+                      <Badge variant="outline" className="text-xs">
                         Aguardando
                       </Badge>
                     </div>
