@@ -460,6 +460,7 @@ export default function Booking() {
                       classmateNames={getClassmateNames(classId, slotKey)}
                       waitlistEnabled={(slot as any).waitlist_enabled ?? true}
                       isOnWaitlist={myWaitlistClassIds.has(classId)}
+                      waitlistPosition={myWaitlistPositions[classId] || null}
                       waitlistLoading={waitlistSlot === classId}
                       onJoinWaitlist={() => {
                         setWaitlistSlot(classId);
