@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Clock, User, Inbox, Pin } from 'lucide-react';
+import { Loader2, Clock, User, Inbox, Pin, ListOrdered } from 'lucide-react';
 import { format, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
@@ -22,6 +22,7 @@ interface SlotDetail {
   classSlot: any;
   appointments: any[];
   fixedStudents: any[];
+  waitlistStudents: any[];
   instructorName: string | null;
 }
 
@@ -104,6 +105,31 @@ export default function AdminSchedule() {
     enabled: !!user?.id && dayOfWeek !== null,
   });
 
+  // Fetch waitlist entries for selected date
+  const { data: waitlistEntries } = useQuery({
+    queryKey: ['admin-waitlist', formattedDate],
+    queryFn: async () => {
+      if (!formattedDate) return [];
+      const { data, error } = await supabase
+        .from('waitlist')
+        .select('id, class_schedule_id, student_id, status, created_at')
+        .eq('date', formattedDate)
+        .eq('status', 'waiting')
+        .order('created_at');
+      if (error) throw error;
+      if (!data || data.length === 0) return [];
+
+      const sIds = [...new Set(data.map(d => d.student_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', sIds);
+      const pMap = new Map((profiles || []).map(p => [p.id, p.name || 'Aluno']));
+      return data.map(d => ({ ...d, studentName: pMap.get(d.student_id) || 'Aluno' }));
+    },
+    enabled: !!formattedDate,
+  });
+
   // Fetch collaborator profiles for instructor names
   const { data: collaboratorProfiles } = useQuery({
     queryKey: ['collaborator-profiles', user?.id],
@@ -129,6 +155,9 @@ export default function AdminSchedule() {
     const slotFixed = fixedStudents?.filter((f) =>
       f.class_schedule_id === slot.id || f.time_slot === slotKey
     ) || [];
+    const slotWaitlist = waitlistEntries?.filter((w) =>
+      w.class_schedule_id === slot.id
+    ) || [];
     const instructorName = slot.default_collaborator_id
       ? collaboratorProfiles?.get(slot.default_collaborator_id) || null
       : null;
@@ -137,6 +166,7 @@ export default function AdminSchedule() {
       classSlot: slot,
       appointments: slotAppts,
       fixedStudents: slotFixed,
+      waitlistStudents: slotWaitlist,
       instructorName,
     });
   };
@@ -318,6 +348,27 @@ export default function AdminSchedule() {
                   })
                 )}
               </div>
+
+              {/* Waitlist */}
+              {selectedSlot && selectedSlot.waitlistStudents.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
+                    <ListOrdered className="w-3.5 h-3.5 text-orange-500" />
+                    Fila de Espera ({selectedSlot.waitlistStudents.length})
+                  </p>
+                  {selectedSlot.waitlistStudents.map((w: any, i: number) => (
+                    <div key={w.id} className="flex items-center justify-between p-2 rounded-lg bg-accent/5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-accent w-5">{i + 1}º</span>
+                        <span className="text-sm text-foreground">{w.studentName}</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs">
+                        Aguardando
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>

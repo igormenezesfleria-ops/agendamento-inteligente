@@ -20,6 +20,7 @@ interface SlotCardProps {
   classmateNames?: string[];
   waitlistEnabled?: boolean;
   isOnWaitlist?: boolean;
+  waitlistPosition?: number | null;
   waitlistLoading?: boolean;
   onJoinWaitlist?: () => void;
 }
@@ -40,6 +41,7 @@ export function SlotCard({
   classmateNames = [],
   waitlistEnabled = false,
   isOnWaitlist = false,
+  waitlistPosition = null,
   waitlistLoading = false,
   onJoinWaitlist,
 }: SlotCardProps) {
@@ -79,9 +81,16 @@ export function SlotCard({
   const renderFullSlotButton = () => {
     if (isOnWaitlist) {
       return (
-        <Button variant="secondary" className="w-full opacity-70 cursor-not-allowed" disabled>
-          Na Fila
-        </Button>
+        <div className="space-y-1">
+          <Button variant="secondary" className="w-full opacity-70 cursor-not-allowed" disabled>
+            Na Fila
+          </Button>
+          {waitlistPosition && (
+            <p className="text-xs text-center text-muted-foreground">
+              Você é o <span className="font-semibold text-accent">{waitlistPosition}º</span> da fila
+            </p>
+          )}
+        </div>
       );
     }
     if (waitlistEnabled && onJoinWaitlist && canBook && !forceDisabled) {
