@@ -302,6 +302,29 @@ function MetricCard({ icon: Icon, label, value }: { icon: React.ElementType; lab
   );
 }
 
+const quickActionColors: Record<string, { bg: string; icon: string }> = {
+  accent: { bg: 'bg-accent/15', icon: 'text-accent' },
+  primary: { bg: 'bg-primary/15', icon: 'text-primary' },
+  warning: { bg: 'bg-warning/15', icon: 'text-warning' },
+  secondary: { bg: 'bg-secondary', icon: 'text-secondary-foreground' },
+};
+
+function QuickActionCard({ icon: Icon, label, to, color }: { icon: React.ElementType; label: string; to: string; color: string }) {
+  const c = quickActionColors[color] || quickActionColors.secondary;
+  return (
+    <Link to={to}>
+      <Card className="hover:shadow-md transition-shadow cursor-pointer active:scale-[0.97]">
+        <CardContent className="p-4 flex flex-col items-center gap-2.5">
+          <div className={cn('w-11 h-11 rounded-full flex items-center justify-center', c.bg)}>
+            <Icon className={cn('w-5 h-5', c.icon)} />
+          </div>
+          <span className="text-sm font-semibold text-foreground text-center">{label}</span>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
 function EmptyState({ message }: { message: string }) {
   return (
     <div className="text-center py-12">
