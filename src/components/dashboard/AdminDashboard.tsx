@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2, ChevronRight, Zap, BarChart3 } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2, ChevronRight, Zap, BarChart3, Settings, Tag } from 'lucide-react';
 import { format, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
@@ -206,6 +206,17 @@ export function AdminDashboard() {
         <MetricCard icon={GraduationCap} label="Alunos Ativos" value={studentCount} />
       </div>
 
+      {/* Quick Actions Grid */}
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-muted-foreground">Acesso Rápido</p>
+        <div className="grid grid-cols-2 gap-3">
+          <QuickActionCard icon={GraduationCap} label="Meus Alunos" to="/dashboard/alunos" color="accent" />
+          <QuickActionCard icon={Calendar} label="Agenda Completa" to="/dashboard/agenda" color="primary" />
+          <QuickActionCard icon={Tag} label="Planos & Preços" to="/dashboard/planos" color="warning" />
+          <QuickActionCard icon={Settings} label="Ajuste de Horários" to="/dashboard/horarios" color="secondary" />
+        </div>
+      </div>
+
       {/* Today's agenda */}
       <div className="space-y-4">
         <h2 className="font-display text-xl text-foreground">Agenda de Hoje</h2>
@@ -287,6 +298,29 @@ function MetricCard({ icon: Icon, label, value }: { icon: React.ElementType; lab
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+const quickActionColors: Record<string, { bg: string; icon: string }> = {
+  accent: { bg: 'bg-accent/15', icon: 'text-accent' },
+  primary: { bg: 'bg-primary/15', icon: 'text-primary' },
+  warning: { bg: 'bg-warning/15', icon: 'text-warning' },
+  secondary: { bg: 'bg-secondary', icon: 'text-secondary-foreground' },
+};
+
+function QuickActionCard({ icon: Icon, label, to, color }: { icon: React.ElementType; label: string; to: string; color: string }) {
+  const c = quickActionColors[color] || quickActionColors.secondary;
+  return (
+    <Link to={to}>
+      <Card className="hover:shadow-md transition-shadow cursor-pointer active:scale-[0.97]">
+        <CardContent className="p-4 flex flex-col items-center gap-2.5">
+          <div className={cn('w-11 h-11 rounded-full flex items-center justify-center', c.bg)}>
+            <Icon className={cn('w-5 h-5', c.icon)} />
+          </div>
+          <span className="text-sm font-semibold text-foreground text-center">{label}</span>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }
 
