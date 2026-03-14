@@ -206,6 +206,18 @@ export function AdminDashboard() {
         <MetricCard icon={GraduationCap} label="Alunos Ativos" value={studentCount} />
       </div>
 
+      {/* Quick Actions Grid */}
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-muted-foreground">Acesso Rápido</p>
+        <div className="grid grid-cols-2 gap-3">
+          <QuickActionCard icon={GraduationCap} label="Meus Alunos" to="/dashboard/alunos" color="accent" />
+          <QuickActionCard icon={Calendar} label="Agenda Completa" to="/dashboard/agenda" color="primary" />
+          <QuickActionCard icon={Tag} label="Planos & Preços" to="/dashboard/planos" color="warning" />
+          <QuickActionCard icon={Settings} label="Ajuste de Horários" to="/dashboard/horarios" color="secondary" />
+        </div>
+      </div>
+      </div>
+
       {/* Today's agenda */}
       <div className="space-y-4">
         <h2 className="font-display text-xl text-foreground">Agenda de Hoje</h2>
