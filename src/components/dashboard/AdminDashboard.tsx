@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2, ChevronRight, Zap, BarChart3 } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2, ChevronRight, Zap, BarChart3, Settings, Tag } from 'lucide-react';
 import { format, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
