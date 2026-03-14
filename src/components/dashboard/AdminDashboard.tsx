@@ -216,7 +216,6 @@ export function AdminDashboard() {
           <QuickActionCard icon={Settings} label="Ajuste de Horários" to="/dashboard/horarios" color="secondary" />
         </div>
       </div>
-      </div>
 
       {/* Today's agenda */}
       <div className="space-y-4">
