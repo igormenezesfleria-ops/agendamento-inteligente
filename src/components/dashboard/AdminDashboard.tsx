@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+
 import { Link } from 'react-router-dom';
 import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt';
 import { toLocalDateTime } from '@/lib/deadline';
