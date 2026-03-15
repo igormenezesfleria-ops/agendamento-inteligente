@@ -135,6 +135,17 @@ export function AdminDashboard() {
         <p className="text-muted-foreground capitalize">{todayFormatted}</p>
       </div>
 
+      {/* Quick Actions — compact horizontal row */}
+      <div className="space-y-1.5">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acesso Rápido</p>
+        <div className="flex flex-row justify-between items-start gap-2">
+          <QuickActionCard icon={GraduationCap} label="Meus Alunos" to="/dashboard/meus-alunos" color="accent" />
+          <QuickActionCard icon={Calendar} label="Agenda" to="/dashboard/agenda" color="primary" />
+          <QuickActionCard icon={Tag} label="Planos" to="/dashboard/admin/plans" color="warning" />
+          <QuickActionCard icon={Settings} label="Horários" to="/dashboard/configurar-horarios" color="secondary" />
+        </div>
+      </div>
+
       {/* Impact Report CTA */}
       <Card className="bg-slate-900 border-orange-500/30 overflow-hidden">
         <CardContent className="p-4 flex items-center gap-4">
@@ -154,68 +165,6 @@ export function AdminDashboard() {
           </Button>
         </CardContent>
       </Card>
-
-      <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />
-
-      {/* Next class highlight — top priority */}
-      <Card className={cn(nextClass ? 'border-accent/40 bg-accent/5' : '')}>
-        <CardContent className="p-4">
-          {nextClass ? (
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="w-10 h-10 rounded-xl accent-gradient flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-accent-foreground" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Seu Próximo Treino</p>
-                <p className="text-foreground font-medium">
-                  {nextClass.time} - {nextClass.endTime} · {nextClass.studentName}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Seu Próximo Treino</p>
-                <p className="text-sm text-muted-foreground">Sem mais treinos para hoje. Dia de descanso! 💪</p>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Metric cards */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
-        <Link to="/dashboard/solicitacoes" className="group">
-          <Card className="cursor-pointer transition-opacity hover:opacity-80 border-accent/30">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center accent-gradient shrink-0">
-                <Bell className="w-6 h-6 text-accent-foreground" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
-                <p className="text-sm text-muted-foreground">Solicitações Pendentes</p>
-              </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors shrink-0" />
-            </CardContent>
-          </Card>
-        </Link>
-        <MetricCard icon={Calendar} label="Treinos Hoje" value={todayCount} />
-        <MetricCard icon={GraduationCap} label="Alunos Ativos" value={studentCount} />
-      </div>
-
-      {/* Quick Actions Grid */}
-      <div className="space-y-2">
-        <p className="text-sm font-semibold text-muted-foreground">Acesso Rápido</p>
-        <div className="grid grid-cols-2 gap-3">
-          <QuickActionCard icon={GraduationCap} label="Meus Alunos" to="/dashboard/alunos" color="accent" />
-          <QuickActionCard icon={Calendar} label="Agenda Completa" to="/dashboard/agenda" color="primary" />
-          <QuickActionCard icon={Tag} label="Planos & Preços" to="/dashboard/planos" color="warning" />
-          <QuickActionCard icon={Settings} label="Ajuste de Horários" to="/dashboard/horarios" color="secondary" />
-        </div>
-      </div>
 
       {/* Today's agenda */}
       <div className="space-y-4">
@@ -311,15 +260,11 @@ const quickActionColors: Record<string, { bg: string; icon: string }> = {
 function QuickActionCard({ icon: Icon, label, to, color }: { icon: React.ElementType; label: string; to: string; color: string }) {
   const c = quickActionColors[color] || quickActionColors.secondary;
   return (
-    <Link to={to}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer active:scale-[0.97]">
-        <CardContent className="p-4 flex flex-col items-center gap-2.5">
-          <div className={cn('w-11 h-11 rounded-full flex items-center justify-center', c.bg)}>
-            <Icon className={cn('w-5 h-5', c.icon)} />
-          </div>
-          <span className="text-sm font-semibold text-foreground text-center">{label}</span>
-        </CardContent>
-      </Card>
+    <Link to={to} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+      <div className={cn('w-12 h-12 rounded-2xl shadow-sm flex items-center justify-center bg-card border border-border', c.bg)}>
+        <Icon className={cn('w-5 h-5', c.icon)} />
+      </div>
+      <span className="text-[10px] font-semibold text-muted-foreground text-center leading-tight">{label}</span>
     </Link>
   );
 }
