@@ -1,17 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, Clock, User, Inbox, Loader2, ChevronRight, Zap, BarChart3, Settings, Tag } from 'lucide-react';
-import { format, getDay } from 'date-fns';
+import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User } from 'lucide-react';
+import { format, isToday, isTomorrow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { STATUS_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt';
+import { toLocalDateTime } from '@/lib/deadline';
 
 export function AdminDashboard() {
   const { user } = useAuth();
