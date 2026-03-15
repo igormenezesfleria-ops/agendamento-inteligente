@@ -38,10 +38,6 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Mobile header */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border print:hidden">
         <div className="flex items-center justify-between px-4 h-16">
-          <NotificationBell />
-          <Link to="/dashboard" className="bg-white rounded-full px-6 py-1.5 shadow-sm flex items-center justify-center">
-            <img src="/logo-synton.png" alt="Synton" className="h-6 w-auto object-contain" />
-          </Link>
           <Button
             variant="ghost"
             size="icon"
@@ -50,6 +46,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           >
             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </Button>
+          <Link to="/dashboard" className="bg-white rounded-full px-8 py-2 shadow-sm flex items-center justify-center">
+            <img src="/logo-synton.png" alt="Synton" className="h-8 w-auto object-contain" />
+          </Link>
+          <NotificationBell />
         </div>
       </header>
 
@@ -63,8 +63,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="hidden lg:flex items-center justify-between px-6 h-16 border-b border-sidebar-border">
-            <Link to="/dashboard" className="bg-white rounded-full px-6 py-1.5 shadow-sm flex items-center justify-center">
-              <img src="/logo-synton.png" alt="Synton" className="h-7 w-auto object-contain" />
+            <Link to="/dashboard" className="bg-white rounded-full px-8 py-2 shadow-sm flex items-center justify-center">
+              <img src="/logo-synton.png" alt="Synton" className="h-8 w-auto object-contain" />
             </Link>
             <NotificationBell />
           </div>
@@ -147,7 +147,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main content */}
       <main className="lg:ml-64 pt-16 lg:pt-0 min-h-screen w-full overflow-x-hidden print:ml-0 print:pt-0">
-        <div className="p-4 md:p-8 print:p-4">{children}</div>
+        <div className="p-4 md:p-8 print:p-4 max-w-lg mx-auto lg:max-w-4xl">{children}</div>
       </main>
     </div>
   );

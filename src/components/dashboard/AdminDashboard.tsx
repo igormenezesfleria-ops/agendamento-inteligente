@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+
 import { Link } from 'react-router-dom';
 import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt';
 import { toLocalDateTime } from '@/lib/deadline';
@@ -206,19 +206,11 @@ export function AdminDashboard() {
   );
 }
 
-const quickActionColors: Record<string, { bg: string; icon: string }> = {
-  accent: { bg: 'bg-accent/15', icon: 'text-accent' },
-  primary: { bg: 'bg-primary/15', icon: 'text-primary' },
-  warning: { bg: 'bg-warning/15', icon: 'text-warning' },
-  secondary: { bg: 'bg-secondary', icon: 'text-secondary-foreground' },
-};
-
-function QuickActionCard({ icon: Icon, label, to, color }: { icon: React.ElementType; label: string; to: string; color: string }) {
-  const c = quickActionColors[color] || quickActionColors.secondary;
+function QuickActionCard({ icon: Icon, label, to }: { icon: React.ElementType; label: string; to: string; color: string }) {
   return (
     <Link to={to} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-      <div className={cn('w-12 h-12 rounded-2xl shadow-sm flex items-center justify-center bg-card border border-border', c.bg)}>
-        <Icon className={cn('w-5 h-5', c.icon)} />
+      <div className="w-12 h-12 rounded-2xl shadow-sm flex items-center justify-center bg-card border border-border">
+        <Icon className="w-5 h-5 text-primary" />
       </div>
       <span className="text-[10px] font-semibold text-muted-foreground text-center leading-tight">{label}</span>
     </Link>
