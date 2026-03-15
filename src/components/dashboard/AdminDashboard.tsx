@@ -166,6 +166,36 @@ export function AdminDashboard() {
         </CardContent>
       </Card>
 
+      {/* Alert Cards */}
+      <div className="flex flex-col gap-3">
+        <Link to="/dashboard/solicitacoes">
+          <Card className="border-warning/30 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]">
+            <CardContent className="p-4 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-warning/15 flex items-center justify-center shrink-0">
+                <Bell className="w-5 h-5 text-warning" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">{pendingCount} Solicitações Pendentes</p>
+                <p className="text-xs text-muted-foreground">Toque para revisar</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Card className="border-accent/30">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5 text-accent" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">{todayCount} Treinos Hoje</p>
+              <p className="text-xs text-muted-foreground">{studentCount} alunos ativos</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Today's agenda */}
       <div className="space-y-4">
         <h2 className="font-display text-xl text-foreground">Agenda de Hoje</h2>
