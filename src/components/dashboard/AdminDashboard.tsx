@@ -16,8 +16,6 @@ export function AdminDashboard() {
   const { user } = useAuth();
   const [showImpact, setShowImpact] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
-  const dayOfWeek = getDay(new Date());
-  const nowTime = format(new Date(), 'HH:mm');
 
   const { data: pendingCount = 0 } = useQuery({
     queryKey: ['admin-stat-pending'],
@@ -26,19 +24,6 @@ export function AdminDashboard() {
         .from('appointments')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
-      if (error) throw error;
-      return count ?? 0;
-    },
-  });
-
-  const { data: todayCount = 0 } = useQuery({
-    queryKey: ['admin-stat-today'],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('appointments')
-        .select('*', { count: 'exact', head: true })
-        .eq('date', today)
-        .eq('status', 'confirmed');
       if (error) throw error;
       return count ?? 0;
     },
@@ -58,72 +43,66 @@ export function AdminDashboard() {
     enabled: !!user?.id,
   });
 
-  const { data: classSlots } = useQuery({
-    queryKey: ['admin-today-slots', user?.id, dayOfWeek],
+  const { data: nextAppointment } = useQuery({
+    queryKey: ['admin-next-appointment', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('class_schedules')
-        .select('*')
-        .eq('instructor_id', user!.id)
-        .eq('day_of_week', dayOfWeek)
-        .order('start_time');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user?.id,
-  });
-
-  const { data: todayAppointments, isLoading: loadingAppts } = useQuery({
-    queryKey: ['admin-today-appts', today],
-    queryFn: async () => {
+      // Fetch upcoming confirmed appointments for the entire studio
       const { data: appts, error } = await supabase
         .from('appointments')
         .select('id, date, time_slot, status, student_id, instructor_id')
-        .eq('date', today)
-        .in('status', ['pending', 'confirmed', 'delegated'])
-        .order('time_slot');
+        .in('status', ['confirmed', 'delegated'])
+        .gte('date', today)
+        .order('date')
+        .order('time_slot')
+        .limit(20);
       if (error) throw error;
-      if (!appts || appts.length === 0) return [];
+      if (!appts || appts.length === 0) return null;
 
-      const studentIds = [...new Set(appts.map((a) => a.student_id))];
-      const { data: profiles } = await supabase
+      // Filter to only future appointments (date+time > now)
+      const now = new Date();
+      const future = appts.filter((a) => toLocalDateTime(a.date, a.time_slot) > now);
+      if (future.length === 0) return null;
+
+      const appt = future[0];
+
+      // Fetch student name
+      const { data: studentProfile } = await supabase
         .from('profiles')
-        .select('id, name')
-        .in('id', studentIds);
-      const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+        .select('name')
+        .eq('id', appt.student_id)
+        .single();
 
-      return appts.map((a) => ({
-        ...a,
-        studentName: profileMap.get(a.student_id)?.name || 'Aluno',
-      }));
+      // Fetch instructor name if different from admin
+      let instructorLabel = 'Você (Admin)';
+      if (appt.instructor_id && appt.instructor_id !== user!.id) {
+        const { data: instrProfile } = await supabase
+          .from('profiles')
+          .select('name')
+          .eq('id', appt.instructor_id)
+          .single();
+        instructorLabel = instrProfile?.name || 'Colaborador';
+      }
+
+      const apptDate = new Date(appt.date + 'T00:00:00');
+      let dateLabel: string;
+      if (isToday(apptDate)) {
+        dateLabel = 'Hoje';
+      } else if (isTomorrow(apptDate)) {
+        dateLabel = 'Amanhã';
+      } else {
+        dateLabel = format(apptDate, "EEEE, d 'de' MMM", { locale: ptBR });
+      }
+
+      return {
+        dateLabel,
+        time: appt.time_slot,
+        studentName: studentProfile?.name || 'Aluno',
+        instructorLabel,
+      };
     },
+    enabled: !!user?.id,
+    refetchInterval: 60_000,
   });
-
-  // Find the next upcoming appointment for today
-  const nextClass = useMemo(() => {
-    if (!todayAppointments || !classSlots) return null;
-    const confirmedAppts = todayAppointments
-      .filter((a: any) => a.status === 'confirmed' && a.time_slot >= nowTime)
-      .sort((a: any, b: any) => a.time_slot.localeCompare(b.time_slot));
-    if (confirmedAppts.length === 0) return null;
-    const appt = confirmedAppts[0] as any;
-    const slot = classSlots.find((s) => s.start_time?.slice(0, 5) === appt.time_slot);
-    return {
-      time: appt.time_slot,
-      endTime: slot?.end_time?.slice(0, 5) || '',
-      studentName: appt.studentName,
-      className: slot?.class_name || 'Treino',
-    };
-  }, [todayAppointments, classSlots, nowTime]);
-
-  const statusVariant = (status: string) => {
-    switch (status) {
-      case 'confirmed': return 'confirmed';
-      case 'pending': return 'pending';
-      case 'delegated': return 'delegated';
-      default: return 'outline';
-    }
-  };
 
   const todayFormatted = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
@@ -134,7 +113,7 @@ export function AdminDashboard() {
         <p className="text-muted-foreground capitalize">{todayFormatted}</p>
       </div>
 
-      {/* Quick Actions — compact horizontal row */}
+      {/* Quick Actions */}
       <div className="space-y-1.5">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acesso Rápido</p>
         <div className="flex flex-row justify-between items-start gap-2">
@@ -182,100 +161,48 @@ export function AdminDashboard() {
           </Card>
         </Link>
 
+        {/* Next Appointment Card */}
         <Card className="border-accent/30">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
-              <Zap className="w-5 h-5 text-accent" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground">{todayCount} Treinos Hoje</p>
-              <p className="text-xs text-muted-foreground">{studentCount} alunos ativos</p>
-            </div>
+          <CardContent className="p-4">
+            {nextAppointment ? (
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Próximo Agendamento</p>
+                  <p className="text-base font-bold text-foreground">
+                    {nextAppointment.dateLabel}, {nextAppointment.time}
+                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                      <User className="w-3.5 h-3.5 shrink-0" />
+                      Aluno: {nextAppointment.studentName}
+                    </p>
+                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                      <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                      Professor: {nextAppointment.instructorLabel}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
+                  <Zap className="w-5 h-5 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground">Sem mais treinos agendados!</p>
+                  <p className="text-xs text-muted-foreground">Dia de descanso! 💪</p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Today's agenda */}
-      <div className="space-y-4">
-        <h2 className="font-display text-xl text-foreground">Agenda de Hoje</h2>
-
-        {loadingAppts ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
-          </div>
-        ) : !classSlots || classSlots.length === 0 ? (
-          <EmptyState message="Você não tem horários configurados para hoje." />
-        ) : (
-          <div className="space-y-3">
-            {classSlots.map((slot) => {
-              const slotKey = slot.start_time?.slice(0, 5) || '';
-              const slotAppts = todayAppointments?.filter((a: any) => a.time_slot === slotKey) || [];
-
-              return (
-                <Card key={slot.id} className={cn(slotAppts.length > 0 && 'border-accent/30')}>
-                  <CardContent className="p-3 sm:p-4">
-                    <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4">
-                      {/* Time + capacity row */}
-                      <div className="flex items-center justify-between sm:justify-start gap-2 sm:min-w-[120px]">
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                          <span className="font-medium text-foreground text-sm">
-                            {slotKey} - {slot.end_time?.slice(0, 5)}
-                          </span>
-                        </div>
-                        <Badge variant="outline" className="text-xs sm:hidden shrink-0">
-                          {slotAppts.length}/{slot.capacity}
-                        </Badge>
-                      </div>
-
-                      {/* Students */}
-                      <div className="flex-1 min-w-0">
-                        {slotAppts.length === 0 ? (
-                          <span className="text-sm text-muted-foreground/40">—</span>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            {slotAppts.map((appt: any) => (
-                              <div key={appt.id} className="flex items-center gap-1.5 bg-muted/50 rounded-lg px-2.5 py-1.5">
-                                <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                <span className="text-sm text-foreground truncate max-w-[120px] sm:max-w-none">{appt.studentName}</span>
-                                <Badge variant={statusVariant(appt.status) as any} className="text-[10px] px-1.5 py-0">
-                                  {STATUS_LABELS[appt.status] || appt.status}
-                                </Badge>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Capacity badge - desktop only */}
-                      <Badge variant="outline" className="text-xs hidden sm:inline-flex shrink-0">
-                        {slotAppts.length}/{slot.capacity}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {showImpact && <PersonalImpactReceipt open={showImpact} onClose={() => setShowImpact(false)} />}
     </div>
-  );
-}
-
-function MetricCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: number }) {
-  return (
-    <Card>
-      <CardContent className="p-4 flex items-center gap-4">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-secondary shrink-0">
-          <Icon className="w-6 h-6 text-secondary-foreground" />
-        </div>
-        <div>
-          <p className="text-2xl font-bold text-foreground">{value}</p>
-          <p className="text-sm text-muted-foreground">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -295,16 +222,5 @@ function QuickActionCard({ icon: Icon, label, to, color }: { icon: React.Element
       </div>
       <span className="text-[10px] font-semibold text-muted-foreground text-center leading-tight">{label}</span>
     </Link>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return (
-    <div className="text-center py-12">
-      <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
-        <Inbox className="w-6 h-6 text-muted-foreground" />
-      </div>
-      <p className="text-muted-foreground">{message}</p>
-    </div>
   );
 }
