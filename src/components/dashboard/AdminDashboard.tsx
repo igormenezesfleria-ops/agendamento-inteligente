@@ -201,7 +201,7 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {showImpact && <PersonalImpactReceipt open={showImpact} onClose={() => setShowImpact(false)} />}
+      {showImpact && <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />}
     </div>
   );
 }
