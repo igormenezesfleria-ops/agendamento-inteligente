@@ -209,10 +209,10 @@ export function AdminDashboard() {
 function QuickActionCard({ icon: Icon, label, to }: { icon: React.ElementType; label: string; to: string; color: string }) {
   return (
     <Link to={to} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-      <div className="w-12 h-12 rounded-2xl shadow-sm flex items-center justify-center bg-card border border-border">
-        <Icon className="w-5 h-5 text-primary" />
+      <div className="w-12 h-12 rounded-2xl shadow-sm flex items-center justify-center bg-accent/10 border border-accent/20">
+        <Icon className="w-5 h-5 text-accent" />
       </div>
-      <span className="text-[10px] font-semibold text-muted-foreground text-center leading-tight">{label}</span>
+      <span className="text-[10px] font-semibold text-foreground text-center leading-tight">{label}</span>
     </Link>
   );
 }
