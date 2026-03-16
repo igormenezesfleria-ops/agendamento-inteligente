@@ -3,17 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { DateSelector } from '@/components/booking/DateSelector';
+import { HorizontalDateStrip } from '@/components/booking/HorizontalDateStrip';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Clock, User, Inbox, Pin, ListOrdered } from 'lucide-react';
-import { format, getDay } from 'date-fns';
+import { Loader2, Clock, User, Inbox, Pin, ListOrdered, CalendarDays } from 'lucide-react';
+import { format, getDay, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
