@@ -30,7 +30,8 @@ interface SlotDetail {
 
 export default function AdminSchedule() {
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(startOfDay(new Date()));
+  const [showMonthView, setShowMonthView] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotDetail | null>(null);
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
