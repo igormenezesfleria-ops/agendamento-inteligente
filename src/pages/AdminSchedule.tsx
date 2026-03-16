@@ -220,10 +220,7 @@ export default function AdminSchedule() {
         )}
 
         {selectedDate && (
-          <div className="space-y-4">
-            <h3 className="font-display text-lg text-foreground">
-              Horários — {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
-            </h3>
+          <div className="space-y-3">
 
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
