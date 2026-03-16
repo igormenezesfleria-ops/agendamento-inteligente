@@ -18,15 +18,25 @@ export function AdminDashboard() {
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const { data: pendingCount = 0 } = useQuery({
-    queryKey: ['admin-stat-pending'],
+    queryKey: ['admin-stat-pending', user?.id],
     queryFn: async () => {
+      // Get student IDs belonging to this admin
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('business_owner_id', user!.id)
+        .eq('role', 'student');
+      const studentIds = (students || []).map(s => s.id);
+      if (studentIds.length === 0) return 0;
       const { count, error } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .in('student_id', studentIds);
       if (error) throw error;
       return count ?? 0;
     },
+    enabled: !!user?.id,
   });
 
   const { data: studentCount = 0 } = useQuery({
