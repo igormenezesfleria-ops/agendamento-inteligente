@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
 
 import { Link } from 'react-router-dom';
@@ -18,15 +19,25 @@ export function AdminDashboard() {
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const { data: pendingCount = 0 } = useQuery({
-    queryKey: ['admin-stat-pending'],
+    queryKey: ['admin-stat-pending', user?.id],
     queryFn: async () => {
+      // Get student IDs belonging to this admin
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('business_owner_id', user!.id)
+        .eq('role', 'student');
+      const studentIds = (students || []).map(s => s.id);
+      if (studentIds.length === 0) return 0;
       const { count, error } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .in('student_id', studentIds);
       if (error) throw error;
       return count ?? 0;
     },
+    enabled: !!user?.id,
   });
 
   const { data: studentCount = 0 } = useQuery({
@@ -149,14 +160,24 @@ export function AdminDashboard() {
       {/* Alert Cards */}
       <div className="flex flex-col gap-3">
         <Link to="/dashboard/solicitacoes">
-          <Card className="border-warning/30 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]">
+          <Card className={cn(
+            'hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]',
+            pendingCount > 0 ? 'border-warning/30' : 'border-border'
+          )}>
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-warning/15 flex items-center justify-center shrink-0">
-                <Bell className="w-5 h-5 text-warning" />
+              <div className={cn(
+                'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                pendingCount > 0 ? 'bg-warning/15' : 'bg-muted'
+              )}>
+                <Bell className={cn('w-5 h-5', pendingCount > 0 ? 'text-warning' : 'text-muted-foreground')} />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground">{pendingCount} Solicitações Pendentes</p>
-                <p className="text-xs text-muted-foreground">Toque para revisar</p>
+                <p className="text-sm font-bold text-foreground">
+                  {pendingCount > 0 ? `${pendingCount} Solicitações Pendentes` : 'Nenhuma Solicitação'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {pendingCount > 0 ? 'Toque para revisar' : 'Tudo em dia! ✅'}
+                </p>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </CardContent>

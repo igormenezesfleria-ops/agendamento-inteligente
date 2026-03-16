@@ -3,17 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { DateSelector } from '@/components/booking/DateSelector';
+import { HorizontalDateStrip } from '@/components/booking/HorizontalDateStrip';
+import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Clock, User, Inbox, Pin, ListOrdered } from 'lucide-react';
-import { format, getDay } from 'date-fns';
+import { Loader2, Clock, User, Inbox, Pin, ListOrdered, CalendarDays } from 'lucide-react';
+import { format, getDay, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -28,7 +30,8 @@ interface SlotDetail {
 
 export default function AdminSchedule() {
   const { user } = useAuth();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(startOfDay(new Date()));
+  const [showMonthView, setShowMonthView] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<SlotDetail | null>(null);
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
@@ -182,21 +185,42 @@ export default function AdminSchedule() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        <div className="space-y-2">
-          <h1 className="font-display text-3xl text-foreground">Agenda Completa</h1>
-          <p className="text-muted-foreground">
-            Selecione uma data para visualizar os horários e alunos.
-          </p>
+      <div className="space-y-4 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="font-display text-2xl text-foreground">Agenda Completa</h1>
+            <p className="text-sm text-muted-foreground">
+              {selectedDate ? format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR }) : 'Selecione uma data'}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            onClick={() => setShowMonthView(!showMonthView)}
+            title={showMonthView ? 'Ver strip' : 'Ver mês'}
+          >
+            <CalendarDays className="w-4 h-4" />
+          </Button>
         </div>
 
-        <DateSelector selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        {showMonthView ? (
+          <Card>
+            <CardContent className="p-2 flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate || undefined}
+                onSelect={(date) => { if (date) { setSelectedDate(date); setShowMonthView(false); } }}
+                locale={ptBR}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <HorizontalDateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        )}
 
         {selectedDate && (
-          <div className="space-y-4">
-            <h3 className="font-display text-lg text-foreground">
-              Horários — {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
-            </h3>
+          <div className="space-y-3">
 
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
