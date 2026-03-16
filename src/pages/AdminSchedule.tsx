@@ -185,15 +185,39 @@ export default function AdminSchedule() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        <div className="space-y-2">
-          <h1 className="font-display text-3xl text-foreground">Agenda Completa</h1>
-          <p className="text-muted-foreground">
-            Selecione uma data para visualizar os horários e alunos.
-          </p>
+      <div className="space-y-4 animate-fade-in">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <h1 className="font-display text-2xl text-foreground">Agenda Completa</h1>
+            <p className="text-sm text-muted-foreground">
+              {selectedDate ? format(selectedDate, "EEEE, d 'de' MMMM", { locale: ptBR }) : 'Selecione uma data'}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            onClick={() => setShowMonthView(!showMonthView)}
+            title={showMonthView ? 'Ver strip' : 'Ver mês'}
+          >
+            <CalendarDays className="w-4 h-4" />
+          </Button>
         </div>
 
-        <DateSelector selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        {showMonthView ? (
+          <Card>
+            <CardContent className="p-2 flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate || undefined}
+                onSelect={(date) => { if (date) { setSelectedDate(date); setShowMonthView(false); } }}
+                locale={ptBR}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <HorizontalDateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        )}
 
         {selectedDate && (
           <div className="space-y-4">
