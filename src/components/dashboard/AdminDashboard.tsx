@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
+import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
 
 import { Link } from 'react-router-dom';
