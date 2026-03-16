@@ -13,7 +13,7 @@ import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt'
 import { toLocalDateTime } from '@/lib/deadline';
 
 export function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [showImpact, setShowImpact] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
@@ -109,8 +109,10 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6 animate-fade-in max-w-full overflow-hidden">
       <div className="space-y-1">
-        <h1 className="font-display text-2xl sm:text-3xl text-foreground">Painel Administrativo</h1>
-        <p className="text-muted-foreground capitalize">{todayFormatted}</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
+          Olá, {profile?.name?.split(' ')[0] || 'Igor'}! 👋
+        </h1>
+        <p className="text-sm text-muted-foreground capitalize">{todayFormatted}</p>
       </div>
 
       {/* Quick Actions */}

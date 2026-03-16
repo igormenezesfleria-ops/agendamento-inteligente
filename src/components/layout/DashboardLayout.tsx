@@ -35,10 +35,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background w-full overflow-x-hidden">
-      {/* Mobile header */}
+      {/* Mobile header — single dark navbar */}
       <header className="lg:hidden fixed top-0 left-0 right-0 z-50 print:hidden">
-        {/* Section A: Action Bar */}
-        <div className="flex items-center justify-between px-4 h-12 bg-sidebar">
+        <div className="flex items-center justify-between px-4 h-14 bg-sidebar">
           <Button
             variant="ghost"
             size="icon"
@@ -47,13 +46,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           >
             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </Button>
-          <NotificationBell />
-        </div>
-        {/* Section B: Brand Wing */}
-        <div className="flex items-center justify-center py-4 bg-card shadow-sm border-b border-border">
-          <Link to="/dashboard">
-            <img src="/logo-synton.png" alt="Synton" className="h-12 w-auto object-contain" />
+          <Link to="/dashboard" className="bg-white rounded-full px-5 py-1.5 flex items-center justify-center">
+            <img src="/logo-synton.png" alt="Synton" className="h-7 w-auto object-contain" />
           </Link>
+          <NotificationBell />
         </div>
       </header>
 
@@ -74,7 +70,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           {/* User info */}
-          <div className="px-4 py-4 mt-24 lg:mt-0">
+          <div className="px-4 py-4 mt-14 lg:mt-0">
             <div className="bg-sidebar-accent rounded-xl p-4">
               <div className="flex items-center gap-3 mb-2">
                 {profile?.photo_url ? (
@@ -150,7 +146,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       )}
 
       {/* Main content */}
-      <main className="lg:ml-64 pt-24 lg:pt-0 min-h-screen w-full overflow-x-hidden print:ml-0 print:pt-0">
+      <main className="lg:ml-64 pt-14 lg:pt-0 min-h-screen w-full overflow-x-hidden print:ml-0 print:pt-0">
         <div className="p-4 md:p-8 print:p-4 max-w-lg mx-auto lg:max-w-4xl">{children}</div>
       </main>
     </div>
