@@ -13,7 +13,7 @@ import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt'
 import { toLocalDateTime } from '@/lib/deadline';
 
 export function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [showImpact, setShowImpact] = useState(false);
   const today = format(new Date(), 'yyyy-MM-dd');
 
