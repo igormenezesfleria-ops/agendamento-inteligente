@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, Wallet, Users } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
@@ -228,6 +228,31 @@ export function AdminDashboard() {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Visão de Gestão */}
+      <div className="space-y-3 mt-2">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Visão de Gestão</p>
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="shadow-sm">
+            <CardContent className="p-4 space-y-2">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                <Wallet className="w-4.5 h-4.5 text-emerald-600" />
+              </div>
+              <p className="text-xs text-muted-foreground font-medium">Faturamento</p>
+              <p className="text-xl font-bold text-foreground">R$ 4.500</p>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm">
+            <CardContent className="p-4 space-y-2">
+              <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <Users className="w-4.5 h-4.5 text-blue-600" />
+              </div>
+              <p className="text-xs text-muted-foreground font-medium">Alunos Ativos</p>
+              <p className="text-xl font-bold text-foreground">{studentCount}</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {showImpact && <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />}
