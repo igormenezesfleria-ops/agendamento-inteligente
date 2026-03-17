@@ -159,30 +159,36 @@ export function AdminDashboard() {
 
       {/* Alert Cards */}
       <div className="flex flex-col gap-3">
-        <Link to="/dashboard/solicitacoes">
-          <Card className={cn(
-            'hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]',
-            pendingCount > 0 ? 'border-warning/30' : 'border-border'
-          )}>
+        {pendingCount > 0 ? (
+          <Link to="/dashboard/solicitacoes">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] border-warning/30">
+              <CardContent className="p-4 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-warning/15">
+                  <Bell className="w-5 h-5 text-warning" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground">
+                    {pendingCount} Solicitações Pendentes
+                  </p>
+                  <p className="text-xs text-muted-foreground">Toque para revisar</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              </CardContent>
+            </Card>
+          </Link>
+        ) : (
+          <Card className="border-border">
             <CardContent className="p-4 flex items-center gap-4">
-              <div className={cn(
-                'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-                pendingCount > 0 ? 'bg-warning/15' : 'bg-muted'
-              )}>
-                <Bell className={cn('w-5 h-5', pendingCount > 0 ? 'text-warning' : 'text-muted-foreground')} />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-muted">
+                <Bell className="w-5 h-5 text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground">
-                  {pendingCount > 0 ? `${pendingCount} Solicitações Pendentes` : 'Nenhuma Solicitação'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {pendingCount > 0 ? 'Toque para revisar' : 'Tudo em dia! ✅'}
-                </p>
+                <p className="text-sm font-bold text-foreground">Nenhuma solicitação no momento</p>
+                <p className="text-xs text-muted-foreground">Tudo em dia! ✅</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </CardContent>
           </Card>
-        </Link>
+        )}
 
         {/* Next Appointment Card */}
         <Card className="border-accent/30">
