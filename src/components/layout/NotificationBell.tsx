@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell, Check, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
@@ -74,6 +74,23 @@ export function NotificationBell() {
     setUnreadCount(0);
   };
 
+  const deleteNotification = async (id: string) => {
+    const target = notifications.find(n => n.id === id);
+    await supabase.from('notifications').delete().eq('id', id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    if (target && !target.is_read) {
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  const clearAll = async () => {
+    if (notifications.length === 0) return;
+    const ids = notifications.map(n => n.id);
+    await supabase.from('notifications').delete().in('id', ids);
+    setNotifications([]);
+    setUnreadCount(0);
+  };
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'appointment_confirmed': return '✅';
@@ -102,12 +119,20 @@ export function NotificationBell() {
         <SheetHeader className="px-6 pt-6 pb-3 border-b">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg">Notificações</SheetTitle>
-            {unreadCount > 0 && (
-              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={markAllAsRead}>
-                <CheckCheck className="w-3.5 h-3.5" />
-                Marcar todas
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {unreadCount > 0 && (
+                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={markAllAsRead}>
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  Marcar todas
+                </Button>
+              )}
+              {notifications.length > 0 && (
+                <Button variant="ghost" size="sm" className="text-xs gap-1 text-accent font-medium hover:text-accent" onClick={clearAll}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Limpar todas
+                </Button>
+              )}
+            </div>
           </div>
         </SheetHeader>
         <ScrollArea className="h-[calc(100vh-100px)]">
@@ -119,30 +144,41 @@ export function NotificationBell() {
           ) : (
             <div className="divide-y">
               {notifications.map(n => (
-                <button
+                <div
                   key={n.id}
-                  onClick={() => !n.is_read && markAsRead(n.id)}
                   className={cn(
-                    'w-full text-left px-6 py-4 transition-colors hover:bg-muted/50 flex gap-3',
+                    'w-full text-left px-6 py-4 transition-colors hover:bg-muted/50 flex gap-3 items-start',
                     !n.is_read && 'bg-primary/5'
                   )}
                 >
-                  <span className="text-lg flex-shrink-0 mt-0.5">{getIcon(n.type)}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className={cn('text-sm font-medium', !n.is_read && 'text-foreground', n.is_read && 'text-muted-foreground')}>
-                        {n.title}
+                  <button
+                    onClick={() => !n.is_read && markAsRead(n.id)}
+                    className="flex gap-3 flex-1 min-w-0 text-left"
+                  >
+                    <span className="text-lg flex-shrink-0 mt-0.5">{getIcon(n.type)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={cn('text-sm font-medium', !n.is_read && 'text-foreground', n.is_read && 'text-muted-foreground')}>
+                          {n.title}
+                        </p>
+                        {!n.is_read && (
+                          <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1">
+                        {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
                       </p>
-                      {!n.is_read && (
-                        <span className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1.5" />
-                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-1">
-                      {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
-                    </p>
-                  </div>
-                </button>
+                  </button>
+                  <button
+                    onClick={() => deleteNotification(n.id)}
+                    className="flex-shrink-0 mt-1 p-1 rounded-md text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    aria-label="Excluir notificação"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
             </div>
           )}
