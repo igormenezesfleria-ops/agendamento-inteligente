@@ -13,7 +13,7 @@ export function Hero() {
         {/* Main headline */}
         <h1 className="text-3xl lg:text-4xl font-extrabold text-white text-center tracking-tight mt-8 animate-slide-up">
           A evolução da sua
-          <span className="block text-gradient">gestão.</span>
+          <span className="block text-accent">gestão.</span>
         </h1>
 
         {/* Subtitle */}
