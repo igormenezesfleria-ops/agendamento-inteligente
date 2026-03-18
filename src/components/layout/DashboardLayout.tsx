@@ -47,7 +47,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             {isSidebarOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
           </Button>
           <Link to="/dashboard">
-            <img src="/logo-synton.png" alt="Synton" className="h-14 w-auto object-contain" />
+            <img src="/logo-synton-horizontal.png" alt="Synton" className="h-16 w-auto object-contain" />
           </Link>
           <NotificationBell />
         </div>
@@ -64,7 +64,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Logo */}
           <div className="hidden lg:flex items-center justify-between px-6 h-16 border-b border-sidebar-border">
             <Link to="/dashboard" className="flex items-center justify-center">
-              <img src="/logo-synton.png" alt="Synton" className="h-9 w-auto object-contain" />
+              <img src="/logo-synton-horizontal.png" alt="Synton" className="h-9 w-auto object-contain" />
             </Link>
             <NotificationBell />
           </div>
