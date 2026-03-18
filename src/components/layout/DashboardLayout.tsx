@@ -63,8 +63,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="hidden lg:flex items-center justify-between px-6 h-16 border-b border-sidebar-border">
-            <Link to="/dashboard" className="bg-white rounded-full px-8 py-2 shadow-sm flex items-center justify-center">
-              <img src="/logo-synton.png" alt="Synton" className="h-8 w-auto object-contain" />
+            <Link to="/dashboard" className="flex items-center justify-center">
+              <img src="/logo-synton.png" alt="Synton" className="h-9 w-auto object-contain" />
             </Link>
             <NotificationBell />
           </div>
