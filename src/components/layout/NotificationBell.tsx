@@ -178,6 +178,14 @@ export function NotificationBell() {
                       <p className="text-[10px] text-muted-foreground/60 mt-1">
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
                       </p>
+                      {n.type === 'workout_completed' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleActionClick(n, '/dashboard/tarefas'); }}
+                          className="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-medium mt-2 w-full text-center block"
+                        >
+                          Ir para Tarefas
+                        </button>
+                      )}
                     </div>
                   </button>
                   <button
