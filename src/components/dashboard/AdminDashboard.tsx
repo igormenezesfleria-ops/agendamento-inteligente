@@ -259,7 +259,7 @@ export function AdminDashboard() {
                 {profile?.payments_enabled ? (
                   <p className="text-xl font-bold text-foreground">R$ 4.500</p>
                 ) : (
-                  <p className="text-sm font-medium text-accent underline">Configurar recebimentos</p>
+                  <span className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-md text-xs font-semibold inline-block mt-1">Configurar recebimentos</span>
                 )}
               </CardContent>
             </Card>
