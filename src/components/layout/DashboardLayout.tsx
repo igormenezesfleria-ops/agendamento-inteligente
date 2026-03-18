@@ -36,8 +36,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-background w-full overflow-x-hidden">
       {/* Mobile header — single dark navbar */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-50 print:hidden">
-        <div className="flex items-center justify-between px-4 h-14 bg-white border-b border-gray-100">
+      <header className="lg:hidden sticky top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-200 shadow-sm print:hidden">
+        <div className="flex items-center justify-between px-4 py-2">
           <Button
             variant="ghost"
             size="icon"
@@ -46,8 +46,8 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           >
             {isSidebarOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
           </Button>
-          <Link to="/dashboard" className="flex items-center justify-center">
-            <img src="/logo-synton.png" alt="Synton" className="h-10 w-auto object-contain" />
+          <Link to="/dashboard">
+            <img src="/logo-synton.png" alt="Synton" className="h-14 w-auto object-contain" />
           </Link>
           <NotificationBell />
         </div>
