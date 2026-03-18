@@ -70,7 +70,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           {/* User info */}
-          <div className="px-4 py-4 mt-14 lg:mt-0">
+          <div className="px-4 py-4 lg:mt-0">
             <div className="bg-sidebar-accent rounded-xl p-4">
               <div className="flex items-center gap-3 mb-2">
                 {profile?.photo_url ? (
