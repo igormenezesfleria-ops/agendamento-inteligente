@@ -3,11 +3,11 @@ import { Calendar, Users, BarChart3 } from 'lucide-react';
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen bg-secondary overflow-hidden pb-40">
+    <section className="relative min-h-screen bg-[#101318] overflow-hidden pb-40">
       <div className="container relative z-10 flex flex-col items-center px-4 py-20 text-center">
         {/* Logo — free, no pill */}
         <div className="mt-12 mb-8 animate-fade-in">
-          <img src="/logo-synton-dark.png" alt="Synton" className="h-20 w-auto object-contain mx-auto" />
+          <img src="/logo-synton.png" alt="Synton" className="h-20 w-auto object-contain mx-auto" />
         </div>
 
         {/* Main headline */}
