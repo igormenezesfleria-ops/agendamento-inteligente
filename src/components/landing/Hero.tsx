@@ -17,7 +17,7 @@ export function Hero() {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-base text-muted-foreground text-center max-w-sm mx-auto mt-4 px-4 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        <p className="text-base text-slate-400 text-center max-w-sm mx-auto mt-4 px-4 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
           Simplifique agendamentos, acesse históricos e tenha o controle total do seu desempenho em um só lugar.
         </p>
 
