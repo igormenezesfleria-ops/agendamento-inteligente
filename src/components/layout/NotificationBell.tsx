@@ -101,8 +101,15 @@ export function NotificationBell() {
       case 'new_request': return '📩';
       case 'collaborator_declined': return '⚠️';
       case 'reminder': return '⏰';
+      case 'workout_completed': return '🏋️';
       default: return '🔔';
     }
+  };
+
+  const handleActionClick = async (n: Notification, route: string) => {
+    if (!n.is_read) await markAsRead(n.id);
+    setOpen(false);
+    navigate(route);
   };
 
   return (
