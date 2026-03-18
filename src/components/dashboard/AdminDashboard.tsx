@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, Wallet, Users } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, Wallet, Users, CheckCircle2 } from 'lucide-react';
 import { format, isToday, isTomorrow, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
@@ -167,98 +167,69 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      {/* Impact Report CTA */}
-      <Card className="bg-slate-900 border-orange-500/30 overflow-hidden">
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-6 h-6 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white">Relatório de Impacto</p>
-            <p className="text-xs text-slate-400">Compartilhe seus resultados nos Stories</p>
-          </div>
-          <Button
-            onClick={() => setShowImpact(true)}
-            size="sm"
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold shrink-0"
-          >
-            📊 Gerar
-          </Button>
+      {/* Próximo Agendamento (Priority #1) */}
+      <Card className="border-accent/30">
+        <CardContent className="p-4">
+          {nextAppointment ? (
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0 space-y-1">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Próximo Agendamento</p>
+                <p className="text-base font-bold text-foreground">
+                  {nextAppointment.dateLabel}, {nextAppointment.time}
+                </p>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 shrink-0" />
+                    Aluno: {nextAppointment.studentName}
+                  </p>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+                    Professor: {nextAppointment.instructorLabel}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-accent" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-bold text-foreground">Sem mais treinos agendados!</p>
+                <p className="text-xs text-muted-foreground">Dia de descanso! 💪</p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Alert Cards */}
-      <div className="flex flex-col gap-3">
-        {pendingCount > 0 ? (
-          <Link to="/dashboard/solicitacoes">
-            <Card className="bg-orange-50 dark:bg-orange-950/30 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] border-orange-200 dark:border-orange-800/40">
-              <CardContent className="p-4 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-orange-100 dark:bg-orange-900/40">
-                  <Bell className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                    {pendingCount} Solicitações Pendentes
-                  </p>
-                  <p className="text-xs text-orange-500/70 dark:text-orange-400/60">Toque para revisar</p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-orange-400 shrink-0" />
-              </CardContent>
-            </Card>
-          </Link>
-        ) : (
-          <Card className="bg-slate-50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-700">
+      {/* Solicitações Pendentes — smart empty state */}
+      {pendingCount > 0 ? (
+        <Link to="/dashboard/solicitacoes">
+          <Card className="bg-orange-50 dark:bg-orange-950/30 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] border-orange-200 dark:border-orange-800/40">
             <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-slate-100 dark:bg-slate-800">
-                <Bell className="w-5 h-5 text-slate-400" />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-orange-100 dark:bg-orange-900/40">
+                <Bell className="w-5 h-5 text-orange-600 dark:text-orange-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-400">Nenhuma solicitação no momento</p>
-                <p className="text-xs text-slate-400/70">Tudo em dia! ✅</p>
+                <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                  {pendingCount} Solicitações Pendentes
+                </p>
+                <p className="text-xs text-orange-500/70 dark:text-orange-400/60">Toque para revisar</p>
               </div>
+              <ChevronRight className="w-4 h-4 text-orange-400 shrink-0" />
             </CardContent>
           </Card>
-        )}
-
-        {/* Next Appointment Card */}
-        <Card className="border-accent/30">
-          <CardContent className="p-4">
-            {nextAppointment ? (
-              <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
-                  <Zap className="w-5 h-5 text-accent" />
-                </div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Próximo Agendamento</p>
-                  <p className="text-base font-bold text-foreground">
-                    {nextAppointment.dateLabel}, {nextAppointment.time}
-                  </p>
-                  <div className="flex flex-col gap-0.5">
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                      <User className="w-3.5 h-3.5 shrink-0" />
-                      Aluno: {nextAppointment.studentName}
-                    </p>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                      <GraduationCap className="w-3.5 h-3.5 shrink-0" />
-                      Professor: {nextAppointment.instructorLabel}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
-                  <Zap className="w-5 h-5 text-accent" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-foreground">Sem mais treinos agendados!</p>
-                  <p className="text-xs text-muted-foreground">Dia de descanso! 💪</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        </Link>
+      ) : (
+        <div className="py-2 px-4 rounded-lg bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 flex items-center justify-center gap-2 text-sm font-medium w-full">
+          <CheckCircle2 className="w-4 h-4" />
+          Tudo em dia! Sem pendências.
+        </div>
+      )}
 
       {/* Visão de Gestão */}
       <div className="space-y-3 mt-2">
@@ -292,6 +263,26 @@ export function AdminDashboard() {
           </Link>
         </div>
       </div>
+
+      {/* Relatório de Impacto (Secondary — bottom) */}
+      <Card className="bg-slate-900 border-orange-500/30 overflow-hidden">
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
+            <BarChart3 className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">Relatório de Impacto</p>
+            <p className="text-xs text-slate-400">Compartilhe seus resultados nos Stories</p>
+          </div>
+          <Button
+            onClick={() => setShowImpact(true)}
+            size="sm"
+            className="bg-orange-500 hover:bg-orange-600 text-white font-bold shrink-0"
+          >
+            📊 Gerar
+          </Button>
+        </CardContent>
+      </Card>
 
       {showImpact && <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />}
     </div>
