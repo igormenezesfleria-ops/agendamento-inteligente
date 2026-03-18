@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Calendar, Users, ArrowRight, BarChart3 } from 'lucide-react';
+import { Calendar, Users, BarChart3 } from 'lucide-react';
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen bg-secondary overflow-hidden">
-      <div className="container relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-20 text-center">
+    <section className="relative min-h-screen bg-secondary overflow-hidden pb-40">
+      <div className="container relative z-10 flex flex-col items-center px-4 py-20 text-center">
         {/* Logo — free, no pill */}
         <div className="mt-12 mb-8 animate-fade-in">
           <img src="/logo-synton-dark.png" alt="Synton" className="h-20 w-auto object-contain mx-auto" />
@@ -21,21 +20,6 @@ export function Hero() {
         <p className="text-base text-muted-foreground text-center max-w-sm mx-auto mt-4 px-4 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
           Simplifique agendamentos, acesse históricos e tenha o controle total do seu desempenho em um só lugar.
         </p>
-
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-          <Button asChild variant="hero" size="xl">
-            <Link to="/cadastro">
-              Começar Agora
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          </Button>
-          <Button asChild variant="heroOutline" size="xl">
-            <Link to="/login">
-              Já tenho conta
-            </Link>
-          </Button>
-        </div>
 
         {/* Features grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-20 w-full max-w-4xl animate-fade-in" style={{ animationDelay: '0.6s' }}>
@@ -55,6 +39,19 @@ export function Hero() {
             description="Gerencie suas aulas, veja o histórico completo de aulas ministradas e acompanhe todos os treinos realizados."
           />
         </div>
+      </div>
+
+      {/* Sticky Bottom Action Zone */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card/90 backdrop-blur-md border-t border-border/50 p-6 z-50 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
+        <Link
+          to="/cadastro"
+          className="block w-full py-4 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg text-center shadow-md transition-all"
+        >
+          Começar Agora
+        </Link>
+        <Link to="/login" className="block w-full text-center mt-4 text-muted-foreground font-medium text-sm">
+          Já tem uma conta? <span className="text-accent font-bold">Entrar</span>
+        </Link>
       </div>
     </section>
   );
