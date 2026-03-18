@@ -64,7 +64,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           {/* Logo */}
           <div className="hidden lg:flex items-center justify-between px-6 h-16 border-b border-sidebar-border">
             <Link to="/dashboard" className="flex items-center justify-center">
-              <img src="/logo-synton.png" alt="Synton" className="h-9 w-auto object-contain" />
+              <img src="/logo-synton-horizontal.png" alt="Synton" className="h-9 w-auto object-contain" />
             </Link>
             <NotificationBell />
           </div>
