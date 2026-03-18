@@ -42,7 +42,7 @@ export function Hero() {
       </div>
 
       {/* Sticky Bottom Action Zone */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#181c23]/90 backdrop-blur-md border-t border-white/10 p-6 z-50 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.4)]">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#0a0d12]/90 backdrop-blur-md border-t border-white/5 p-6 z-50 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.3)]">
         <Link
           to="/cadastro"
           className="block w-full py-4 rounded-xl bg-accent hover:bg-accent/90 text-accent-foreground font-bold text-lg text-center shadow-md transition-all"
