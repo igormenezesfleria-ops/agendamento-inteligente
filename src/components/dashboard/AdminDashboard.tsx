@@ -69,6 +69,7 @@ export function AdminDashboard() {
     enabled: !!user?.id,
   });
 
+  const { data: nextAppointment } = useQuery({
     queryKey: ['admin-next-appointment', user?.id],
     queryFn: async () => {
       // Fetch upcoming confirmed appointments for the entire studio
