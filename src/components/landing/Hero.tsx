@@ -49,7 +49,7 @@ export function Hero() {
         >
           Começar Agora
         </Link>
-        <Link to="/login" className="block w-full text-center mt-4 text-muted-foreground font-medium text-sm">
+        <Link to="/login" className="block w-full text-center mt-4 text-slate-400 font-medium text-sm">
           Já tem uma conta? <span className="text-accent font-bold">Entrar</span>
         </Link>
       </div>
