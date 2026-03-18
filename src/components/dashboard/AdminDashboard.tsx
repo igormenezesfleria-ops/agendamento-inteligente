@@ -54,6 +54,21 @@ export function AdminDashboard() {
     enabled: !!user?.id,
   });
 
+  const { data: collaboratorCount = 0 } = useQuery({
+    queryKey: ['admin-stat-collaborators', user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'collaborator')
+        .eq('business_owner_id', user!.id)
+        .eq('is_active', true);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user?.id,
+  });
+
   const { data: nextAppointment } = useQuery({
     queryKey: ['admin-next-appointment', user?.id],
     queryFn: async () => {
@@ -234,24 +249,32 @@ export function AdminDashboard() {
       <div className="space-y-3 mt-2">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Visão de Gestão</p>
         <div className="grid grid-cols-2 gap-3">
-          <Card className="shadow-sm">
-            <CardContent className="p-4 space-y-2">
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Wallet className="w-4.5 h-4.5 text-emerald-600" />
-              </div>
-              <p className="text-xs text-muted-foreground font-medium">Faturamento</p>
-              <p className="text-xl font-bold text-foreground">R$ 4.500</p>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm">
-            <CardContent className="p-4 space-y-2">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Users className="w-4.5 h-4.5 text-blue-600" />
-              </div>
-              <p className="text-xs text-muted-foreground font-medium">Alunos Ativos</p>
-              <p className="text-xl font-bold text-foreground">{studentCount}</p>
-            </CardContent>
-          </Card>
+          <Link to="/dashboard/admin/financeiro">
+            <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] h-full">
+              <CardContent className="p-4 space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
+                  <Wallet className="w-4.5 h-4.5 text-emerald-600" />
+                </div>
+                <p className="text-xs text-muted-foreground font-medium">Faturamento</p>
+                {profile?.payments_enabled ? (
+                  <p className="text-xl font-bold text-foreground">R$ 4.500</p>
+                ) : (
+                  <p className="text-sm font-medium text-accent underline">Configurar recebimentos</p>
+                )}
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/dashboard/equipe">
+            <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] h-full">
+              <CardContent className="p-4 space-y-2">
+                <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Users className="w-4.5 h-4.5 text-blue-600" />
+                </div>
+                <p className="text-xs text-muted-foreground font-medium">Colaboradores</p>
+                <p className="text-xl font-bold text-foreground">{collaboratorCount}</p>
+              </CardContent>
+            </Card>
+          </Link>
         </div>
       </div>
 
