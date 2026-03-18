@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 interface Notification {
   id: string;
@@ -22,6 +23,7 @@ interface Notification {
 
 export function NotificationBell() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [open, setOpen] = useState(false);
@@ -99,8 +101,15 @@ export function NotificationBell() {
       case 'new_request': return '📩';
       case 'collaborator_declined': return '⚠️';
       case 'reminder': return '⏰';
+      case 'workout_completed': return '🏋️';
       default: return '🔔';
     }
+  };
+
+  const handleActionClick = async (n: Notification, route: string) => {
+    if (!n.is_read) await markAsRead(n.id);
+    setOpen(false);
+    navigate(route);
   };
 
   return (
@@ -169,6 +178,14 @@ export function NotificationBell() {
                       <p className="text-[10px] text-muted-foreground/60 mt-1">
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
                       </p>
+                      {n.type === 'workout_completed' && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleActionClick(n, '/dashboard/tarefas'); }}
+                          className="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-medium mt-2 w-full text-center block"
+                        >
+                          Ir para Tarefas
+                        </button>
+                      )}
                     </div>
                   </button>
                   <button
