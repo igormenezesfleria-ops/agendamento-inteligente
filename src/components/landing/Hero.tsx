@@ -12,14 +12,14 @@ export function Hero() {
         </div>
 
         {/* Main headline */}
-        <h1 className="font-display text-4xl md:text-6xl lg:text-7xl text-foreground mb-6 max-w-4xl animate-slide-up">
-          Gestão e Agendamento
-          <span className="block text-gradient">Inteligente</span>
+        <h1 className="text-3xl lg:text-4xl font-extrabold text-foreground text-center tracking-tight mt-8 animate-slide-up">
+          A evolução da sua
+          <span className="block text-gradient">gestão.</span>
         </h1>
 
         {/* Subtitle */}
-        <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mb-10 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          O app de agendamentos e gestão do Personal. Simplifique seus agendamentos, acesse históricos de aulas e tenha a gestão completa do seu desempenho em um só lugar.
+        <p className="text-base text-muted-foreground text-center max-w-sm mx-auto mt-4 px-4 leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          Simplifique agendamentos, acesse históricos e tenha o controle total do seu desempenho em um só lugar.
         </p>
 
         {/* CTA Buttons */}
@@ -70,12 +70,12 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="bg-card rounded-2xl p-6 text-left card-hover shadow-card border border-border">
-      <div className="w-12 h-12 rounded-xl accent-gradient flex items-center justify-center mb-4">
-        <Icon className="w-6 h-6 text-accent-foreground" />
+    <div className="bg-card rounded-2xl p-6 text-left card-hover border border-border/50 shadow-sm">
+      <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
+        <Icon className="w-6 h-6 text-accent" />
       </div>
-      <h3 className="font-display text-lg text-foreground mb-2">{title}</h3>
-      <p className="text-muted-foreground text-sm">{description}</p>
+      <h3 className="text-lg font-bold text-foreground">{title}</h3>
+      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{description}</p>
     </div>
   );
 }
