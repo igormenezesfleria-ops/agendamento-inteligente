@@ -49,7 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Link to="/dashboard" className="flex items-center justify-center">
             <img src="/logo-synton.png" alt="Synton" className="h-8 w-auto object-contain" />
           </Link>
-          <NotificationBell className="text-slate-800" />
+          <NotificationBell />
         </div>
       </header>
 
