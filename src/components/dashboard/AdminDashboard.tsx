@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, Wallet, Users } from 'lucide-react';
-import { format, isToday, isTomorrow } from 'date-fns';
+import { format, isToday, isTomorrow, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
 
