@@ -42,12 +42,12 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="text-slate-800"
+            className="text-slate-900"
           >
-            {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isSidebarOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
           </Button>
           <Link to="/dashboard" className="flex items-center justify-center">
-            <img src="/logo-synton.png" alt="Synton" className="h-8 w-auto object-contain" />
+            <img src="/logo-synton.png" alt="Synton" className="h-10 w-auto object-contain" />
           </Link>
           <NotificationBell />
         </div>
