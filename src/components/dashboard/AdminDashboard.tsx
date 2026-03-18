@@ -54,7 +54,21 @@ export function AdminDashboard() {
     enabled: !!user?.id,
   });
 
-  const { data: nextAppointment } = useQuery({
+  const { data: collaboratorCount = 0 } = useQuery({
+    queryKey: ['admin-stat-collaborators', user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'collaborator')
+        .eq('business_owner_id', user!.id)
+        .eq('is_active', true);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!user?.id,
+  });
+
     queryKey: ['admin-next-appointment', user?.id],
     queryFn: async () => {
       // Fetch upcoming confirmed appointments for the entire studio
