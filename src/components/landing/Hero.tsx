@@ -67,12 +67,12 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="bg-card rounded-2xl p-6 text-left card-hover border border-border/50 shadow-sm">
+    <div className="bg-white/5 rounded-2xl p-6 text-left card-hover border border-white/10 shadow-sm">
       <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center mb-4">
         <Icon className="w-6 h-6 text-accent" />
       </div>
-      <h3 className="text-lg font-bold text-foreground">{title}</h3>
-      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{description}</p>
+      <h3 className="text-lg font-bold text-white">{title}</h3>
+      <p className="text-sm text-slate-400 mt-2 leading-relaxed">{description}</p>
     </div>
   );
 }
