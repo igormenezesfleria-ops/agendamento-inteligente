@@ -9,7 +9,7 @@ import { Calendar, Clock, ArrowRight, Dumbbell, AlertTriangle } from 'lucide-rea
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
-import { PerformanceReceipt } from '@/components/student/PerformanceReceipt';
+
 import { ActiveWorkoutCard } from '@/components/student/ActiveWorkoutCard';
 import { StreakBadge } from '@/components/student/StreakBadge';
 import { TriageModal } from '@/components/student/TriageModal';
