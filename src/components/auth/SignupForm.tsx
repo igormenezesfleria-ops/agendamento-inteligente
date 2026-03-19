@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2, Mail, Lock, User, Dumbbell, GraduationCap } from 'lucide-react';
@@ -26,7 +25,7 @@ type SelectedRole = 'admin' | 'student';
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<SelectedRole | null>(null);
+  const [selectedRole, setSelectedRole] = useState<SelectedRole | null>('admin');
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -72,33 +71,33 @@ export function SignupForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {/* Role Selection */}
       <div className="space-y-3">
-        <Label className="text-base font-semibold">Qual é o seu perfil?</Label>
+        <Label className="text-sm font-semibold text-slate-700">Qual é o seu perfil?</Label>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => setSelectedRole('admin')}
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200',
+              'flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200',
               selectedRole === 'admin'
-                ? 'border-accent bg-accent/10 shadow-md'
-                : 'border-border bg-card hover:border-accent/50 hover:bg-accent/5'
+                ? 'bg-orange-50 border-2 border-orange-500 shadow-sm'
+                : 'bg-white border border-slate-200 hover:border-slate-300'
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
-              selectedRole === 'admin' ? 'accent-gradient' : 'bg-muted'
+              selectedRole === 'admin' ? 'bg-orange-100' : 'bg-slate-100'
             )}>
               <Dumbbell className={cn(
                 'w-6 h-6',
-                selectedRole === 'admin' ? 'text-accent-foreground' : 'text-muted-foreground'
+                selectedRole === 'admin' ? 'text-orange-500' : 'text-slate-400'
               )} />
             </div>
             <span className={cn(
               'font-semibold text-sm',
-              selectedRole === 'admin' ? 'text-accent' : 'text-foreground'
+              selectedRole === 'admin' ? 'text-orange-600' : 'text-slate-600'
             )}>
               Sou Personal / Studio
             </span>
@@ -108,24 +107,24 @@ export function SignupForm() {
             type="button"
             onClick={() => setSelectedRole('student')}
             className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200',
+              'flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200',
               selectedRole === 'student'
-                ? 'border-accent bg-accent/10 shadow-md'
-                : 'border-border bg-card hover:border-accent/50 hover:bg-accent/5'
+                ? 'bg-orange-50 border-2 border-orange-500 shadow-sm'
+                : 'bg-white border border-slate-200 hover:border-slate-300'
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
-              selectedRole === 'student' ? 'accent-gradient' : 'bg-muted'
+              selectedRole === 'student' ? 'bg-orange-100' : 'bg-slate-100'
             )}>
               <GraduationCap className={cn(
                 'w-6 h-6',
-                selectedRole === 'student' ? 'text-accent-foreground' : 'text-muted-foreground'
+                selectedRole === 'student' ? 'text-orange-500' : 'text-slate-400'
               )} />
             </div>
             <span className={cn(
               'font-semibold text-sm',
-              selectedRole === 'student' ? 'text-accent' : 'text-foreground'
+              selectedRole === 'student' ? 'text-orange-600' : 'text-slate-600'
             )}>
               Sou Aluno
             </span>
@@ -133,88 +132,98 @@ export function SignupForm() {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="name">Nome Completo</Label>
+      {/* Name */}
+      <div className="space-y-1.5">
+        <Label htmlFor="name" className="text-sm font-semibold text-slate-700">Nome Completo</Label>
         <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
+          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
             id="name"
             type="text"
             placeholder="Seu nome"
-            className="pl-10"
+            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
             {...register('name')}
           />
         </div>
         {errors.name && (
-          <p className="text-sm text-destructive">{errors.name.message}</p>
+          <p className="text-sm text-red-500">{errors.name.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+      {/* Email */}
+      <div className="space-y-1.5">
+        <Label htmlFor="email" className="text-sm font-semibold text-slate-700">Email</Label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
+          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
             id="email"
             type="email"
             placeholder="seu@email.com"
-            className="pl-10"
+            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
             {...register('email')}
           />
         </div>
         {errors.email && (
-          <p className="text-sm text-destructive">{errors.email.message}</p>
+          <p className="text-sm text-red-500">{errors.email.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
+      {/* Password */}
+      <div className="space-y-1.5">
+        <Label htmlFor="password" className="text-sm font-semibold text-slate-700">Senha</Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
             id="password"
             type="password"
             placeholder="••••••••"
-            className="pl-10"
+            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
             {...register('password')}
           />
         </div>
         {errors.password && (
-          <p className="text-sm text-destructive">{errors.password.message}</p>
+          <p className="text-sm text-red-500">{errors.password.message}</p>
         )}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+      {/* Confirm Password */}
+      <div className="space-y-1.5">
+        <Label htmlFor="confirmPassword" className="text-sm font-semibold text-slate-700">Confirmar Senha</Label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <Input
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <input
             id="confirmPassword"
             type="password"
             placeholder="••••••••"
-            className="pl-10"
+            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
             {...register('confirmPassword')}
           />
         </div>
         {errors.confirmPassword && (
-          <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+          <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
         )}
       </div>
 
-      <Button type="submit" variant="accent" size="lg" className="w-full" disabled={isLoading || !selectedRole}>
+      {/* CTA */}
+      <button
+        type="submit"
+        disabled={isLoading || !selectedRole}
+        className="bg-orange-500 hover:bg-orange-600 text-white w-full py-4 rounded-xl font-bold text-lg shadow-md mt-6 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
         {isLoading ? (
-          <>
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="w-5 h-5 animate-spin" />
             Criando conta...
-          </>
+          </span>
         ) : (
           'Criar Conta'
         )}
-      </Button>
+      </button>
 
-      <p className="text-center text-muted-foreground">
+      {/* Footer */}
+      <p className="w-full text-center mt-4 text-slate-500 font-medium text-sm">
         Já tem uma conta?{' '}
-        <Link to="/login" className="text-accent hover:underline font-medium">
+        <Link to="/login" className="text-orange-500 font-bold hover:text-orange-600 transition-colors">
           Entrar
         </Link>
       </p>
