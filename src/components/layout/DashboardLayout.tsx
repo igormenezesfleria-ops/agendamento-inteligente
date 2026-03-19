@@ -47,7 +47,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <Menu className="w-7 h-7" />
           </Button>
           <Link to="/dashboard">
-            <img src="/logo-synton-horizontal.png" alt="Synton" className="h-16 w-auto object-contain" />
+            <img src="/logo-synton-horizontal.png" alt="Synton" className="h-14 w-auto object-contain" />
           </Link>
           <NotificationBell />
         </div>
