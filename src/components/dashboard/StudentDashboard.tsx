@@ -185,25 +185,6 @@ export function StudentDashboard() {
       {/* e) Gamification & Engagement */}
       <StreakBadge />
 
-      <Card className="border-0 bg-slate-900 text-white overflow-hidden relative">
-        <CardContent className="p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-6 h-6 text-orange-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm text-white">Infográfico de Impacto</p>
-            <p className="text-xs text-slate-400">Gere e compartilhe nos Stories!</p>
-          </div>
-          <Button
-            onClick={() => setReceiptOpen(true)}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shrink-0"
-            size="sm"
-          >
-            🔥 Gerar
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* f) Announcements */}
       <AnnouncementsFeed />
 

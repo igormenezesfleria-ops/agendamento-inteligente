@@ -1,12 +1,19 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dumbbell, Loader2 } from 'lucide-react';
+import { Loader2, Dumbbell, X } from 'lucide-react';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from '@/components/ui/drawer';
 
 export function ActiveWorkoutCard() {
   const { user } = useAuth();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { data: workout, isLoading } = useQuery({
     queryKey: ['active-workout', user?.id],
@@ -39,56 +46,88 @@ export function ActiveWorkoutCard() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="p-5 flex justify-center">
-          <Loader2 className="w-5 h-5 animate-spin text-accent" />
-        </CardContent>
-      </Card>
+      <div className="flex justify-center py-4">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
+      </div>
     );
   }
 
+  // Zero-state: render nothing
+  if (!workout) return null;
+
   return (
-    <Card>
-      <CardContent className="p-5 space-y-4">
-        <div className="flex items-center gap-2">
-          <Dumbbell className="w-5 h-5 text-accent" />
-          <h3 className="font-display text-lg text-foreground">Ficha de Treino Atual</h3>
+    <>
+      {/* Sleek trigger card */}
+      <div className="bg-card rounded-2xl p-5 border border-border/50 shadow-sm flex items-center justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">Seu Plano de Treino Atual</p>
+          <p className="text-base font-bold text-accent truncate">{workout.title}</p>
         </div>
+        <button
+          onClick={() => setDrawerOpen(true)}
+          className="bg-accent hover:bg-accent/90 text-accent-foreground px-5 py-2.5 rounded-xl font-bold text-sm transition-all shrink-0"
+        >
+          Ver Ficha Completa
+        </button>
+      </div>
 
-        {!workout ? (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Nenhum treino prescrito.
-          </p>
-        ) : (
-          <>
-            <div className="flex items-center justify-between">
-              <p className="font-semibold text-foreground">{workout.title}</p>
-              <Badge className="bg-green-600 text-white text-[10px]">Ativo</Badge>
+      {/* Bottom Sheet Drawer */}
+      <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <DrawerContent className="h-[85vh]">
+          <div className="p-6 overflow-y-auto flex-1">
+            <div className="flex items-center justify-between mb-6">
+              <DrawerHeader className="p-0">
+                <DrawerTitle className="text-2xl font-extrabold text-foreground">
+                  {workout.title}
+                </DrawerTitle>
+              </DrawerHeader>
+              <DrawerClose className="rounded-full p-2 hover:bg-muted transition-colors">
+                <X className="w-5 h-5 text-muted-foreground" />
+              </DrawerClose>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {workout.start_date} → {workout.end_date}
-            </p>
 
+            {/* Personal note */}
+            <div className="bg-accent/10 border-l-4 border-accent text-accent-foreground/80 text-sm p-3 rounded-r-lg mb-6">
+              <strong>Nota do Personal:</strong> Capricha na carga hoje! Foca na postura.
+            </div>
+
+            {/* Exercise list */}
             {workout.exercises.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Exercícios serão adicionados em breve.</p>
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Exercícios serão adicionados em breve.
+              </p>
             ) : (
-              <div className="space-y-2">
+              <div>
                 {workout.exercises.map((ex, i) => (
-                  <div key={ex.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                    <span className="text-xs font-bold text-accent mt-0.5">{i + 1}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground">{ex.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {ex.sets} séries × {ex.reps} reps{ex.rest ? ` · ${ex.rest} descanso` : ''}
+                  <div
+                    key={ex.id}
+                    className="py-4 border-b border-border/30 last:border-0 flex justify-between items-center"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-xs font-bold text-accent w-5 text-center shrink-0">
+                        {i + 1}
+                      </span>
+                      <span className="font-semibold text-foreground truncate">{ex.name}</span>
+                    </div>
+                    <div className="text-right shrink-0 ml-4">
+                      <p className="text-accent font-extrabold text-sm">
+                        {ex.sets}×{ex.reps}
                       </p>
+                      {ex.rest && (
+                        <p className="text-muted-foreground text-xs">{ex.rest} desc.</p>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
             )}
-          </>
-        )}
-      </CardContent>
-    </Card>
+
+            <p className="text-xs text-muted-foreground mt-6 text-center">
+              {workout.start_date} → {workout.end_date}
+            </p>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 }
