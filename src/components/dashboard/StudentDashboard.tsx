@@ -5,11 +5,11 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, ArrowRight, Dumbbell, BarChart3, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Dumbbell, AlertTriangle } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
-import { PerformanceReceipt } from '@/components/student/PerformanceReceipt';
+
 import { ActiveWorkoutCard } from '@/components/student/ActiveWorkoutCard';
 import { StreakBadge } from '@/components/student/StreakBadge';
 import { TriageModal } from '@/components/student/TriageModal';
@@ -19,7 +19,6 @@ import { ptBR } from 'date-fns/locale';
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
-  const [receiptOpen, setReceiptOpen] = useState(false);
   const [triageOpen, setTriageOpen] = useState(false);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
@@ -185,33 +184,13 @@ export function StudentDashboard() {
       {/* e) Gamification & Engagement */}
       <StreakBadge />
 
-      <Card className="border-0 bg-slate-900 text-white overflow-hidden relative">
-        <CardContent className="p-5 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-6 h-6 text-orange-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm text-white">Infográfico de Impacto</p>
-            <p className="text-xs text-slate-400">Gere e compartilhe nos Stories!</p>
-          </div>
-          <Button
-            onClick={() => setReceiptOpen(true)}
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs shrink-0"
-            size="sm"
-          >
-            🔥 Gerar
-          </Button>
-        </CardContent>
-      </Card>
-
       {/* f) Announcements */}
       <AnnouncementsFeed />
 
       {/* g) Workout History */}
       <StudentWorkoutHistory />
 
-      {/* Receipt Modal */}
-      <PerformanceReceipt open={receiptOpen} onOpenChange={setReceiptOpen} />
+      {/* Triage Onboarding Modal */}
 
       {/* Triage Onboarding Modal */}
       <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
