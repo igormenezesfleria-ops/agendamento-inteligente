@@ -4,8 +4,8 @@ import { SignupForm } from '@/components/auth/SignupForm';
 export default function Signup() {
   return (
     <AuthLayout
-      title="Criar sua conta"
-      subtitle="Cadastre-se para começar a agendar seus treinos"
+      title="Crie sua conta."
+      subtitle="Cadastre-se para iniciar sua jornada."
     >
       <SignupForm />
     </AuthLayout>
