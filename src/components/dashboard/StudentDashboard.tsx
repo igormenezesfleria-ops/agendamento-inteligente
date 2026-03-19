@@ -190,8 +190,7 @@ export function StudentDashboard() {
       {/* g) Workout History */}
       <StudentWorkoutHistory />
 
-      {/* Receipt Modal */}
-      <PerformanceReceipt open={receiptOpen} onOpenChange={setReceiptOpen} />
+      {/* Triage Onboarding Modal */}
 
       {/* Triage Onboarding Modal */}
       <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
