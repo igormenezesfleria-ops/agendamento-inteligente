@@ -3,9 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Clock, Inbox } from 'lucide-react';
+import { Loader2, Inbox } from 'lucide-react';
 import { format, parseISO, lastDayOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MonthYearFilter } from '@/components/history/MonthYearFilter';
@@ -64,32 +63,23 @@ export default function StudentHistory() {
         ) : (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">{history.length} treino(s) no histórico</p>
-            {history.map((item) => {
-              const dateObj = parseISO(item.date + 'T12:00:00');
-              const formattedDate = format(dateObj, "EEEE, d 'de' MMMM yyyy", { locale: ptBR });
-              return (
-                <Card key={item.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <span className="font-medium text-foreground capitalize text-sm">{formattedDate}</span>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                          <Clock className="w-3 h-3" />
-                          {item.time_slot}
-                        </span>
-                      </div>
-                      <div>
-                        {item.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
-                        {item.attendance === 'absent' && <Badge variant="destructive">Faltou</Badge>}
-                        {(!item.attendance || item.attendance === 'pending') && (
-                          <Badge variant="outline">Concluído</Badge>
-                        )}
-                      </div>
+            <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
+              {history.map((item) => {
+                const dateObj = parseISO(item.date + 'T12:00:00');
+                const formattedDate = format(dateObj, "EEEE, d 'de' MMMM yyyy", { locale: ptBR });
+                return (
+                  <div key={item.id} className="flex items-center justify-between py-3 px-4 border-b border-border/30 last:border-0">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-foreground capitalize">{formattedDate}</span>
+                      <span className="text-xs text-muted-foreground">{item.time_slot}</span>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    {item.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
+                    {item.attendance === 'absent' && <Badge variant="destructive">Faltou</Badge>}
+                    {(!item.attendance || item.attendance === 'pending') && <Badge variant="outline">Concluído</Badge>}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

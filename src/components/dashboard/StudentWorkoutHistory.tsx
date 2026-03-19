@@ -46,26 +46,19 @@ export function StudentWorkoutHistory() {
             <p className="text-sm text-muted-foreground">Nenhum treino registrado ainda.</p>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
             {history.map((item) => {
               const dateObj = parseISO(item.date + 'T12:00:00');
               const formattedDate = format(dateObj, "d MMM yyyy", { locale: ptBR });
               return (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col text-sm">
-                      <span className="font-medium text-foreground capitalize">{formattedDate}</span>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {item.time_slot}
-                      </span>
-                    </div>
+                <div key={item.id} className="flex items-center justify-between py-3 px-4 border-b border-border/30 last:border-0">
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-foreground capitalize">{formattedDate}</span>
+                    <span className="text-xs text-muted-foreground">{item.time_slot}</span>
                   </div>
                   {item.attendance === 'present' && <Badge variant="confirmed">Presente</Badge>}
                   {item.attendance === 'absent' && <Badge variant="destructive">Faltou</Badge>}
-                  {!item.attendance || item.attendance === 'pending' ? (
-                    <Badge variant="outline">Concluído</Badge>
-                  ) : null}
+                  {(!item.attendance || item.attendance === 'pending') && <Badge variant="outline">Concluído</Badge>}
                 </div>
               );
             })}
