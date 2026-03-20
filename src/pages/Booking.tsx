@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { format, isAfter, addHours, getDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { DateSelector } from '@/components/booking/DateSelector';
+import { HorizontalDateStrip } from '@/components/booking/HorizontalDateStrip';
 import { SlotCard } from '@/components/booking/SlotCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -403,20 +404,20 @@ export default function Booking() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        <div className="space-y-2">
+      <div className="space-y-6 pb-32 animate-fade-in">
+        <div className="space-y-1">
           <h1 className="font-display text-3xl text-foreground">Agendar Treino</h1>
-          <p className="text-muted-foreground">
-            Escolha uma data e horário disponível para seu próximo treino.
+          <p className="text-muted-foreground text-sm">
+            Escolha uma data e horário disponível.
           </p>
         </div>
 
-        <DateSelector selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        <HorizontalDateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
         {selectedDate && (
           <div className="space-y-4">
             <h3 className="font-display text-lg text-foreground">
-              Horários Disponíveis - {format(selectedDate, "d 'de' MMMM")}
+              Horários — {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
             </h3>
 
             {isLoading ? (
@@ -433,7 +434,7 @@ export default function Booking() {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {classSlots.map((slot) => {
                   const slotKey = slot.start_time?.slice(0, 5) || '';
                   const classId = slot.id;

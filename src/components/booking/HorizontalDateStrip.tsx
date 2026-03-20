@@ -18,7 +18,6 @@ export function HorizontalDateStrip({ selectedDate, onSelectDate }: HorizontalDa
     dates.push(addDays(today, i));
   }
 
-  // Auto-scroll to selected date
   useEffect(() => {
     if (!selectedDate || !scrollRef.current) return;
     const idx = dates.findIndex(d => format(d, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd'));
@@ -31,7 +30,7 @@ export function HorizontalDateStrip({ selectedDate, onSelectDate }: HorizontalDa
   return (
     <div
       ref={scrollRef}
-      className="flex flex-row overflow-x-auto gap-2 py-2 px-1 scrollbar-hide"
+      className="flex flex-row overflow-x-auto gap-3 py-2 px-1 scrollbar-hide"
       style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
     >
       {dates.map((date) => {
@@ -43,18 +42,21 @@ export function HorizontalDateStrip({ selectedDate, onSelectDate }: HorizontalDa
             key={date.toISOString()}
             onClick={() => onSelectDate(date)}
             className={cn(
-              'flex flex-col items-center justify-center min-w-[3.2rem] py-2.5 px-2 rounded-2xl border-2 transition-all duration-200 shrink-0',
+              'flex flex-col items-center justify-center w-16 h-20 rounded-2xl border transition-all duration-200 shrink-0',
               isSelected
-                ? 'bg-accent border-accent text-accent-foreground scale-105 shadow-md'
-                : 'bg-card border-border text-muted-foreground hover:border-accent/40',
+                ? 'bg-accent border-accent text-accent-foreground shadow-md'
+                : 'bg-card border-border text-muted-foreground hover:border-accent/40 cursor-pointer',
               isToday && !isSelected && 'border-accent/30'
             )}
           >
-            <span className="text-[10px] font-bold uppercase leading-none">
+            <span className={cn(
+              'text-[11px] font-bold uppercase leading-none',
+              isSelected ? 'text-accent-foreground' : 'text-muted-foreground'
+            )}>
               {format(date, 'EEE', { locale: ptBR }).replace('.', '')}
             </span>
             <span className={cn(
-              'text-lg font-bold leading-tight mt-0.5',
+              'text-xl font-extrabold leading-tight mt-1',
               isSelected ? 'text-accent-foreground' : 'text-foreground'
             )}>
               {format(date, 'd')}
