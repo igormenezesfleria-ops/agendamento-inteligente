@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { format, isAfter, addHours, getDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
