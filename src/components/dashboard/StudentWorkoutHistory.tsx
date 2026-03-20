@@ -68,7 +68,7 @@ export function StudentWorkoutHistory() {
             })}
             {hasMore && (
               <Link
-                to="/dashboard/historico"
+                to="/dashboard/historico-treinos"
                 className="block w-full text-center py-3 border-t border-border/30 text-accent font-semibold text-sm hover:text-accent/80 transition-colors"
               >
                 Ver todo o histórico
