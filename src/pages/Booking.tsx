@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { HorizontalDateStrip } from '@/components/booking/HorizontalDateStrip';
-import { SlotCard } from '@/components/booking/SlotCard';
+import { BookingSlotCard } from '@/components/booking/BookingSlotCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
