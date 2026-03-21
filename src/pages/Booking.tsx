@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { HorizontalDateStrip } from '@/components/booking/HorizontalDateStrip';
-import { SlotCard } from '@/components/booking/SlotCard';
+import { BookingSlotCard } from '@/components/booking/BookingSlotCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -19,6 +19,7 @@ export default function Booking() {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [bookingSlot, setBookingSlot] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [upsellOpen, setUpsellOpen] = useState(false);
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
@@ -400,23 +401,36 @@ export default function Booking() {
     bookMutation.mutate({ timeSlot, classScheduleId });
   };
 
+  const handleConfirmBooking = () => {
+    if (!selectedSlotId) return;
+    const slot = classSlots?.find(s => s.id === selectedSlotId);
+    if (!slot) return;
+    const slotKey = slot.start_time?.slice(0, 5) || '';
+    handleBook(slotKey, selectedSlotId);
+  };
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedSlotId(null);
+  };
+
   const isLoading = isLoadingSlots || isLoadingCounts;
 
   return (
     <DashboardLayout>
       <div className="space-y-6 pb-32 animate-fade-in">
         <div className="space-y-1">
-          <h1 className="font-display text-3xl text-foreground">Agendar Treino</h1>
+          <h1 className="text-3xl font-extrabold text-foreground">Agendar Treino</h1>
           <p className="text-muted-foreground text-sm">
             Escolha uma data e horário disponível.
           </p>
         </div>
 
-        <HorizontalDateStrip selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+        <HorizontalDateStrip selectedDate={selectedDate} onSelectDate={handleDateSelect} />
 
         {selectedDate && (
           <div className="space-y-4">
-            <h3 className="font-display text-lg text-foreground">
+            <h3 className="text-lg font-bold text-foreground">
               Horários — {format(selectedDate, "d 'de' MMMM", { locale: ptBR })}
             </h3>
 
@@ -434,9 +448,10 @@ export default function Booking() {
                 </p>
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div>
                 {classSlots.map((slot) => {
                   const slotKey = slot.start_time?.slice(0, 5) || '';
+                  const endKey = slot.end_time?.slice(0, 5) || '';
                   const classId = slot.id;
                   const fixed = isStudentFixed(classId, slotKey);
                   const booked = isSlotBooked(classId, slotKey);
@@ -444,10 +459,12 @@ export default function Booking() {
                   const effectiveRemaining = getEffectiveRemaining(classId, slot.capacity);
 
                   return (
-                    <SlotCard
+                    <BookingSlotCard
                       key={slot.id}
                       timeSlot={slotKey}
-                      label={`${slot.class_name} · ${slotKey} - ${slot.end_time?.slice(0, 5)}`}
+                      startTime={slotKey}
+                      endTime={endKey}
+                      className={slot.class_name}
                       effectiveRemaining={effectiveRemaining}
                       maxCapacity={slot.capacity}
                       isLocked={lockedSlots?.includes(slotKey) || false}
@@ -455,9 +472,8 @@ export default function Booking() {
                       isFixed={fixed}
                       hasTimeConflict={timeConflict}
                       canBook={canBookSlot(slotKey, slot.action_window_hours)}
-                      isLoading={bookingSlot === classId}
-                      onBook={() => handleBook(slotKey, classId)}
-                      actionWindowHours={slot.action_window_hours ?? 2}
+                      isSelected={selectedSlotId === classId}
+                      onSelect={() => setSelectedSlotId(classId)}
                       classmateNames={getClassmateNames(classId, slotKey)}
                       waitlistEnabled={(slot as any).waitlist_enabled ?? true}
                       isOnWaitlist={myWaitlistClassIds.has(classId)}
@@ -470,6 +486,19 @@ export default function Booking() {
                     />
                   );
                 })}
+
+                <Button
+                  className="w-full py-4 rounded-xl font-bold text-lg shadow-md mt-4"
+                  variant="accent"
+                  disabled={!selectedSlotId || bookMutation.isPending}
+                  onClick={handleConfirmBooking}
+                >
+                  {bookMutation.isPending ? (
+                    <><Loader2 className="w-5 h-5 animate-spin mr-2" /> Agendando...</>
+                  ) : (
+                    'Confirmar Agendamento'
+                  )}
+                </Button>
               </div>
             )}
           </div>
