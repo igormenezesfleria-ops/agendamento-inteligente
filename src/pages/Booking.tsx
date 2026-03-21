@@ -19,6 +19,7 @@ export default function Booking() {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [bookingSlot, setBookingSlot] = useState<string | null>(null);
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
   const [upsellOpen, setUpsellOpen] = useState(false);
 
   const formattedDate = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
