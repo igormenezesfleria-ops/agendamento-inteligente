@@ -22,7 +22,6 @@ export default function CollaboratorTasks() {
     queryKey: ['myTasks', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-
       const { data: appointments, error: appError } = await supabase
         .from('appointments')
         .select('id, date, time_slot, status, student_id, attendance, collaborator_status')
@@ -41,10 +40,7 @@ export default function CollaboratorTasks() {
         .in('id', studentIds);
 
       if (profError) throw profError;
-
-      const profileMap = new Map(
-        (profiles || []).map((p) => [p.id, p])
-      );
+      const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
       return appointments.map((a) => ({
         ...a,
@@ -56,179 +52,85 @@ export default function CollaboratorTasks() {
 
   const acceptMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'confirmed' })
-        .eq('id', id);
+      const { error } = await supabase.from('appointments').update({ status: 'confirmed' }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success('Tarefa aceita!');
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      setLoadingId(null);
-    },
-    onError: () => {
-      toast.error('Erro ao aceitar tarefa');
-      setLoadingId(null);
-    },
+    onSuccess: () => { toast.success('Tarefa aceita!'); queryClient.invalidateQueries({ queryKey: ['myTasks'] }); setLoadingId(null); },
+    onError: () => { toast.error('Erro ao aceitar tarefa'); setLoadingId(null); },
   });
 
   const rejectMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc('decline_appointment', {
-        appointment_id: id,
-      });
+      const { error } = await supabase.rpc('decline_appointment', { appointment_id: id });
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success('Agendamento devolvido para o administrador.');
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      setLoadingId(null);
-    },
-    onError: () => {
-      toast.error('Erro ao recusar tarefa');
-      setLoadingId(null);
-    },
+    onSuccess: () => { toast.success('Agendamento devolvido para o administrador.'); queryClient.invalidateQueries({ queryKey: ['myTasks'] }); setLoadingId(null); },
+    onError: () => { toast.error('Erro ao recusar tarefa'); setLoadingId(null); },
   });
 
   const completeMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-        })
-        .eq('id', id);
+      const { error } = await supabase.from('appointments').update({ status: 'completed', completed_at: new Date().toISOString() }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success('Treino finalizado!');
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myHistory'] });
-      setLoadingId(null);
-    },
-    onError: () => {
-      toast.error('Erro ao finalizar treino');
-      setLoadingId(null);
-    },
+    onSuccess: () => { toast.success('Treino finalizado!'); queryClient.invalidateQueries({ queryKey: ['myTasks'] }); queryClient.invalidateQueries({ queryKey: ['myHistory'] }); setLoadingId(null); },
+    onError: () => { toast.error('Erro ao finalizar treino'); setLoadingId(null); },
   });
 
   const attendanceMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: 'present' | 'absent' }) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ attendance: status })
-        .eq('id', id);
+      const { error } = await supabase.from('appointments').update({ attendance: status }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: (_, variables) => {
-      toast.success(variables.status === 'present' ? 'Presença registrada!' : 'Falta registrada!');
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['myHistory'] });
-      setLoadingId(null);
-    },
-    onError: () => {
-      toast.error('Erro ao registrar presença');
-      setLoadingId(null);
-    },
+    onSuccess: (_, variables) => { toast.success(variables.status === 'present' ? 'Presença registrada!' : 'Falta registrada!'); queryClient.invalidateQueries({ queryKey: ['myTasks'] }); queryClient.invalidateQueries({ queryKey: ['myHistory'] }); setLoadingId(null); },
+    onError: () => { toast.error('Erro ao registrar presença'); setLoadingId(null); },
   });
 
   const acceptDelegationMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ collaborator_status: 'accepted', status: 'confirmed' })
-        .eq('id', id);
+      const { error } = await supabase.from('appointments').update({ collaborator_status: 'accepted', status: 'confirmed' }).eq('id', id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success('Delegação aceita!');
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      setLoadingId(null);
-    },
-    onError: () => {
-      toast.error('Erro ao aceitar delegação');
-      setLoadingId(null);
-    },
+    onSuccess: () => { toast.success('Delegação aceita!'); queryClient.invalidateQueries({ queryKey: ['myTasks'] }); setLoadingId(null); },
+    onError: () => { toast.error('Erro ao aceitar delegação'); setLoadingId(null); },
   });
 
   const declineDelegationMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.rpc('decline_appointment', {
-        appointment_id: id,
-      });
+      const { error } = await supabase.rpc('decline_appointment', { appointment_id: id });
       if (error) throw error;
     },
-    onSuccess: () => {
-      toast.success('Treino recusado e devolvido ao Admin.');
-      queryClient.invalidateQueries({ queryKey: ['myTasks'] });
-      setLoadingId(null);
-    },
-    onError: () => {
-      toast.error('Erro ao recusar delegação');
-      setLoadingId(null);
-    },
+    onSuccess: () => { toast.success('Treino recusado e devolvido ao Admin.'); queryClient.invalidateQueries({ queryKey: ['myTasks'] }); setLoadingId(null); },
+    onError: () => { toast.error('Erro ao recusar delegação'); setLoadingId(null); },
   });
 
-  const handleAccept = (id: string) => {
-    setLoadingId(id);
-    acceptMutation.mutate(id);
-  };
-
-  const handleRejectRequest = (id: string) => {
-    setPendingRejectId(id);
-    setRejectDialogOpen(true);
-  };
-
-  const handleRejectConfirm = () => {
-    if (!pendingRejectId) return;
-    setLoadingId(pendingRejectId);
-    rejectMutation.mutate(pendingRejectId);
-    setRejectDialogOpen(false);
-    setPendingRejectId(null);
-  };
-
-  const handleComplete = (id: string) => {
-    setLoadingId(id);
-    completeMutation.mutate(id);
-  };
-
-  const handleMarkAttendance = (id: string, status: 'present' | 'absent') => {
-    setLoadingId(id);
-    attendanceMutation.mutate({ id, status });
-  };
-
-  const handleAcceptDelegation = (id: string) => {
-    setLoadingId(id);
-    acceptDelegationMutation.mutate(id);
-  };
-
-  const handleDeclineDelegation = (id: string) => {
-    setLoadingId(id);
-    declineDelegationMutation.mutate(id);
-  };
+  const handleAccept = (id: string) => { setLoadingId(id); acceptMutation.mutate(id); };
+  const handleRejectRequest = (id: string) => { setPendingRejectId(id); setRejectDialogOpen(true); };
+  const handleRejectConfirm = () => { if (!pendingRejectId) return; setLoadingId(pendingRejectId); rejectMutation.mutate(pendingRejectId); setRejectDialogOpen(false); setPendingRejectId(null); };
+  const handleComplete = (id: string) => { setLoadingId(id); completeMutation.mutate(id); };
+  const handleMarkAttendance = (id: string, status: 'present' | 'absent') => { setLoadingId(id); attendanceMutation.mutate({ id, status }); };
+  const handleAcceptDelegation = (id: string) => { setLoadingId(id); acceptDelegationMutation.mutate(id); };
+  const handleDeclineDelegation = (id: string) => { setLoadingId(id); declineDelegationMutation.mutate(id); };
 
   const pendingTasks = tasks?.filter((t: any) => t.status === 'delegated');
   const confirmedTasks = tasks?.filter((t: any) => t.status === 'confirmed');
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        <div className="space-y-2">
-          <h1 className="font-display text-3xl text-foreground">Minhas Tarefas</h1>
-          <p className="text-muted-foreground">
-            Gerencie os treinos delegados a você.
-          </p>
+      <div className="space-y-6 animate-fade-in pb-32">
+        {/* Premium Header */}
+        <div className="text-center space-y-1 pt-2">
+          <h1 className="text-3xl font-extrabold text-slate-900">Minhas Tarefas.</h1>
+          <p className="text-slate-500 text-sm">Gerencie os treinos delegados a você.</p>
         </div>
 
-        <Tabs defaultValue="tasks" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="tasks">
+        <Tabs defaultValue="tasks" className="space-y-4">
+          <TabsList className="w-full bg-slate-100 rounded-xl p-1">
+            <TabsTrigger value="tasks" className="flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-semibold">
               <ClipboardList className="w-4 h-4 mr-2" />
               Tarefas Ativas
             </TabsTrigger>
-            <TabsTrigger value="history">
+            <TabsTrigger value="history" className="flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-semibold">
               <History className="w-4 h-4 mr-2" />
               Meus Treinos
             </TabsTrigger>
@@ -242,7 +144,7 @@ export default function CollaboratorTasks() {
             ) : tasks?.length === 0 ? (
               <EmptyState />
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-6">
                 {pendingTasks && pendingTasks.length > 0 && (
                   <Section title="Aguardando Aceite" count={pendingTasks.length}>
                     {pendingTasks.map((task: any) => (
@@ -301,11 +203,11 @@ export default function CollaboratorTasks() {
 
 function Section({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
   return (
-    <div className="space-y-4">
-      <h2 className="font-display text-lg text-foreground flex items-center gap-2">
-        {title}
-        <Badge variant="secondary">{count}</Badge>
-      </h2>
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        <Badge className="bg-accent/10 text-accent border-accent/20 text-xs font-bold">{count}</Badge>
+      </div>
       <div className="space-y-3">{children}</div>
     </div>
   );
@@ -313,16 +215,12 @@ function Section({ title, count, children }: { title: string; count: number; chi
 
 function EmptyState() {
   return (
-    <div className="text-center py-12">
-      <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
-        <ClipboardList className="w-8 h-8 text-muted-foreground" />
+    <div className="bg-white rounded-2xl p-10 border border-slate-100 shadow-sm text-center">
+      <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
+        <ClipboardList className="w-8 h-8 text-slate-400" />
       </div>
-      <h3 className="font-display text-lg text-foreground mb-2">
-        Nenhuma tarefa
-      </h3>
-      <p className="text-muted-foreground">
-        Você não tem tarefas delegadas no momento.
-      </p>
+      <h3 className="text-xl font-extrabold text-slate-900 mb-2">Nenhuma tarefa</h3>
+      <p className="text-slate-500 text-sm">Você não tem tarefas delegadas no momento.</p>
     </div>
   );
 }

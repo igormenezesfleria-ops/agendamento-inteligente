@@ -4,7 +4,6 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -13,7 +12,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -28,9 +26,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { UserPlus, Trash2, Users, Loader2, ChevronRight, DollarSign } from 'lucide-react';
+import { UserPlus, Trash2, Users, Loader2, ChevronRight, DollarSign, Eye } from 'lucide-react';
 import { CollaboratorHistoryDialog } from '@/components/admin/CollaboratorHistoryDialog';
 import { CollaboratorRatesDialog } from '@/components/admin/CollaboratorRatesDialog';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface Collaborator {
   id: string;
@@ -40,6 +39,7 @@ interface Collaborator {
   base_rate: number | null;
   no_show_rate: number | null;
   fixed_monthly_rate: number | null;
+  photo_url: string | null;
 }
 
 export default function TeamManagement() {
@@ -60,7 +60,7 @@ export default function TeamManagement() {
       if (!currentUser) return [];
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, created_at, pay_type, base_rate, no_show_rate, fixed_monthly_rate')
+        .select('id, name, created_at, pay_type, base_rate, no_show_rate, fixed_monthly_rate, photo_url')
         .eq('role', 'collaborator')
         .eq('business_owner_id', currentUser.id)
         .order('created_at', { ascending: false });
@@ -111,164 +111,199 @@ export default function TeamManagement() {
     },
   });
 
-  const handleCollabClick = (collab: Collaborator) => {
-    setSelectedCollab({ id: collab.id, name: collab.name });
-    setHistoryDialogOpen(true);
-  };
-
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="font-display text-3xl text-foreground">Gerenciar Equipe</h1>
-            <p className="text-muted-foreground">Adicione ou remova colaboradores do seu studio.</p>
-          </div>
-
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="accent">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Adicionar Colaborador
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Novo Colaborador</DialogTitle>
-                <DialogDescription>Crie uma conta para o novo membro da equipe.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome completo</Label>
-                  <Input id="name" placeholder="Nome do colaborador" value={newCollaborator.name} onChange={(e) => setNewCollaborator({ ...newCollaborator, name: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">E-mail</Label>
-                  <Input id="email" type="email" placeholder="email@exemplo.com" value={newCollaborator.email} onChange={(e) => setNewCollaborator({ ...newCollaborator, email: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha inicial</Label>
-                  <Input id="password" type="password" placeholder="Mínimo 6 caracteres" value={newCollaborator.password} onChange={(e) => setNewCollaborator({ ...newCollaborator, password: e.target.value })} />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
-                <Button variant="accent" onClick={addCollaborator} disabled={isSubmitting}>
-                  {isSubmitting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Criando...</>) : 'Criar Colaborador'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+      <div className="space-y-6 animate-fade-in pb-32">
+        {/* Premium Header */}
+        <div className="text-center space-y-1 pt-2">
+          <h1 className="text-3xl font-extrabold text-slate-900">Sua Equipe.</h1>
+          <p className="text-slate-500 text-sm">Gerencie os colaboradores do seu studio.</p>
         </div>
 
-        <Card>
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
-              <Users className="w-6 h-6 text-accent" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold text-foreground">{collaborators?.length ?? 0}</p>
-              <p className="text-sm text-muted-foreground">Colaboradores ativos</p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Stats Card */}
+        <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+            <Users className="w-6 h-6 text-accent" />
+          </div>
+          <div>
+            <p className="text-2xl font-extrabold text-slate-900">{collaborators?.length ?? 0}</p>
+            <p className="text-xs text-slate-500">Colaboradores ativos</p>
+          </div>
+        </div>
 
+        {/* Collaborator List */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
         ) : collaborators && collaborators.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-3">
             {collaborators.map((collaborator) => (
-              <Card
+              <div
                 key={collaborator.id}
-                className="card-hover cursor-pointer"
-                onClick={() => handleCollabClick(collaborator)}
+                className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4 cursor-pointer hover:border-accent/30 transition-all"
+                onClick={() => {
+                  setSelectedCollab({ id: collaborator.id, name: collaborator.name });
+                  setHistoryDialogOpen(true);
+                }}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
-                        <span className="text-lg font-bold text-secondary-foreground">
-                          {collaborator.name?.charAt(0).toUpperCase() || 'C'}
-                        </span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-foreground">{collaborator.name || 'Sem nome'}</h3>
-                        <Badge variant="collaborator" className="mt-1">Colaborador</Badge>
-                      </div>
-                    </div>
+                {/* Avatar */}
+                <Avatar className="w-12 h-12">
+                  <AvatarImage src={collaborator.photo_url || undefined} />
+                  <AvatarFallback className="bg-accent/10 text-accent font-bold text-lg">
+                    {collaborator.name?.charAt(0).toUpperCase() || 'C'}
+                  </AvatarFallback>
+                </Avatar>
 
-                    <div className="flex items-center gap-1">
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-slate-900 truncate">
+                      {collaborator.name || 'Sem nome'}
+                    </h3>
+                    <Badge className="bg-accent/10 text-accent border-accent/20 text-[10px] font-bold uppercase tracking-wide">
+                      Ativo
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {collaborator.pay_type === 'fixed_monthly' ? 'Salário Fixo' :
+                     collaborator.pay_type === 'per_student' ? 'Por Aluno' :
+                     collaborator.pay_type === 'per_class' ? 'Por Aula' : 'Treinador'}
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-accent"
+                    onClick={() => {
+                      setSelectedCollab({ id: collaborator.id, name: collaborator.name });
+                      setHistoryDialogOpen(true);
+                    }}
+                    title="Ver histórico"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-slate-400 hover:text-accent"
+                    onClick={() => {
+                      setRatesCollab(collaborator);
+                      setRatesDialogOpen(true);
+                    }}
+                    title="Configurar pagamento"
+                  >
+                    <DollarSign className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="text-muted-foreground hover:text-accent"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setRatesCollab(collaborator);
-                          setRatesDialogOpen(true);
-                        }}
-                        title="Configurar pagamento"
+                        className="h-8 w-8 text-slate-400 hover:text-destructive"
                       >
-                        <DollarSign className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-muted-foreground hover:text-destructive"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remover colaborador?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. O colaborador{' '}
-                              <strong>{collaborator.name}</strong> perderá acesso ao sistema.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              onClick={() => removeCollaboratorMutation.mutate(collaborator.id)}
-                            >
-                              Remover
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                  </div>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remover colaborador?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. <strong>{collaborator.name}</strong> perderá acesso ao sistema.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          onClick={() => removeCollaboratorMutation.mutate(collaborator.id)}
+                        >
+                          Remover
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
 
-                  <p className="text-xs text-muted-foreground mt-4">
-                    Adicionado em {new Date(collaborator.created_at).toLocaleDateString('pt-BR')}
-                  </p>
-                </CardContent>
-              </Card>
+                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0" />
+              </div>
             ))}
           </div>
         ) : (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-secondary mx-auto flex items-center justify-center mb-4">
-                <Users className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="font-display text-xl text-foreground mb-2">Nenhum colaborador</h3>
-              <p className="text-muted-foreground mb-6">Adicione membros à sua equipe para delegar treinos.</p>
-              <Button variant="accent" onClick={() => setIsAddDialogOpen(true)}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Adicionar Primeiro Colaborador
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="bg-white rounded-2xl p-10 border border-slate-100 shadow-sm text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-50 mx-auto flex items-center justify-center mb-4">
+              <Users className="w-8 h-8 text-slate-400" />
+            </div>
+            <h3 className="text-xl font-extrabold text-slate-900 mb-2">Nenhum colaborador</h3>
+            <p className="text-slate-500 text-sm mb-6">Adicione membros à sua equipe para delegar treinos.</p>
+          </div>
         )}
+
+        {/* Primary CTA */}
+        <button
+          onClick={() => setIsAddDialogOpen(true)}
+          className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-4 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+        >
+          <UserPlus className="w-5 h-5" />
+          Adicionar Colaborador
+        </button>
+
+        {/* Add Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Novo Colaborador</DialogTitle>
+              <DialogDescription>Crie uma conta para o novo membro da equipe.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome completo</Label>
+                <Input
+                  id="name"
+                  placeholder="Nome do colaborador"
+                  value={newCollaborator.name}
+                  onChange={(e) => setNewCollaborator({ ...newCollaborator, name: e.target.value })}
+                  className="bg-slate-50 border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-accent focus:border-accent focus:bg-white transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={newCollaborator.email}
+                  onChange={(e) => setNewCollaborator({ ...newCollaborator, email: e.target.value })}
+                  className="bg-slate-50 border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-accent focus:border-accent focus:bg-white transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Senha inicial</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Mínimo 6 caracteres"
+                  value={newCollaborator.password}
+                  onChange={(e) => setNewCollaborator({ ...newCollaborator, password: e.target.value })}
+                  className="bg-slate-50 border-slate-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-accent focus:border-accent focus:bg-white transition-all"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isSubmitting}>Cancelar</Button>
+              <Button
+                onClick={addCollaborator}
+                disabled={isSubmitting}
+                className="bg-accent hover:bg-accent/90 text-accent-foreground"
+              >
+                {isSubmitting ? (<><Loader2 className="w-4 h-4 mr-2 animate-spin" />Criando...</>) : 'Criar Colaborador'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <CollaboratorHistoryDialog
           open={historyDialogOpen}
