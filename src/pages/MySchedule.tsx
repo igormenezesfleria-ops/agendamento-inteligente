@@ -3,14 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
-import { Loader2, User, Clock, Inbox, CheckCircle2, XCircle, FileText } from 'lucide-react';
+import { Loader2, User, Clock, Calendar, Inbox, CheckCircle2, XCircle, FileText } from 'lucide-react';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -22,6 +21,8 @@ export default function MySchedule() {
   const [selectedAppt, setSelectedAppt] = useState<any>(null);
   const [privateNotes, setPrivateNotes] = useState('');
   const [expandedAttendance, setExpandedAttendance] = useState<string | null>(null);
+
+  const today = startOfDay(new Date());
 
   const { data: appointments, isLoading } = useQuery({
     queryKey: ['my-schedule', user?.id],
@@ -86,8 +87,10 @@ export default function MySchedule() {
     setNotesDialogOpen(true);
   };
 
-  const today = startOfDay(new Date());
-  const title = profile?.role === 'admin' ? 'Minhas Tarefas' : 'Meus Treinos';
+  const title = profile?.role === 'admin' ? 'Minhas Tarefas.' : 'Meus Treinos.';
+  const subtitle = profile?.role === 'admin'
+    ? 'Treinos pendentes de ação — marque presença para concluir.'
+    : 'Seus treinos confirmados com controle de presença.';
 
   const canMarkAttendance = (appt: any) => {
     const apptDate = parseISO(appt.date);
@@ -97,14 +100,10 @@ export default function MySchedule() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 animate-fade-in">
-        <div className="space-y-2">
-          <h1 className="font-display text-3xl text-foreground">{title}</h1>
-          <p className="text-muted-foreground">
-            {profile?.role === 'admin'
-              ? 'Treinos pendentes de ação — marque presença para concluir.'
-              : 'Seus treinos confirmados com controle de presença.'}
-          </p>
+      <div className="space-y-6 animate-fade-in pb-32">
+        <div className="text-center space-y-1 pt-2">
+          <h1 className="text-3xl font-extrabold text-foreground">{title}</h1>
+          <p className="text-muted-foreground text-sm">{subtitle}</p>
         </div>
 
         {isLoading ? (
@@ -112,119 +111,90 @@ export default function MySchedule() {
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
         ) : !appointments || appointments.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-3">
-              <Inbox className="w-6 h-6 text-muted-foreground" />
+          <div className="bg-card rounded-2xl p-10 border border-border shadow-sm text-center">
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <Inbox className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">Nenhum treino encontrado.</p>
+            <h3 className="text-xl font-extrabold text-foreground mb-2">Sua agenda de treinos.</h3>
+            <p className="text-muted-foreground text-sm">Ainda não há treinos confirmados. Eles aparecerão aqui.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {appointments.map((appt: any) => (
-              <Card key={appt.id}>
-                <CardContent className="p-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center shrink-0">
-                        <User className="w-5 h-5 text-accent" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground">{appt.studentName}</p>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          <span className="capitalize">
-                            {format(parseISO(appt.date), "EEEE, d MMM", { locale: ptBR })}
-                          </span>
-                          <span>• {appt.time_slot}</span>
-                        </div>
+              <div key={appt.id} className="bg-card rounded-2xl p-4 border border-border shadow-sm transition-all">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <User className="w-5 h-5 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="font-bold text-foreground text-sm">{appt.studentName}</p>
+                      <div className="flex items-center gap-1.5">
+                        {appt.attendance === 'present' && <Badge variant="confirmed" className="text-[10px]">Presente</Badge>}
+                        {appt.attendance === 'absent' && <Badge variant="destructive" className="text-[10px]">Faltou</Badge>}
+                        {appt.status === 'delegated' && <Badge variant="secondary" className="text-[10px]">Delegado</Badge>}
                       </div>
                     </div>
-
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        <span className="capitalize">{format(parseISO(appt.date), "EEE, d 'de' MMM", { locale: ptBR })}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{appt.time_slot}</span>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      {appt.attendance === 'present' && (
-                        <Badge variant="confirmed">Presente</Badge>
-                      )}
-                      {appt.attendance === 'absent' && (
-                        <Badge variant="destructive">Faltou</Badge>
-                      )}
-                      {appt.status === 'delegated' && (
-                        <Badge variant="secondary">Delegado</Badge>
-                      )}
-
                       {canMarkAttendance(appt) ? (
                         expandedAttendance === appt.id ? (
-                          <div className="flex items-center gap-2">
-                            <Button
-                              size="sm"
-                              variant="success"
+                          <>
+                            <Button size="sm" variant="success" className="rounded-xl text-xs"
                               onClick={() => { attendanceMutation.mutate({ id: appt.id, attendance: 'present' }); setExpandedAttendance(null); }}
-                              disabled={attendanceMutation.isPending}
-                            >
-                              <CheckCircle2 className="w-4 h-4 mr-1" />
-                              Presente
+                              disabled={attendanceMutation.isPending}>
+                              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Presente
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
+                            <Button size="sm" variant="outline" className="rounded-xl text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
                               onClick={() => { attendanceMutation.mutate({ id: appt.id, attendance: 'absent' }); setExpandedAttendance(null); }}
-                              disabled={attendanceMutation.isPending}
-                            >
-                              <XCircle className="w-4 h-4 mr-1" />
-                              Faltou
+                              disabled={attendanceMutation.isPending}>
+                              <XCircle className="w-3.5 h-3.5 mr-1" />Faltou
                             </Button>
-                          </div>
+                          </>
                         ) : (
-                          <Button
-                            size="sm"
-                            variant="accent"
-                            onClick={() => setExpandedAttendance(appt.id)}
-                            className="font-semibold"
-                          >
-                            <CheckCircle2 className="w-4 h-4 mr-1" />
-                            Dar Presença / Falta
+                          <Button size="sm" variant="accent" className="rounded-xl text-xs font-semibold"
+                            onClick={() => setExpandedAttendance(appt.id)}>
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />Dar Presença / Falta
                           </Button>
                         )
                       ) : (
-                        <Badge variant="outline">
-                          {appt.attendance === 'present' ? 'Presente' : appt.attendance === 'absent' ? 'Faltou' : 'Aguardando'}
-                        </Badge>
+                        !canMarkAttendance(appt) && appt.attendance !== 'present' && appt.attendance !== 'absent' && (
+                          <Badge variant="outline" className="text-[10px]">Aguardando</Badge>
+                        )
                       )}
-
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        onClick={() => openNotes(appt)}
-                        title={appt.private_notes ? 'Ver observação' : 'Adicionar observação'}
-                      >
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-muted-foreground hover:text-accent"
+                        onClick={() => openNotes(appt)} title={appt.private_notes ? 'Ver observação' : 'Adicionar observação'}>
                         <FileText className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         )}
 
-        {/* Private Notes Dialog */}
         <Dialog open={notesDialogOpen} onOpenChange={setNotesDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Observação Técnica</DialogTitle>
             </DialogHeader>
-            <Textarea
-              value={privateNotes}
-              onChange={(e) => setPrivateNotes(e.target.value)}
-              placeholder="Adicione observações sobre o treino (visível apenas para instrutores)..."
-              rows={4}
-            />
+            <Textarea value={privateNotes} onChange={(e) => setPrivateNotes(e.target.value)}
+              placeholder="Adicione observações sobre o treino (visível apenas para instrutores)..." rows={4}
+              className="bg-muted border-border rounded-xl focus:ring-2 focus:ring-accent" />
             <DialogFooter>
               <Button variant="outline" onClick={() => setNotesDialogOpen(false)}>Cancelar</Button>
-              <Button
-                variant="accent"
-                onClick={() => selectedAppt && notesMutation.mutate({ id: selectedAppt.id, notes: privateNotes })}
-                disabled={notesMutation.isPending}
-              >
+              <Button variant="accent" onClick={() => selectedAppt && notesMutation.mutate({ id: selectedAppt.id, notes: privateNotes })}
+                disabled={notesMutation.isPending}>
                 {notesMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
               </Button>
             </DialogFooter>

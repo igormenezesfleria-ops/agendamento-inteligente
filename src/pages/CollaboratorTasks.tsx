@@ -118,19 +118,18 @@ export default function CollaboratorTasks() {
   return (
     <DashboardLayout>
       <div className="space-y-6 animate-fade-in pb-32">
-        {/* Premium Header */}
         <div className="text-center space-y-1 pt-2">
-          <h1 className="text-3xl font-extrabold text-slate-900">Minhas Tarefas.</h1>
-          <p className="text-slate-500 text-sm">Gerencie os treinos delegados a você.</p>
+          <h1 className="text-3xl font-extrabold text-foreground">Minhas Tarefas.</h1>
+          <p className="text-muted-foreground text-sm">Gerencie os treinos delegados a você.</p>
         </div>
 
         <Tabs defaultValue="tasks" className="space-y-4">
-          <TabsList className="w-full bg-slate-100 rounded-xl p-1">
-            <TabsTrigger value="tasks" className="flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-semibold">
+          <TabsList className="w-full bg-muted rounded-xl p-1">
+            <TabsTrigger value="tasks" className="flex-1 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm text-sm font-semibold">
               <ClipboardList className="w-4 h-4 mr-2" />
               Tarefas Ativas
             </TabsTrigger>
-            <TabsTrigger value="history" className="flex-1 rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm text-sm font-semibold">
+            <TabsTrigger value="history" className="flex-1 rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm text-sm font-semibold">
               <History className="w-4 h-4 mr-2" />
               Meus Treinos
             </TabsTrigger>
@@ -148,37 +147,18 @@ export default function CollaboratorTasks() {
                 {pendingTasks && pendingTasks.length > 0 && (
                   <Section title="Aguardando Aceite" count={pendingTasks.length}>
                     {pendingTasks.map((task: any) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        type="pending"
-                        isLoading={loadingId === task.id}
-                        onAccept={handleAccept}
-                        onReject={handleRejectRequest}
-                        onComplete={handleComplete}
-                        onMarkAttendance={handleMarkAttendance}
-                        onAcceptDelegation={handleAcceptDelegation}
-                        onDeclineDelegation={handleDeclineDelegation}
-                      />
+                      <TaskCard key={task.id} task={task} type="pending" isLoading={loadingId === task.id}
+                        onAccept={handleAccept} onReject={handleRejectRequest} onComplete={handleComplete}
+                        onMarkAttendance={handleMarkAttendance} onAcceptDelegation={handleAcceptDelegation} onDeclineDelegation={handleDeclineDelegation} />
                     ))}
                   </Section>
                 )}
-
                 {confirmedTasks && confirmedTasks.length > 0 && (
                   <Section title="Confirmados" count={confirmedTasks.length}>
                     {confirmedTasks.map((task: any) => (
-                      <TaskCard
-                        key={task.id}
-                        task={task}
-                        type="confirmed"
-                        isLoading={loadingId === task.id}
-                        onAccept={handleAccept}
-                        onReject={handleRejectRequest}
-                        onComplete={handleComplete}
-                        onMarkAttendance={handleMarkAttendance}
-                        onAcceptDelegation={handleAcceptDelegation}
-                        onDeclineDelegation={handleDeclineDelegation}
-                      />
+                      <TaskCard key={task.id} task={task} type="confirmed" isLoading={loadingId === task.id}
+                        onAccept={handleAccept} onReject={handleRejectRequest} onComplete={handleComplete}
+                        onMarkAttendance={handleMarkAttendance} onAcceptDelegation={handleAcceptDelegation} onDeclineDelegation={handleDeclineDelegation} />
                     ))}
                   </Section>
                 )}
@@ -191,11 +171,7 @@ export default function CollaboratorTasks() {
           </TabsContent>
         </Tabs>
 
-        <RejectConfirmDialog
-          open={rejectDialogOpen}
-          onOpenChange={setRejectDialogOpen}
-          onConfirm={handleRejectConfirm}
-        />
+        <RejectConfirmDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen} onConfirm={handleRejectConfirm} />
       </div>
     </DashboardLayout>
   );
@@ -205,7 +181,7 @@ function Section({ title, count, children }: { title: string; count: number; chi
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <h2 className="text-lg font-bold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-bold text-foreground">{title}</h2>
         <Badge className="bg-accent/10 text-accent border-accent/20 text-xs font-bold">{count}</Badge>
       </div>
       <div className="space-y-3">{children}</div>
@@ -215,12 +191,12 @@ function Section({ title, count, children }: { title: string; count: number; chi
 
 function EmptyState() {
   return (
-    <div className="bg-white rounded-2xl p-10 border border-slate-100 shadow-sm text-center">
-      <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
-        <ClipboardList className="w-8 h-8 text-slate-400" />
+    <div className="bg-card rounded-2xl p-10 border border-border shadow-sm text-center">
+      <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+        <ClipboardList className="w-8 h-8 text-muted-foreground" />
       </div>
-      <h3 className="text-xl font-extrabold text-slate-900 mb-2">Nenhuma tarefa</h3>
-      <p className="text-slate-500 text-sm">Você não tem tarefas delegadas no momento.</p>
+      <h3 className="text-xl font-extrabold text-foreground mb-2">Sua lista de tarefas.</h3>
+      <p className="text-muted-foreground text-sm">Ainda não há tarefas delegadas. Elas aparecerão aqui.</p>
     </div>
   );
 }

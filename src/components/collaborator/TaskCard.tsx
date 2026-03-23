@@ -34,15 +34,15 @@ export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete
   const canAct = isWithinDeadline(task.date, task.time_slot, 12);
 
   return (
-    <div className="bg-white rounded-2xl p-4 border border-slate-100 shadow-sm">
-      {/* Top row: student + badges */}
+    <div className="bg-card rounded-2xl p-4 border border-border shadow-sm transition-all">
+      {/* Top row */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
             <User className="w-4 h-4 text-accent" />
           </div>
           <div>
-            <span className="text-sm font-bold text-slate-900">{task.profiles?.name || 'Aluno'}</span>
+            <span className="text-sm font-bold text-foreground">{task.profiles?.name || 'Aluno'}</span>
             {isTodayTask && (
               <Badge className="ml-2 bg-accent/10 text-accent border-accent/20 text-[10px] font-bold">Hoje</Badge>
             )}
@@ -53,15 +53,15 @@ export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete
             {STATUS_LABELS[task.status] || task.status}
           </Badge>
           {task.collaborator_status === 'pending' && (
-            <Badge className="bg-amber-50 text-amber-600 border-amber-200 text-[10px]">Aguardando</Badge>
+            <Badge className="bg-warning/10 text-warning border-warning/20 text-[10px]">Aguardando</Badge>
           )}
           {task.attendance === 'present' && <Badge variant="confirmed" className="text-[10px]">Presente</Badge>}
           {task.attendance === 'absent' && <Badge variant="destructive" className="text-[10px]">Faltou</Badge>}
         </div>
       </div>
 
-      {/* Date & Time row */}
-      <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+      {/* Date & Time */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
         <div className="flex items-center gap-1">
           <Calendar className="w-3.5 h-3.5" />
           <span className="capitalize">{formattedDate}</span>
@@ -74,31 +74,17 @@ export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete
 
       {/* Actions */}
       <div className="flex items-center gap-2 flex-wrap">
-        {/* Collaborator delegation accept/decline */}
         {task.collaborator_status === 'pending' && onAcceptDelegation && onDeclineDelegation && (
           <>
-            <Button
-              variant="success"
-              size="sm"
-              className="rounded-xl text-xs"
-              onClick={() => onAcceptDelegation(task.id)}
-              disabled={isLoading}
-            >
+            <Button variant="success" size="sm" className="rounded-xl text-xs" onClick={() => onAcceptDelegation(task.id)} disabled={isLoading}>
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Check className="w-3.5 h-3.5 mr-1" />Aceitar</>}
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-xl text-xs text-destructive border-destructive/30 hover:bg-destructive/10"
-              onClick={() => onDeclineDelegation(task.id)}
-              disabled={isLoading}
-            >
+            <Button variant="outline" size="sm" className="rounded-xl text-xs text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => onDeclineDelegation(task.id)} disabled={isLoading}>
               <X className="w-3.5 h-3.5 mr-1" />Recusar
             </Button>
           </>
         )}
 
-        {/* Legacy pending actions */}
         {type === 'pending' && task.collaborator_status !== 'pending' && (
           <>
             {canAct ? (
@@ -130,12 +116,7 @@ export function TaskCard({ task, type, isLoading, onAccept, onReject, onComplete
                 </Button>
               </>
             )}
-            <Button
-              size="sm"
-              className="rounded-xl text-xs bg-accent hover:bg-accent/90 text-accent-foreground"
-              onClick={() => onComplete(task.id)}
-              disabled={isLoading}
-            >
+            <Button size="sm" variant="accent" className="rounded-xl text-xs" onClick={() => onComplete(task.id)} disabled={isLoading}>
               {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle2 className="w-3.5 h-3.5 mr-1" />Finalizar</>}
             </Button>
           </>
