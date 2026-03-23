@@ -50,17 +50,16 @@ export function CollaboratorHistory() {
 
   if (!history || history.length === 0) {
     return (
-      <div className="bg-white rounded-2xl p-10 border border-slate-100 shadow-sm text-center">
-        <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-8 h-8 text-slate-400" />
+      <div className="bg-card rounded-2xl p-10 border border-border shadow-sm text-center">
+        <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-xl font-extrabold text-slate-900 mb-2">Nenhum treino concluído</h3>
-        <p className="text-slate-500 text-sm">Seus treinos concluídos aparecerão aqui.</p>
+        <h3 className="text-xl font-extrabold text-foreground mb-2">Seu histórico de treinos.</h3>
+        <p className="text-muted-foreground text-sm">Ainda não há treinos concluídos. Eles aparecerão aqui.</p>
       </div>
     );
   }
 
-  // Group by date+time
   const grouped = history.reduce<Record<string, typeof history>>((acc, item) => {
     const key = `${item.date}_${item.time_slot}`;
     if (!acc[key]) acc[key] = [];
@@ -71,10 +70,10 @@ export function CollaboratorHistory() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-500">{history.length} treino(s) concluído(s)</p>
+        <p className="text-xs text-muted-foreground">{history.length} treino(s) concluído(s)</p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         {Object.entries(grouped).map(([key, items], idx) => {
           const first = items[0];
           const slot = TIME_SLOTS.find((s) => s.id === first.time_slot);
@@ -82,8 +81,8 @@ export function CollaboratorHistory() {
           const formattedDate = format(parsedDate, "EEE, d 'de' MMM", { locale: ptBR });
 
           return (
-            <div key={key} className={`p-4 ${idx > 0 ? 'border-t border-slate-50' : ''}`}>
-              <div className="flex items-center gap-3 text-xs text-slate-500 mb-2">
+            <div key={key} className={`p-4 ${idx > 0 ? 'border-t border-border' : ''}`}>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
                 <div className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
                   <span className="capitalize">{formattedDate}</span>
@@ -95,10 +94,10 @@ export function CollaboratorHistory() {
               </div>
               <div className="space-y-1.5">
                 {items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-xl bg-slate-50">
+                  <div key={item.id} className="flex items-center justify-between py-2 px-3 rounded-xl bg-muted">
                     <div className="flex items-center gap-2">
                       <User className="w-3.5 h-3.5 text-accent" />
-                      <span className="font-semibold text-slate-900 text-sm">{item.studentName}</span>
+                      <span className="font-semibold text-foreground text-sm">{item.studentName}</span>
                     </div>
                     {item.attendance === 'present' && <Badge variant="confirmed" className="text-[10px]">Presente</Badge>}
                     {item.attendance === 'absent' && <Badge variant="destructive" className="text-[10px]">Faltou</Badge>}
