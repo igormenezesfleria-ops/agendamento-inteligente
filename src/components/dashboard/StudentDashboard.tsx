@@ -204,6 +204,27 @@ export function StudentDashboard() {
       {/* Triage Onboarding Modal */}
       <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
 
+      {/* Liability Waiver Overlay */}
+      <LiabilityWaiverOverlay
+        open={liabilityOpen}
+        onAccepted={() => {
+          setLiabilityOpen(false);
+          // After liability accepted, check if triage needed
+          if (profile && profile.profile_completed === false) {
+            setTriageOpen(true);
+          }
+        }}
+      />
+
+      {/* PSE Post-Workout Feedback */}
+      <PSEFeedbackModal
+        open={pseOpen}
+        onOpenChange={setPseOpen}
+        onSubmit={(score) => {
+          console.log('PSE score:', score);
+        }}
+      />
+
       {/* Questionnaire Answering Modal */}
       <QuestionnaireModal
         open={!!selectedQuestionnaire}
