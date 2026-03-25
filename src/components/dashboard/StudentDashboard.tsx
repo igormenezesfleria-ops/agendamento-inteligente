@@ -27,8 +27,13 @@ export function StudentDashboard() {
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
   useEffect(() => {
-    if (profile && profile.profile_completed === false && profile.business_owner_id) {
-      setTriageOpen(true);
+    if (profile && profile.business_owner_id) {
+      // Show liability waiver first if not accepted
+      if (!(profile as any).liability_accepted) {
+        setLiabilityOpen(true);
+      } else if (profile.profile_completed === false) {
+        setTriageOpen(true);
+      }
     }
   }, [profile]);
 
