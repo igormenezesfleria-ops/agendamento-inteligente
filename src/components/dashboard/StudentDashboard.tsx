@@ -22,6 +22,8 @@ import { ptBR } from 'date-fns/locale';
 export function StudentDashboard() {
   const { profile, user } = useAuth();
   const [triageOpen, setTriageOpen] = useState(false);
+  const [liabilityOpen, setLiabilityOpen] = useState(false);
+  const [pseOpen, setPseOpen] = useState(false);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
   useEffect(() => {
