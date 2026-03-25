@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { ClipboardList, User, CalendarCheck, History, Calendar, Flame, Share2 } from 'lucide-react';
+import { CheckinQueue } from '@/components/dashboard/CheckinQueue';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -101,6 +102,9 @@ export function CollaboratorDashboard() {
           Confira suas tarefas e treinos delegados.
         </p>
       </div>
+
+      {/* Check-in Validation Queue */}
+      <CheckinQueue />
 
       {/* Next Session Widget */}
       {nextSession ? (

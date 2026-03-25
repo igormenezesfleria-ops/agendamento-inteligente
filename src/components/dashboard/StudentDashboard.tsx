@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, ArrowRight, Dumbbell, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Dumbbell, AlertTriangle, MapPin } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
@@ -21,9 +22,12 @@ import { ptBR } from 'date-fns/locale';
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [triageOpen, setTriageOpen] = useState(false);
   const [liabilityOpen, setLiabilityOpen] = useState(false);
   const [pseOpen, setPseOpen] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
   useEffect(() => {
@@ -48,7 +52,7 @@ export function StudentDashboard() {
       // Fetch upcoming confirmed/pending appointments
       const { data, error } = await supabase
         .from('appointments')
-        .select('id, date, time_slot, status, class_schedule_id')
+        .select('id, date, time_slot, status, class_schedule_id, checkin_at')
         .eq('student_id', user.id)
         .in('status', ['confirmed', 'pending'])
         .gte('date', todayStr)
@@ -108,6 +112,22 @@ export function StudentDashboard() {
     return format(date, "EEEE, dd 'de' MMMM", { locale: ptBR });
   };
 
+  const handleCheckin = async () => {
+    if (!nextAppointment || !user) return;
+    setCheckingIn(true);
+    const { error } = await supabase
+      .from('appointments')
+      .update({ checkin_at: new Date().toISOString() })
+      .eq('id', nextAppointment.id);
+    setCheckingIn(false);
+    if (error) {
+      toast({ title: 'Erro', description: 'Não foi possível fazer check-in.', variant: 'destructive' });
+      return;
+    }
+    toast({ title: '📍 Check-in realizado!', description: 'Aguarde a validação do seu professor.' });
+    queryClient.invalidateQueries({ queryKey: ['next-appointment'] });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Pending Questionnaire Alert */}
@@ -152,7 +172,7 @@ export function StudentDashboard() {
         </Link>
       </Button>
 
-      {/* c) Next Class */}
+      {/* c) Next Class + Check-in */}
       {!isLoading && (
         nextAppointment ? (
           <Card className="border-accent/30 bg-accent/5">
@@ -173,6 +193,35 @@ export function StudentDashboard() {
                   </p>
                 </div>
               </div>
+              {/* Check-in CTA — show when class is today and within 30min window */}
+              {(() => {
+                const now = new Date();
+                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                if (nextAppointment.date !== todayStr) return null;
+                const [h, m] = nextAppointment.time_slot.split(':').map(Number);
+                const classTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
+                const diffMin = (classTime.getTime() - now.getTime()) / 60000;
+                // Show check-in from 30min before to 15min after class start
+                if (diffMin > 30 || diffMin < -15) return null;
+                const alreadyCheckedIn = !!(nextAppointment as any).checkin_at;
+                if (alreadyCheckedIn) {
+                  return (
+                    <div className="mt-4 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 py-3 rounded-xl font-bold text-center text-sm border border-emerald-200 dark:border-emerald-800/40">
+                      ✅ Check-in realizado! Aguarde validação.
+                    </div>
+                  );
+                }
+                return (
+                  <button
+                    onClick={handleCheckin}
+                    disabled={checkingIn}
+                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-4 rounded-xl font-bold text-lg shadow-[0_0_15px_hsl(var(--accent)/0.4)] animate-pulse flex justify-center items-center gap-2 mt-4 transition-all"
+                  >
+                    <MapPin className="w-5 h-5" />
+                    Fazer Check-in no Estúdio
+                  </button>
+                );
+              })()}
             </CardContent>
           </Card>
         ) : (

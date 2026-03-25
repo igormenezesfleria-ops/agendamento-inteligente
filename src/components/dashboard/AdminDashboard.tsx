@@ -11,6 +11,7 @@ import { ptBR } from 'date-fns/locale';
 
 import { Link } from 'react-router-dom';
 import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt';
+import { CheckinQueue } from '@/components/dashboard/CheckinQueue';
 import { toLocalDateTime } from '@/lib/deadline';
 
 export function AdminDashboard() {
@@ -155,6 +156,9 @@ export function AdminDashboard() {
         </h1>
         <p className="text-sm text-muted-foreground capitalize">{todayFormatted}</p>
       </div>
+
+      {/* Check-in Validation Queue */}
+      <CheckinQueue />
 
       {/* Quick Actions */}
       <div className="space-y-1.5">
