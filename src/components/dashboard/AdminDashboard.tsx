@@ -11,6 +11,7 @@ import { ptBR } from 'date-fns/locale';
 
 import { Link } from 'react-router-dom';
 import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt';
+import { CheckinQueue } from '@/components/dashboard/CheckinQueue';
 import { toLocalDateTime } from '@/lib/deadline';
 
 export function AdminDashboard() {
