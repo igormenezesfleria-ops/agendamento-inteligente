@@ -157,6 +157,9 @@ export function AdminDashboard() {
         <p className="text-sm text-muted-foreground capitalize">{todayFormatted}</p>
       </div>
 
+      {/* Check-in Validation Queue */}
+      <CheckinQueue />
+
       {/* Quick Actions */}
       <div className="space-y-1.5">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acesso Rápido</p>

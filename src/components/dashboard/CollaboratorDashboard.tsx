@@ -103,6 +103,9 @@ export function CollaboratorDashboard() {
         </p>
       </div>
 
+      {/* Check-in Validation Queue */}
+      <CheckinQueue />
+
       {/* Next Session Widget */}
       {nextSession ? (
         <div className="bg-card rounded-2xl p-5 border border-accent/30 shadow-sm">

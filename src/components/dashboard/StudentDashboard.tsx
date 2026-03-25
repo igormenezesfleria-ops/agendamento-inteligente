@@ -112,6 +112,22 @@ export function StudentDashboard() {
     return format(date, "EEEE, dd 'de' MMMM", { locale: ptBR });
   };
 
+  const handleCheckin = async () => {
+    if (!nextAppointment || !user) return;
+    setCheckingIn(true);
+    const { error } = await supabase
+      .from('appointments')
+      .update({ checkin_at: new Date().toISOString() })
+      .eq('id', nextAppointment.id);
+    setCheckingIn(false);
+    if (error) {
+      toast({ title: 'Erro', description: 'Não foi possível fazer check-in.', variant: 'destructive' });
+      return;
+    }
+    toast({ title: '📍 Check-in realizado!', description: 'Aguarde a validação do seu professor.' });
+    queryClient.invalidateQueries({ queryKey: ['next-appointment'] });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Pending Questionnaire Alert */}
