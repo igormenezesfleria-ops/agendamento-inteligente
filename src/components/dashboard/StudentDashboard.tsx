@@ -14,6 +14,8 @@ import { ActiveWorkoutCard } from '@/components/student/ActiveWorkoutCard';
 import { StreakBadge } from '@/components/student/StreakBadge';
 import { TriageModal } from '@/components/student/TriageModal';
 import { QuestionnaireModal } from '@/components/student/QuestionnaireModal';
+import { LiabilityWaiverOverlay } from '@/components/student/LiabilityWaiverOverlay';
+import { PSEFeedbackModal } from '@/components/student/PSEFeedbackModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
