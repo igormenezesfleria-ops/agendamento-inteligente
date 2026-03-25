@@ -307,6 +307,8 @@ export type Database = {
           is_active: boolean | null
           is_onboarded: boolean
           last_attendance_week: string | null
+          liability_accepted: boolean | null
+          liability_accepted_at: string | null
           longest_streak: number
           main_objective: string | null
           name: string | null
@@ -347,6 +349,8 @@ export type Database = {
           is_active?: boolean | null
           is_onboarded?: boolean
           last_attendance_week?: string | null
+          liability_accepted?: boolean | null
+          liability_accepted_at?: string | null
           longest_streak?: number
           main_objective?: string | null
           name?: string | null
@@ -387,6 +391,8 @@ export type Database = {
           is_active?: boolean | null
           is_onboarded?: boolean
           last_attendance_week?: string | null
+          liability_accepted?: boolean | null
+          liability_accepted_at?: string | null
           longest_streak?: number
           main_objective?: string | null
           name?: string | null

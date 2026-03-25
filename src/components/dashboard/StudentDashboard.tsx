@@ -14,17 +14,26 @@ import { ActiveWorkoutCard } from '@/components/student/ActiveWorkoutCard';
 import { StreakBadge } from '@/components/student/StreakBadge';
 import { TriageModal } from '@/components/student/TriageModal';
 import { QuestionnaireModal } from '@/components/student/QuestionnaireModal';
+import { LiabilityWaiverOverlay } from '@/components/student/LiabilityWaiverOverlay';
+import { PSEFeedbackModal } from '@/components/student/PSEFeedbackModal';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
   const [triageOpen, setTriageOpen] = useState(false);
+  const [liabilityOpen, setLiabilityOpen] = useState(false);
+  const [pseOpen, setPseOpen] = useState(false);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
   useEffect(() => {
-    if (profile && profile.profile_completed === false && profile.business_owner_id) {
-      setTriageOpen(true);
+    if (profile && profile.business_owner_id) {
+      // Show liability waiver first if not accepted
+      if (!(profile as any).liability_accepted) {
+        setLiabilityOpen(true);
+      } else if (profile.profile_completed === false) {
+        setTriageOpen(true);
+      }
     }
   }, [profile]);
 
@@ -194,6 +203,27 @@ export function StudentDashboard() {
 
       {/* Triage Onboarding Modal */}
       <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
+
+      {/* Liability Waiver Overlay */}
+      <LiabilityWaiverOverlay
+        open={liabilityOpen}
+        onAccepted={() => {
+          setLiabilityOpen(false);
+          // After liability accepted, check if triage needed
+          if (profile && profile.profile_completed === false) {
+            setTriageOpen(true);
+          }
+        }}
+      />
+
+      {/* PSE Post-Workout Feedback */}
+      <PSEFeedbackModal
+        open={pseOpen}
+        onOpenChange={setPseOpen}
+        onSubmit={(score) => {
+          console.log('PSE score:', score);
+        }}
+      />
 
       {/* Questionnaire Answering Modal */}
       <QuestionnaireModal
