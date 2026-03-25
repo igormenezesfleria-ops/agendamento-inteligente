@@ -22,6 +22,8 @@ import { ptBR } from 'date-fns/locale';
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [triageOpen, setTriageOpen] = useState(false);
   const [liabilityOpen, setLiabilityOpen] = useState(false);
   const [pseOpen, setPseOpen] = useState(false);
