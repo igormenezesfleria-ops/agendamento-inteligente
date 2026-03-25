@@ -24,6 +24,7 @@ export function StudentDashboard() {
   const [triageOpen, setTriageOpen] = useState(false);
   const [liabilityOpen, setLiabilityOpen] = useState(false);
   const [pseOpen, setPseOpen] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
   useEffect(() => {
