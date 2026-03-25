@@ -49,7 +49,7 @@ export function StudentDashboard() {
       // Fetch upcoming confirmed/pending appointments
       const { data, error } = await supabase
         .from('appointments')
-        .select('id, date, time_slot, status, class_schedule_id')
+        .select('id, date, time_slot, status, class_schedule_id, checkin_at')
         .eq('student_id', user.id)
         .in('status', ['confirmed', 'pending'])
         .gte('date', todayStr)
