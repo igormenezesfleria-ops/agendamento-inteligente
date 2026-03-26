@@ -58,7 +58,7 @@ export function StreakBadge() {
           </button>
         </CardContent>
       </Card>
-      <StreakShareModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <EvolutionHub open={modalOpen} onOpenChange={setModalOpen} />
     </>
   );
 }
