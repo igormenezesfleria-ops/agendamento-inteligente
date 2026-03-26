@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Flame, Share2 } from 'lucide-react';
 import { startOfWeek, endOfWeek, format } from 'date-fns';
-import { StreakShareModal } from './StreakShareModal';
+import { EvolutionHub } from './EvolutionHub';
 
 export function StreakBadge() {
   const { profile, user } = useAuth();
