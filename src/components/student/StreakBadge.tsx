@@ -55,7 +55,7 @@ export function StreakBadge() {
 
   return (
     <>
-      <Card className="border-accent/20 bg-gradient-to-br from-accent/5 via-background to-amber-500/5 overflow-hidden">
+      <Card className="border-accent/20 bg-gradient-to-br from-accent/5 via-background to-accent/3 overflow-hidden">
         <CardContent className="p-5 space-y-4">
           {/* Header */}
           <div className="flex items-center gap-3">
