@@ -199,6 +199,7 @@ function getNavItems(role: string) {
 
   const collaboratorItems = [
     { href: '/dashboard/collaborator', label: 'Início', icon: Home },
+    { href: '/dashboard/chat', label: 'Mensagens', icon: MessageSquare },
     { href: '/dashboard/meus-treinos', label: 'Meus Treinos', icon: CalendarCheck },
     { href: '/dashboard/minhas-tarefas', label: 'Minhas Tarefas', icon: ClipboardList },
     { href: '/dashboard/collaborator/historico', label: 'Histórico de Treinos', icon: History },
