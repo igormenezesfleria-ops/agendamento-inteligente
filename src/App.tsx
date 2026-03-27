@@ -36,6 +36,7 @@ import PaymentSettings from "./pages/PaymentSettings";
 import PlansManagement from "./pages/PlansManagement";
 import StudentPlans from "./pages/StudentPlans";
 import Questionnaires from "./pages/Questionnaires";
+import Chat from "./pages/Chat";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
