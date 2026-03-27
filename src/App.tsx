@@ -265,12 +265,20 @@ const App = () => (
               }
             />
 
-            {/* Shared routes (admin + student) */}
+            {/* Shared routes (admin + student + collaborator) */}
             <Route
               path="/dashboard/questionarios"
               element={
                 <ProtectedRoute allowedRoles={['admin', 'student']}>
                   <Questionnaires />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/chat"
+              element={
+                <ProtectedRoute>
+                  <Chat />
                 </ProtectedRoute>
               }
             />
