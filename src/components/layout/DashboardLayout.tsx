@@ -166,6 +166,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 function getNavItems(role: string) {
   const studentItems = [
     { href: '/dashboard/student', label: 'Início', icon: Home },
+    { href: '/dashboard/chat', label: 'Mensagens', icon: MessageSquare },
     { href: '/dashboard/agendar', label: 'Agendar Treino', icon: Calendar },
     { href: '/dashboard/meus-agendamentos', label: 'Meus Agendamentos', icon: ClipboardList },
     { href: '/dashboard/questionarios', label: 'Questionários', icon: GraduationCap },
