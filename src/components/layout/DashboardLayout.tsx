@@ -166,6 +166,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 function getNavItems(role: string) {
   const studentItems = [
     { href: '/dashboard/student', label: 'Início', icon: Home },
+    { href: '/dashboard/chat', label: 'Mensagens', icon: MessageSquare },
     { href: '/dashboard/agendar', label: 'Agendar Treino', icon: Calendar },
     { href: '/dashboard/meus-agendamentos', label: 'Meus Agendamentos', icon: ClipboardList },
     { href: '/dashboard/questionarios', label: 'Questionários', icon: GraduationCap },
@@ -177,6 +178,7 @@ function getNavItems(role: string) {
   const adminItems: Array<{ href: string; label: string; icon: React.ElementType } | { section: string }> = [
     { href: '/dashboard/admin', label: 'Início', icon: Home },
     { section: 'Operação' },
+    { href: '/dashboard/chat', label: 'Mensagens', icon: MessageSquare },
     { href: '/dashboard/solicitacoes', label: 'Solicitações', icon: Bell },
     { href: '/dashboard/minha-agenda', label: 'Minhas Tarefas', icon: ClipboardList },
     { href: '/dashboard/agenda', label: 'Agenda Completa', icon: Calendar },
@@ -197,6 +199,7 @@ function getNavItems(role: string) {
 
   const collaboratorItems = [
     { href: '/dashboard/collaborator', label: 'Início', icon: Home },
+    { href: '/dashboard/chat', label: 'Mensagens', icon: MessageSquare },
     { href: '/dashboard/meus-treinos', label: 'Meus Treinos', icon: CalendarCheck },
     { href: '/dashboard/minhas-tarefas', label: 'Minhas Tarefas', icon: ClipboardList },
     { href: '/dashboard/collaborator/historico', label: 'Histórico de Treinos', icon: History },
