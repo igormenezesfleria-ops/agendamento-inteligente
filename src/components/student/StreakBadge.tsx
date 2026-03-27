@@ -71,7 +71,7 @@ export function StreakBadge() {
               </p>
             </div>
             {streak > 0 && (
-              <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+              <Trophy className="w-5 h-5 text-accent shrink-0" />
             )}
           </div>
 
