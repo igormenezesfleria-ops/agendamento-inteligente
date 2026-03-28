@@ -156,6 +156,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         />
       )}
 
+      {/* Bottom Tab Bar */}
+      <BottomTabBar />
+
       {/* Main content */}
       <main className="lg:ml-64 lg:pt-0 min-h-screen w-full overflow-x-hidden print:ml-0 print:pt-0">
         <div className="p-4 md:p-8 print:p-4 max-w-lg mx-auto lg:max-w-4xl">{children}</div>
