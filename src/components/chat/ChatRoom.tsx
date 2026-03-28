@@ -28,6 +28,7 @@ export function ChatRoom({ conversationId, peer, onBack }: ChatRoomProps) {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    if (isMock) return;
     loadMessages();
     markAsRead();
 
