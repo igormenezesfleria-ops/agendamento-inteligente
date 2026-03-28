@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/layout/NotificationBell';
+import { BottomTabBar } from '@/components/layout/BottomTabBar';
 import { usePushPermission } from '@/hooks/usePushPermission';
 
 interface DashboardLayoutProps {
