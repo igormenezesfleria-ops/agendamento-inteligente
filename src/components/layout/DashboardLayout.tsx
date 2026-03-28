@@ -57,7 +57,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 print:hidden',
+          'fixed inset-y-0 left-0 z-[100] w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0 print:hidden',
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
@@ -151,7 +151,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Mobile overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden print:hidden"
+          className="fixed inset-0 bg-black/50 z-[99] lg:hidden print:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

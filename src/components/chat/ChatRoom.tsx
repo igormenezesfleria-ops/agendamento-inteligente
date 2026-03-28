@@ -23,10 +23,12 @@ export function ChatRoom({ conversationId, peer, onBack }: ChatRoomProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const isMock = conversationId.startsWith('mock-');
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    if (isMock) return;
     loadMessages();
     markAsRead();
 
@@ -90,6 +92,20 @@ export function ChatRoom({ conversationId, peer, onBack }: ChatRoomProps) {
     setSending(true);
     const content = newMessage.trim();
     setNewMessage('');
+
+    if (isMock) {
+      const localMsg: Message = {
+        id: crypto.randomUUID(),
+        sender_id: user.id,
+        content,
+        created_at: new Date().toISOString(),
+        is_read: true,
+      };
+      setMessages((prev) => [...prev, localMsg]);
+      setSending(false);
+      inputRef.current?.focus();
+      return;
+    }
 
     await supabase.from('messages').insert({
       conversation_id: conversationId,
