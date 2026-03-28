@@ -93,6 +93,20 @@ export function ChatRoom({ conversationId, peer, onBack }: ChatRoomProps) {
     const content = newMessage.trim();
     setNewMessage('');
 
+    if (isMock) {
+      const localMsg: Message = {
+        id: crypto.randomUUID(),
+        sender_id: user.id,
+        content,
+        created_at: new Date().toISOString(),
+        is_read: true,
+      };
+      setMessages((prev) => [...prev, localMsg]);
+      setSending(false);
+      inputRef.current?.focus();
+      return;
+    }
+
     await supabase.from('messages').insert({
       conversation_id: conversationId,
       sender_id: user.id,

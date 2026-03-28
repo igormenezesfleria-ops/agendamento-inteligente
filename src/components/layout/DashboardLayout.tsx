@@ -151,7 +151,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Mobile overlay */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden print:hidden"
+          className="fixed inset-0 bg-black/50 z-[99] lg:hidden print:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
