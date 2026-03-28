@@ -3,7 +3,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, User, CalendarCheck, History, Calendar, Flame, Share2 } from 'lucide-react';
+import { ClipboardList, User, CalendarCheck, History, Calendar, Flame, Share2, MessageCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { CheckinQueue } from '@/components/dashboard/CheckinQueue';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -112,9 +113,17 @@ export function CollaboratorDashboard() {
           <p className="text-xs font-bold text-accent uppercase tracking-wider">
             Próxima Sessão
           </p>
-          <p className="text-lg font-bold text-foreground mt-1">
-            {nextSession.studentName}
-          </p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-lg font-bold text-foreground">
+              {nextSession.studentName}
+            </p>
+            <Link
+              to="/dashboard/chat"
+              className="bg-secondary text-accent p-2 rounded-full hover:bg-accent/10 transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
+            </Link>
+          </div>
           <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
             <Calendar className="w-3.5 h-3.5" />
             {formatSessionDate(nextSession.date)}, {getTimeRange(nextSession.time_slot)}

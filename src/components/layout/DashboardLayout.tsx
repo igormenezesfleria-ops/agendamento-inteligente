@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { NotificationBell } from '@/components/layout/NotificationBell';
+import { BottomTabBar } from '@/components/layout/BottomTabBar';
 import { usePushPermission } from '@/hooks/usePushPermission';
 
 interface DashboardLayoutProps {
@@ -154,6 +155,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
+
+      {/* Bottom Tab Bar */}
+      <BottomTabBar />
 
       {/* Main content */}
       <main className="lg:ml-64 lg:pt-0 min-h-screen w-full overflow-x-hidden print:ml-0 print:pt-0">

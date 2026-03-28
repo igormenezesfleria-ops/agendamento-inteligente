@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, MessageCircle } from 'lucide-react';
+import { Search, MessageCircle, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format } from 'date-fns';
@@ -23,6 +23,23 @@ interface ChatInboxProps {
   onOpenThread: (conversationId: string, peer: Peer) => void;
 }
 
+const MOCK_THREADS: ConversationThread[] = [
+  {
+    id: 'mock-1',
+    peer: { id: 'mock-peer-1', name: 'Gabriela Nassar', photo_url: null },
+    lastMessage: 'Professor, a carga do agachamento está pesada...',
+    lastMessageAt: new Date().toISOString(),
+    unreadCount: 1,
+  },
+  {
+    id: 'mock-2',
+    peer: { id: 'mock-peer-2', name: 'Luis Carlos (Admin)', photo_url: null },
+    lastMessage: 'Beleza, te vejo no treino amanhã!',
+    lastMessageAt: new Date(Date.now() - 86400000).toISOString(),
+    unreadCount: 0,
+  },
+];
+
 export function ChatInbox({ onOpenThread }: ChatInboxProps) {
   const { user } = useAuth();
   const [threads, setThreads] = useState<ConversationThread[]>([]);
@@ -45,7 +62,8 @@ export function ChatInbox({ onOpenThread }: ChatInboxProps) {
       .order('last_message_at', { ascending: false });
 
     if (!conversations || conversations.length === 0) {
-      setThreads([]);
+      // Show mock threads when no real conversations exist
+      setThreads(MOCK_THREADS);
       setLoading(false);
       return;
     }
@@ -94,7 +112,7 @@ export function ChatInbox({ onOpenThread }: ChatInboxProps) {
     });
 
     const results = await Promise.all(threadPromises);
-    setThreads(results);
+    setThreads(results.length > 0 ? results : MOCK_THREADS);
     setLoading(false);
   };
 
@@ -148,8 +166,7 @@ export function ChatInbox({ onOpenThread }: ChatInboxProps) {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16">
           <MessageCircle className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
-          <p className="text-muted-foreground font-medium">Nenhuma conversa ainda</p>
-          <p className="text-sm text-muted-foreground/60 mt-1">Suas mensagens aparecerão aqui</p>
+          <p className="text-muted-foreground font-medium">Nenhuma conversa encontrada</p>
         </div>
       ) : (
         <div className="space-y-0">
@@ -195,6 +212,11 @@ export function ChatInbox({ onOpenThread }: ChatInboxProps) {
           ))}
         </div>
       )}
+
+      {/* Floating Action Button - New Message */}
+      <button className="fixed bottom-24 right-6 w-14 h-14 bg-accent rounded-full shadow-accent flex justify-center items-center text-accent-foreground hover:scale-105 transition-transform z-[60]">
+        <Pencil className="w-6 h-6" />
+      </button>
     </div>
   );
 }
