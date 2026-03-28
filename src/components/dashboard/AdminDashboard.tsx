@@ -188,6 +188,12 @@ export function AdminDashboard() {
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 shrink-0" />
                     Aluno: {nextAppointment.studentName}
+                    <Link
+                      to="/dashboard/chat"
+                      className="bg-secondary text-accent p-1.5 rounded-full hover:bg-accent/10 transition-colors ml-1"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                    </Link>
                   </p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                     <GraduationCap className="w-3.5 h-3.5 shrink-0" />
