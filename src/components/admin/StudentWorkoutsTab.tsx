@@ -121,6 +121,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
       setExSets('');
       setExReps('');
       setExRest('');
+      setExVideoUrl('');
     },
     onError: () => toast({ title: 'Erro ao adicionar exercício', variant: 'destructive' }),
   });
