@@ -283,6 +283,15 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                       <Input placeholder="Reps" value={exReps} onChange={(e) => setExReps(e.target.value)} />
                       <Input placeholder="Descanso" value={exRest} onChange={(e) => setExRest(e.target.value)} />
                     </div>
+                    <div className="relative">
+                      <Link className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                      <Input
+                        placeholder="Link do Vídeo (YouTube)"
+                        value={exVideoUrl}
+                        onChange={(e) => setExVideoUrl(e.target.value)}
+                        className="pl-9"
+                      />
+                    </div>
                     <Button
                       size="sm"
                       className="w-full gap-1"
