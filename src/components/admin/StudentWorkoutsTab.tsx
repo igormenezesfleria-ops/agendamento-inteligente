@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp, Link } from 'lucide-react';
 
 interface Props {
   studentId: string;
