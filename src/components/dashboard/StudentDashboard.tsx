@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, ArrowRight, Dumbbell, AlertTriangle, MapPin } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Dumbbell, AlertTriangle, MapPin, ScanLine } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
@@ -238,6 +238,27 @@ export function StudentDashboard() {
 
       {/* d) Active Workout */}
       <ActiveWorkoutCard />
+
+      {/* Biofeedback AI CTA */}
+      <Card className="border-accent/20 bg-accent/5 overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+              <ScanLine className="w-5 h-5 text-accent" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-sm font-bold text-foreground">Análise Biomecânica AI</p>
+              <p className="text-xs text-muted-foreground">Corrija sua forma em tempo real</p>
+            </div>
+            <Button asChild size="sm" variant="accent">
+              <Link to="/dashboard/biofeedback">
+                Iniciar
+                <ArrowRight className="w-3.5 h-3.5 ml-1" />
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* e) Gamification & Engagement */}
       <StreakBadge />
