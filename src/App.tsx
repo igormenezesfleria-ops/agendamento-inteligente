@@ -284,6 +284,15 @@ const App = () => (
               }
             />
 
+            <Route
+              path="/dashboard/biofeedback"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <Biofeedback />
+                </ProtectedRoute>
+              }
+            />
+
             {/* Collaborator routes */}
             <Route
               path="/dashboard/minhas-tarefas"
