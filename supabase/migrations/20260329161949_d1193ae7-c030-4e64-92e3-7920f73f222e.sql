@@ -1,0 +1,1 @@
+ALTER TABLE public.workout_exercises ADD COLUMN video_url text DEFAULT '' NOT NULL;
