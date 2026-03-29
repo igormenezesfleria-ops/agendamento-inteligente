@@ -48,6 +48,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const [exSets, setExSets] = useState('');
   const [exReps, setExReps] = useState('');
   const [exRest, setExRest] = useState('');
+  const [exVideoUrl, setExVideoUrl] = useState('');
 
   const { data: workouts, isLoading } = useQuery({
     queryKey: ['student-workouts', studentId],
