@@ -109,6 +109,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
         sets: exSets,
         reps: exReps,
         rest: exRest,
+        video_url: exVideoUrl,
         sort_order: currentExercises,
       });
       if (error) throw error;
