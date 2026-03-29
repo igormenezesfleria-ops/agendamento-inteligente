@@ -735,6 +735,7 @@ export type Database = {
           rest: string
           sets: string
           sort_order: number
+          video_url: string
           workout_id: string
         }
         Insert: {
@@ -745,6 +746,7 @@ export type Database = {
           rest?: string
           sets?: string
           sort_order?: number
+          video_url?: string
           workout_id: string
         }
         Update: {
@@ -755,6 +757,7 @@ export type Database = {
           rest?: string
           sets?: string
           sort_order?: number
+          video_url?: string
           workout_id?: string
         }
         Relationships: [

@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp, Link } from 'lucide-react';
 
 interface Props {
   studentId: string;
@@ -48,6 +48,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const [exSets, setExSets] = useState('');
   const [exReps, setExReps] = useState('');
   const [exRest, setExRest] = useState('');
+  const [exVideoUrl, setExVideoUrl] = useState('');
 
   const { data: workouts, isLoading } = useQuery({
     queryKey: ['student-workouts', studentId],
@@ -108,6 +109,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
         sets: exSets,
         reps: exReps,
         rest: exRest,
+        video_url: exVideoUrl,
         sort_order: currentExercises,
       });
       if (error) throw error;
@@ -119,6 +121,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
       setExSets('');
       setExReps('');
       setExRest('');
+      setExVideoUrl('');
     },
     onError: () => toast({ title: 'Erro ao adicionar exercício', variant: 'destructive' }),
   });
@@ -279,6 +282,15 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                       <Input placeholder="Séries" value={exSets} onChange={(e) => setExSets(e.target.value)} />
                       <Input placeholder="Reps" value={exReps} onChange={(e) => setExReps(e.target.value)} />
                       <Input placeholder="Descanso" value={exRest} onChange={(e) => setExRest(e.target.value)} />
+                    </div>
+                    <div className="relative">
+                      <Link className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                      <Input
+                        placeholder="Link do Vídeo (YouTube)"
+                        value={exVideoUrl}
+                        onChange={(e) => setExVideoUrl(e.target.value)}
+                        className="pl-9"
+                      />
                     </div>
                     <Button
                       size="sm"

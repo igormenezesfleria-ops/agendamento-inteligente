@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Dumbbell, X } from 'lucide-react';
+import { Loader2, PlayCircle, X } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -10,10 +10,21 @@ import {
   DrawerTitle,
   DrawerClose,
 } from '@/components/ui/drawer';
+import { VideoModal } from './VideoModal';
+
+interface Exercise {
+  id: string;
+  name: string;
+  sets: string;
+  reps: string;
+  rest: string;
+  video_url: string;
+}
 
 export function ActiveWorkoutCard() {
   const { user } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
   const { data: workout, isLoading } = useQuery({
     queryKey: ['active-workout', user?.id],
@@ -34,12 +45,12 @@ export function ActiveWorkoutCard() {
 
       const { data: exercises, error: exErr } = await supabase
         .from('workout_exercises')
-        .select('id, name, sets, reps, rest')
+        .select('id, name, sets, reps, rest, video_url')
         .eq('workout_id', data.id)
         .order('sort_order');
       if (exErr) throw exErr;
 
-      return { ...data, exercises: exercises || [] };
+      return { ...data, exercises: (exercises || []) as Exercise[] };
     },
     enabled: !!user?.id,
   });
@@ -52,12 +63,11 @@ export function ActiveWorkoutCard() {
     );
   }
 
-  // Zero-state: render nothing
   if (!workout) return null;
 
   return (
     <>
-      {/* Sleek trigger card */}
+      {/* Trigger card */}
       <div className="bg-card rounded-2xl p-5 border border-border/50 shadow-sm flex items-center justify-between">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">Seu Plano de Treino Atual</p>
@@ -86,12 +96,10 @@ export function ActiveWorkoutCard() {
               </DrawerClose>
             </div>
 
-            {/* Personal note */}
             <div className="bg-accent/10 border-l-4 border-accent text-accent-foreground/80 text-sm p-3 rounded-r-lg mb-6">
               <strong>Nota do Personal:</strong> Capricha na carga hoje! Foca na postura.
             </div>
 
-            {/* Exercise list */}
             {workout.exercises.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 Exercícios serão adicionados em breve.
@@ -101,13 +109,23 @@ export function ActiveWorkoutCard() {
                 {workout.exercises.map((ex, i) => (
                   <div
                     key={ex.id}
-                    className="py-4 border-b border-border/30 last:border-0 flex justify-between items-center"
+                    className="py-4 border-b border-border/30 last:border-0 flex justify-between items-start"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="text-xs font-bold text-accent w-5 text-center shrink-0">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="text-xs font-bold text-accent w-5 text-center shrink-0 mt-0.5">
                         {i + 1}
                       </span>
-                      <span className="font-semibold text-foreground truncate">{ex.name}</span>
+                      <div className="min-w-0">
+                        <span className="font-semibold text-foreground truncate block">{ex.name}</span>
+                        {ex.video_url && (
+                          <button
+                            onClick={() => setActiveVideoUrl(ex.video_url)}
+                            className="flex items-center gap-1 text-accent hover:text-accent/80 text-xs mt-1.5 font-bold transition-all"
+                          >
+                            <PlayCircle className="w-4 h-4" /> Ver execução
+                          </button>
+                        )}
+                      </div>
                     </div>
                     <div className="text-right shrink-0 ml-4">
                       <p className="text-accent font-extrabold text-sm">
@@ -128,6 +146,11 @@ export function ActiveWorkoutCard() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      {/* Video Modal */}
+      {activeVideoUrl && (
+        <VideoModal videoUrl={activeVideoUrl} onClose={() => setActiveVideoUrl(null)} />
+      )}
     </>
   );
 }
