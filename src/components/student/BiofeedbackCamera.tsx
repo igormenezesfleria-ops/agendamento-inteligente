@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, Video, VideoOff, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Video, VideoOff, RotateCcw, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 // MediaPipe Pose landmark indices
@@ -35,12 +35,18 @@ const SKELETON_CONNECTIONS: [number, number][] = [
   [LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_FOOT_INDEX],
 ];
 
-// Landmarks involved in knee alignment check
+// Knee-related landmarks for coloring
 const KNEE_LANDMARKS = new Set([
   LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE,
   LANDMARKS.LEFT_ANKLE, LANDMARKS.RIGHT_ANKLE,
   LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP,
 ]);
+
+// --- MOCK thresholds (would come from DB via admin calibration in production) ---
+// Technical note: Model forced to MediaPipe Pose LITE (modelComplexity: 0) for high FPS on mobile PWAs.
+// Manual angle thresholds are applied using basic trigonometry instead of heavy ML inference.
+const MOCK_MAX_KNEE_FLEXION = 90; // degrees — admin-set threshold
+const MOCK_VALGO_ALERT = true;
 
 interface LandmarkResult {
   x: number; y: number; z: number; visibility: number;
@@ -52,6 +58,22 @@ declare global {
   interface Window {
     Pose: any;
   }
+}
+
+/**
+ * Calculate angle in degrees between three 2D points (a-b-c), with b as the vertex.
+ * Uses Math.atan2 for robust angle calculation.
+ */
+function calculateAngle(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+  c: { x: number; y: number },
+): number {
+  const radians =
+    Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+  let angle = Math.abs((radians * 180) / Math.PI);
+  if (angle > 180) angle = 360 - angle;
+  return angle;
 }
 
 export function BiofeedbackCamera() {
@@ -69,7 +91,8 @@ export function BiofeedbackCamera() {
   const [confidence, setConfidence] = useState(0);
   const [scriptsLoaded, setScriptsLoaded] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
-  const [valgoDetected, setValgoDetected] = useState(false);
+  const [leftKneeAngle, setLeftKneeAngle] = useState<number | null>(null);
+  const [rightKneeAngle, setRightKneeAngle] = useState<number | null>(null);
 
   // Load MediaPipe scripts from CDN
   useEffect(() => {
@@ -95,7 +118,7 @@ export function BiofeedbackCamera() {
       s.src = src;
       s.crossOrigin = 'anonymous';
       s.onload = onLoad;
-      s.onerror = onLoad; // still count to avoid blocking
+      s.onerror = onLoad;
       document.head.appendChild(s);
     });
 
@@ -105,85 +128,147 @@ export function BiofeedbackCamera() {
     };
   }, []);
 
-  // Check for knee valgus (dynamic valgus test)
-  const checkKneeValgus = useCallback((landmarks: LandmarkResult[]) => {
-    const lKnee = landmarks[LANDMARKS.LEFT_KNEE];
-    const lAnkle = landmarks[LANDMARKS.LEFT_ANKLE];
-    const rKnee = landmarks[LANDMARKS.RIGHT_KNEE];
-    const rAnkle = landmarks[LANDMARKS.RIGHT_ANKLE];
+  // Analyze a single frame: compute angles, detect violations, draw skeleton + angle labels
+  const analyzeAndDraw = useCallback(
+    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], w: number, h: number) => {
+      ctx.clearRect(0, 0, w, h);
 
-    const tolerance = 0.02; // ~2% of frame width
-    // Left knee caves inward if knee x > ankle x (in mirrored view)
-    const leftValgo = lKnee.visibility > 0.5 && lAnkle.visibility > 0.5 && (lKnee.x - lAnkle.x) > tolerance;
-    // Right knee caves inward if knee x < ankle x
-    const rightValgo = rKnee.visibility > 0.5 && rAnkle.visibility > 0.5 && (rAnkle.x - rKnee.x) > tolerance;
+      // --- Angle-based analysis (trigonometry, NOT ML heuristic) ---
+      const vis = (idx: number) => landmarks[idx].visibility > 0.5;
 
-    return leftValgo || rightValgo;
-  }, []);
+      let lAngle: number | null = null;
+      let rAngle: number | null = null;
+      let lViolation = false;
+      let rViolation = false;
+      let valgoLeft = false;
+      let valgoRight = false;
 
-  // Get color for a landmark/connection based on valgus state
-  const getColor = useCallback((idx: number, hasValgus: boolean) => {
-    if (!hasValgus) return '#22c55e'; // green
-    if (KNEE_LANDMARKS.has(idx)) return '#ef4444'; // red
-    return '#22c55e';
-  }, []);
+      // Left knee flexion: Hip(23) → Knee(25) → Ankle(27)
+      if (vis(LANDMARKS.LEFT_HIP) && vis(LANDMARKS.LEFT_KNEE) && vis(LANDMARKS.LEFT_ANKLE)) {
+        lAngle = calculateAngle(
+          landmarks[LANDMARKS.LEFT_HIP],
+          landmarks[LANDMARKS.LEFT_KNEE],
+          landmarks[LANDMARKS.LEFT_ANKLE],
+        );
+        lViolation = lAngle < MOCK_MAX_KNEE_FLEXION;
+      }
 
-  // Draw skeleton overlay
-  const drawSkeleton = useCallback((ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], w: number, h: number, hasValgus: boolean) => {
-    ctx.clearRect(0, 0, w, h);
+      // Right knee flexion: Hip(24) → Knee(26) → Ankle(28)
+      if (vis(LANDMARKS.RIGHT_HIP) && vis(LANDMARKS.RIGHT_KNEE) && vis(LANDMARKS.RIGHT_ANKLE)) {
+        rAngle = calculateAngle(
+          landmarks[LANDMARKS.RIGHT_HIP],
+          landmarks[LANDMARKS.RIGHT_KNEE],
+          landmarks[LANDMARKS.RIGHT_ANKLE],
+        );
+        rViolation = rAngle < MOCK_MAX_KNEE_FLEXION;
+      }
 
-    // Draw connections
-    SKELETON_CONNECTIONS.forEach(([a, b]) => {
-      const la = landmarks[a];
-      const lb = landmarks[b];
-      if (la.visibility < 0.5 || lb.visibility < 0.5) return;
+      // Valgo check (horizontal alignment)
+      if (MOCK_VALGO_ALERT) {
+        const tolerance = 0.02;
+        if (vis(LANDMARKS.LEFT_KNEE) && vis(LANDMARKS.LEFT_ANKLE)) {
+          valgoLeft = (landmarks[LANDMARKS.LEFT_KNEE].x - landmarks[LANDMARKS.LEFT_ANKLE].x) > tolerance;
+        }
+        if (vis(LANDMARKS.RIGHT_KNEE) && vis(LANDMARKS.RIGHT_ANKLE)) {
+          valgoRight = (landmarks[LANDMARKS.RIGHT_ANKLE].x - landmarks[LANDMARKS.RIGHT_KNEE].x) > tolerance;
+        }
+      }
 
-      const isKneeConnection = KNEE_LANDMARKS.has(a) && KNEE_LANDMARKS.has(b);
-      const color = hasValgus && isKneeConnection ? '#ef4444' : '#22c55e';
+      const hasViolation = lViolation || rViolation || valgoLeft || valgoRight;
 
-      ctx.beginPath();
-      ctx.moveTo(la.x * w, la.y * h);
-      ctx.lineTo(lb.x * w, lb.y * h);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 3;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 8;
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-    });
+      // Build a set of "bad" landmarks for coloring
+      const badLandmarks = new Set<number>();
+      if (lViolation || valgoLeft) {
+        badLandmarks.add(LANDMARKS.LEFT_HIP);
+        badLandmarks.add(LANDMARKS.LEFT_KNEE);
+        badLandmarks.add(LANDMARKS.LEFT_ANKLE);
+      }
+      if (rViolation || valgoRight) {
+        badLandmarks.add(LANDMARKS.RIGHT_HIP);
+        badLandmarks.add(LANDMARKS.RIGHT_KNEE);
+        badLandmarks.add(LANDMARKS.RIGHT_ANKLE);
+      }
 
-    // Draw landmark dots
-    const jointIndices = [
-      LANDMARKS.NOSE,
-      LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER,
-      LANDMARKS.LEFT_ELBOW, LANDMARKS.RIGHT_ELBOW,
-      LANDMARKS.LEFT_WRIST, LANDMARKS.RIGHT_WRIST,
-      LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP,
-      LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE,
-      LANDMARKS.LEFT_ANKLE, LANDMARKS.RIGHT_ANKLE,
-      LANDMARKS.LEFT_HEEL, LANDMARKS.RIGHT_HEEL,
-    ];
+      // --- Draw connections ---
+      SKELETON_CONNECTIONS.forEach(([a, b]) => {
+        const la = landmarks[a];
+        const lb = landmarks[b];
+        if (la.visibility < 0.5 || lb.visibility < 0.5) return;
 
-    jointIndices.forEach((idx) => {
-      const l = landmarks[idx];
-      if (l.visibility < 0.5) return;
-      const color = getColor(idx, hasValgus);
+        const isBad = badLandmarks.has(a) && badLandmarks.has(b);
+        const color = isBad ? '#ef4444' : '#22c55e';
 
-      ctx.beginPath();
-      ctx.arc(l.x * w, l.y * h, 6, 0, Math.PI * 2);
-      ctx.fillStyle = color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 12;
-      ctx.fill();
-      ctx.shadowBlur = 0;
+        ctx.beginPath();
+        ctx.moveTo(la.x * w, la.y * h);
+        ctx.lineTo(lb.x * w, lb.y * h);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      });
 
-      // white inner dot
-      ctx.beginPath();
-      ctx.arc(l.x * w, l.y * h, 2.5, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.fill();
-    });
-  }, [getColor]);
+      // --- Draw joints ---
+      const jointIndices = [
+        LANDMARKS.NOSE,
+        LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER,
+        LANDMARKS.LEFT_ELBOW, LANDMARKS.RIGHT_ELBOW,
+        LANDMARKS.LEFT_WRIST, LANDMARKS.RIGHT_WRIST,
+        LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP,
+        LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE,
+        LANDMARKS.LEFT_ANKLE, LANDMARKS.RIGHT_ANKLE,
+        LANDMARKS.LEFT_HEEL, LANDMARKS.RIGHT_HEEL,
+      ];
+
+      jointIndices.forEach((idx) => {
+        const l = landmarks[idx];
+        if (l.visibility < 0.5) return;
+        const color = badLandmarks.has(idx) ? '#ef4444' : '#22c55e';
+
+        ctx.beginPath();
+        ctx.arc(l.x * w, l.y * h, 6, 0, Math.PI * 2);
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.beginPath();
+        ctx.arc(l.x * w, l.y * h, 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      });
+
+      // --- Draw live angle labels next to knees ---
+      const drawAngleLabel = (idx: number, angle: number | null, violation: boolean) => {
+        if (angle === null) return;
+        const l = landmarks[idx];
+        if (l.visibility < 0.5) return;
+
+        const text = `${Math.round(angle)}°`;
+        const px = l.x * w + 16;
+        const py = l.y * h - 8;
+
+        ctx.font = 'bold 14px monospace';
+        ctx.fillStyle = violation ? '#ef4444' : '#22c55e';
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.lineWidth = 3;
+        ctx.strokeText(text, px, py);
+        ctx.fillText(text, px, py);
+      };
+
+      drawAngleLabel(LANDMARKS.LEFT_KNEE, lAngle, lViolation || valgoLeft);
+      drawAngleLabel(LANDMARKS.RIGHT_KNEE, rAngle, rViolation || valgoRight);
+
+      // Update React state for UI overlay
+      setLeftKneeAngle(lAngle);
+      setRightKneeAngle(rAngle);
+
+      return hasViolation;
+    },
+    [],
+  );
 
   // Initialize Pose model and start camera
   const startCamera = useCallback(async () => {
@@ -191,7 +276,6 @@ export function BiofeedbackCamera() {
     setLoading(true);
 
     try {
-      // Stop existing stream
       streamRef.current?.getTracks().forEach((t) => t.stop());
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -206,15 +290,15 @@ export function BiofeedbackCamera() {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d')!;
 
-      // Initialize MediaPipe Pose
+      // Initialize MediaPipe Pose — LITE model (modelComplexity: 0) for max FPS on mobile
       const pose = new window.Pose({
         locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
       });
 
       pose.setOptions({
-        modelComplexity: 1,
+        modelComplexity: 0, // LITE — critical for mobile PWA performance
         smoothLandmarks: true,
-        enableSegmentation: false,
+        enableSegmentation: false, // disabled to reduce compute
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5,
       });
@@ -226,33 +310,30 @@ export function BiofeedbackCamera() {
         if (results.poseLandmarks && results.poseLandmarks.length > 0) {
           const landmarks: LandmarkResult[] = results.poseLandmarks;
 
-          // Calculate average visibility as confidence
           const avgVis = landmarks.reduce((s, l) => s + l.visibility, 0) / landmarks.length;
           setConfidence(Math.round(avgVis * 100));
 
-          const hasValgus = checkKneeValgus(landmarks);
-          setValgoDetected(hasValgus);
+          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
 
-          if (hasValgus) {
+          if (hasViolation) {
             setStatus('warning');
-            setStatusText('⚠️ Valgo Dinâmico Detectado! Alinhe o joelho.');
+            setStatusText('⚠️ Limite ultrapassado! Corrija o movimento.');
           } else {
             setStatus('good');
             setStatusText('✅ Forma: Excelente (AI Validated)');
           }
-
-          drawSkeleton(ctx, landmarks, canvas.width, canvas.height, hasValgus);
         } else {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           setStatus('loading');
           setStatusText('Posicione-se na câmera...');
           setConfidence(0);
+          setLeftKneeAngle(null);
+          setRightKneeAngle(null);
         }
       });
 
       poseRef.current = pose;
 
-      // Frame processing loop
       const processFrame = async () => {
         if (video.readyState >= 2) {
           await pose.send({ image: video });
@@ -268,7 +349,7 @@ export function BiofeedbackCamera() {
       setLoading(false);
       setStatusText('Erro ao acessar a câmera.');
     }
-  }, [scriptsLoaded, facingMode, checkKneeValgus, drawSkeleton]);
+  }, [scriptsLoaded, facingMode, analyzeAndDraw]);
 
   const stopCamera = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
@@ -283,6 +364,8 @@ export function BiofeedbackCamera() {
     setStatus('loading');
     setStatusText('Câmera desligada');
     setConfidence(0);
+    setLeftKneeAngle(null);
+    setRightKneeAngle(null);
   }, []);
 
   const toggleFacing = useCallback(() => {
@@ -291,7 +374,6 @@ export function BiofeedbackCamera() {
     if (cameraActive) {
       cancelAnimationFrame(rafRef.current);
       streamRef.current?.getTracks().forEach((t) => t.stop());
-      // Will restart with new facing mode
       setTimeout(() => startCamera(), 200);
     }
   }, [facingMode, cameraActive, startCamera]);
@@ -309,8 +391,16 @@ export function BiofeedbackCamera() {
         </button>
       </div>
 
+      {/* Lite Engine badge */}
+      {cameraActive && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-blue-500/20 border border-blue-400/40 backdrop-blur-md rounded-full px-3 py-1">
+          <Zap className="w-3 h-3 text-blue-300" />
+          <span className="text-[10px] font-bold text-blue-200 tracking-wide">Motor Lite Ativado (Alto Desempenho)</span>
+        </div>
+      )}
+
       {/* Status banner */}
-      <div className={`absolute top-16 left-4 right-4 z-20 rounded-xl px-4 py-3 backdrop-blur-md transition-all ${
+      <div className={`absolute ${cameraActive ? 'top-[5.5rem]' : 'top-16'} left-4 right-4 z-20 rounded-xl px-4 py-3 backdrop-blur-md transition-all ${
         status === 'good' ? 'bg-emerald-500/20 border border-emerald-400/40' :
         status === 'warning' ? 'bg-red-500/20 border border-red-400/40' :
         'bg-white/10 border border-white/20'
@@ -335,6 +425,22 @@ export function BiofeedbackCamera() {
             <span className="text-[11px] text-white/60 font-mono tabular-nums">{confidence}% Precisão</span>
           </div>
         )}
+        {/* Live angle readout */}
+        {(leftKneeAngle !== null || rightKneeAngle !== null) && (
+          <div className="mt-2 flex items-center justify-center gap-4 text-[11px] font-mono">
+            {leftKneeAngle !== null && (
+              <span className={leftKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-red-300' : 'text-emerald-300'}>
+                Joelho E: {Math.round(leftKneeAngle)}°
+              </span>
+            )}
+            {rightKneeAngle !== null && (
+              <span className={rightKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-red-300' : 'text-emerald-300'}>
+                Joelho D: {Math.round(rightKneeAngle)}°
+              </span>
+            )}
+            <span className="text-white/40">Limite: {MOCK_MAX_KNEE_FLEXION}°</span>
+          </div>
+        )}
       </div>
 
       {/* Camera feed + skeleton overlay */}
@@ -352,7 +458,6 @@ export function BiofeedbackCamera() {
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
 
-        {/* Idle state */}
         {!cameraActive && !loading && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 gap-4">
             <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center">
