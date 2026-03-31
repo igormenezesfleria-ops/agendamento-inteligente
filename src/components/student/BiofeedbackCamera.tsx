@@ -604,7 +604,8 @@ export function BiofeedbackCamera() {
     return () => {
       stopCamera();
     };
-  }, [startVideoFeed, stopCamera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (cameraActive && scriptsLoaded && !simulationModeRef.current && !aiReadyRef.current) {
