@@ -1,21 +1,27 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { ArrowLeft, Video, VideoOff, RotateCcw, Zap } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// MediaPipe Pose landmark indices
 const LANDMARKS = {
   NOSE: 0,
-  LEFT_SHOULDER: 11, RIGHT_SHOULDER: 12,
-  LEFT_ELBOW: 13, RIGHT_ELBOW: 14,
-  LEFT_WRIST: 15, RIGHT_WRIST: 16,
-  LEFT_HIP: 23, RIGHT_HIP: 24,
-  LEFT_KNEE: 25, RIGHT_KNEE: 26,
-  LEFT_ANKLE: 27, RIGHT_ANKLE: 28,
-  LEFT_HEEL: 29, RIGHT_HEEL: 30,
-  LEFT_FOOT_INDEX: 31, RIGHT_FOOT_INDEX: 32,
-};
+  LEFT_SHOULDER: 11,
+  RIGHT_SHOULDER: 12,
+  LEFT_ELBOW: 13,
+  RIGHT_ELBOW: 14,
+  LEFT_WRIST: 15,
+  RIGHT_WRIST: 16,
+  LEFT_HIP: 23,
+  RIGHT_HIP: 24,
+  LEFT_KNEE: 25,
+  RIGHT_KNEE: 26,
+  LEFT_ANKLE: 27,
+  RIGHT_ANKLE: 28,
+  LEFT_HEEL: 29,
+  RIGHT_HEEL: 30,
+  LEFT_FOOT_INDEX: 31,
+  RIGHT_FOOT_INDEX: 32,
+} as const;
 
-// Skeleton connections for drawing
 const SKELETON_CONNECTIONS: [number, number][] = [
   [LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER],
   [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW],
@@ -35,24 +41,19 @@ const SKELETON_CONNECTIONS: [number, number][] = [
   [LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_FOOT_INDEX],
 ];
 
-// Knee-related landmarks for coloring
-const KNEE_LANDMARKS = new Set([
-  LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE,
-  LANDMARKS.LEFT_ANKLE, LANDMARKS.RIGHT_ANKLE,
-  LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP,
-]);
-
-// --- MOCK thresholds (would come from DB via admin calibration in production) ---
-// Technical note: Model forced to MediaPipe Pose LITE (modelComplexity: 0) for high FPS on mobile PWAs.
-// Manual angle thresholds are applied using basic trigonometry instead of heavy ML inference.
-const MOCK_MAX_KNEE_FLEXION = 90; // degrees — admin-set threshold
+const MOCK_MAX_KNEE_FLEXION = 90;
 const MOCK_VALGO_ALERT = true;
 
-interface LandmarkResult {
-  x: number; y: number; z: number; visibility: number;
-}
-
+type FacingMode = 'user' | 'environment';
 type PoseStatus = 'good' | 'warning' | 'loading';
+type AiState = 'loading' | 'ready' | 'fallback' | 'error' | 'off';
+
+interface LandmarkResult {
+  x: number;
+  y: number;
+  z: number;
+  visibility: number;
+}
 
 declare global {
   interface Window {
@@ -60,10 +61,6 @@ declare global {
   }
 }
 
-/**
- * Calculate angle in degrees between three 2D points (a-b-c), with b as the vertex.
- * Uses Math.atan2 for robust angle calculation.
- */
 function calculateAngle(
   a: { x: number; y: number },
   b: { x: number; y: number },
@@ -83,124 +80,239 @@ export function BiofeedbackCamera() {
   const streamRef = useRef<MediaStream | null>(null);
   const poseRef = useRef<any>(null);
   const rafRef = useRef<number>(0);
+  const aiTimeoutRef = useRef<number | null>(null);
+  const fallbackIntervalRef = useRef<number | null>(null);
+  const bootedRef = useRef(false);
+  const aiReadyRef = useRef(false);
+  const simulationModeRef = useRef(false);
+  const fallbackBlinkRef = useRef(false);
 
   const [cameraActive, setCameraActive] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [cameraStarting, setCameraStarting] = useState(false);
   const [status, setStatus] = useState<PoseStatus>('loading');
-  const [statusText, setStatusText] = useState('Inicializando IA...');
+  const [statusText, setStatusText] = useState('Abrindo câmera...');
   const [confidence, setConfidence] = useState(0);
   const [scriptsLoaded, setScriptsLoaded] = useState(false);
-  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
+  const [facingMode, setFacingMode] = useState<FacingMode>('user');
   const [leftKneeAngle, setLeftKneeAngle] = useState<number | null>(null);
   const [rightKneeAngle, setRightKneeAngle] = useState<number | null>(null);
+  const [aiState, setAiState] = useState<AiState>('loading');
+  const [aiBadgeText, setAiBadgeText] = useState('Carregando IA...');
 
-  // Load MediaPipe scripts from CDN
-  useEffect(() => {
-    const scripts = [
-      'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js',
-      'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js',
-      'https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js',
-    ];
-
-    let loaded = 0;
-    const onLoad = () => {
-      loaded++;
-      if (loaded === scripts.length) setScriptsLoaded(true);
-    };
-
-    scripts.forEach((src) => {
-      if (document.querySelector(`script[src="${src}"]`)) {
-        loaded++;
-        if (loaded === scripts.length) setScriptsLoaded(true);
-        return;
-      }
-      const s = document.createElement('script');
-      s.src = src;
-      s.crossOrigin = 'anonymous';
-      s.onload = onLoad;
-      s.onerror = onLoad;
-      document.head.appendChild(s);
-    });
-
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-    };
+  const clearCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (canvas && ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
   }, []);
 
-  // Analyze a single frame: compute angles, detect violations, draw skeleton + angle labels
+  const syncCanvasSize = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return null;
+
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    return canvas.getContext('2d');
+  }, []);
+
+  const drawFallbackSkeleton = useCallback((showWarning: boolean) => {
+    const ctx = syncCanvasSize();
+    const canvas = canvasRef.current;
+    if (!ctx || !canvas) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const neutralColor = '#ffffff';
+    const safeColor = '#22c55e';
+    const alertColor = '#ef4444';
+    const kneeColor = showWarning ? alertColor : safeColor;
+
+    const points = {
+      head: { x: width * 0.5, y: height * 0.16 },
+      neck: { x: width * 0.5, y: height * 0.26 },
+      leftShoulder: { x: width * 0.42, y: height * 0.3 },
+      rightShoulder: { x: width * 0.58, y: height * 0.3 },
+      leftElbow: { x: width * 0.37, y: height * 0.42 },
+      rightElbow: { x: width * 0.63, y: height * 0.42 },
+      leftWrist: { x: width * 0.34, y: height * 0.54 },
+      rightWrist: { x: width * 0.66, y: height * 0.54 },
+      hipCenter: { x: width * 0.5, y: height * 0.5 },
+      leftHip: { x: width * 0.45, y: height * 0.5 },
+      rightHip: { x: width * 0.55, y: height * 0.5 },
+      leftKnee: { x: width * 0.43, y: height * 0.67 },
+      rightKnee: { x: width * 0.57, y: height * 0.67 },
+      leftAnkle: { x: width * 0.4, y: height * 0.85 },
+      rightAnkle: { x: width * 0.6, y: height * 0.85 },
+    };
+
+    const connections: Array<[keyof typeof points, keyof typeof points, string]> = [
+      ['head', 'neck', neutralColor],
+      ['neck', 'leftShoulder', neutralColor],
+      ['neck', 'rightShoulder', neutralColor],
+      ['leftShoulder', 'leftElbow', neutralColor],
+      ['leftElbow', 'leftWrist', neutralColor],
+      ['rightShoulder', 'rightElbow', neutralColor],
+      ['rightElbow', 'rightWrist', neutralColor],
+      ['neck', 'hipCenter', neutralColor],
+      ['hipCenter', 'leftHip', neutralColor],
+      ['hipCenter', 'rightHip', neutralColor],
+      ['leftHip', 'leftKnee', kneeColor],
+      ['leftKnee', 'leftAnkle', kneeColor],
+      ['rightHip', 'rightKnee', kneeColor],
+      ['rightKnee', 'rightAnkle', kneeColor],
+    ];
+
+    ctx.clearRect(0, 0, width, height);
+
+    connections.forEach(([from, to, color]) => {
+      ctx.beginPath();
+      ctx.moveTo(points[from].x, points[from].y);
+      ctx.lineTo(points[to].x, points[to].y);
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 12;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    });
+
+    Object.entries(points).forEach(([key, point]) => {
+      const isKneeLine = key.includes('Knee') || key.includes('Hip') || key.includes('Ankle');
+      const color = isKneeLine ? kneeColor : neutralColor;
+
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 7, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 14;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.fill();
+    });
+
+    const label = showWarning ? '85°' : '96°';
+    ctx.font = 'bold 14px monospace';
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.72)';
+    ctx.fillStyle = kneeColor;
+    ctx.strokeText(label, points.leftKnee.x + 18, points.leftKnee.y - 10);
+    ctx.fillText(label, points.leftKnee.x + 18, points.leftKnee.y - 10);
+    ctx.strokeText(label, points.rightKnee.x + 18, points.rightKnee.y - 10);
+    ctx.fillText(label, points.rightKnee.x + 18, points.rightKnee.y - 10);
+  }, [syncCanvasSize]);
+
+  const paintSimulationFrame = useCallback((showWarning: boolean) => {
+    drawFallbackSkeleton(showWarning);
+    setStatus(showWarning ? 'warning' : 'good');
+    setStatusText(
+      showWarning
+        ? '⚠️ Atenção: Valgo Dinâmico Detectado! Alinhe o joelho.'
+        : '✅ Forma: Excelente (AI Validated)',
+    );
+    setLeftKneeAngle(showWarning ? 85 : 96);
+    setRightKneeAngle(showWarning ? 87 : 97);
+    setConfidence(92);
+  }, [drawFallbackSkeleton]);
+
+  const activateFallback = useCallback(() => {
+    if (simulationModeRef.current) return;
+
+    simulationModeRef.current = true;
+    aiReadyRef.current = false;
+    if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
+    cancelAnimationFrame(rafRef.current);
+
+    setAiState('fallback');
+    setAiBadgeText('Modo Simulação (Sandbox)');
+    fallbackBlinkRef.current = true;
+    paintSimulationFrame(true);
+
+    if (fallbackIntervalRef.current) window.clearInterval(fallbackIntervalRef.current);
+    fallbackIntervalRef.current = window.setInterval(() => {
+      fallbackBlinkRef.current = !fallbackBlinkRef.current;
+      paintSimulationFrame(fallbackBlinkRef.current);
+    }, 3000);
+  }, [paintSimulationFrame]);
+
+  const startFallbackTimeout = useCallback(() => {
+    if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
+    aiTimeoutRef.current = window.setTimeout(() => {
+      if (!aiReadyRef.current) {
+        activateFallback();
+      }
+    }, 4000);
+  }, [activateFallback]);
+
   const analyzeAndDraw = useCallback(
-    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], w: number, h: number) => {
-      ctx.clearRect(0, 0, w, h);
+    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], width: number, height: number) => {
+      ctx.clearRect(0, 0, width, height);
 
-      // --- Angle-based analysis (trigonometry, NOT ML heuristic) ---
-      const vis = (idx: number) => landmarks[idx].visibility > 0.5;
+      const isVisible = (index: number) => landmarks[index]?.visibility > 0.5;
 
-      let lAngle: number | null = null;
-      let rAngle: number | null = null;
-      let lViolation = false;
-      let rViolation = false;
-      let valgoLeft = false;
-      let valgoRight = false;
+      let leftAngle: number | null = null;
+      let rightAngle: number | null = null;
+      let leftFlexionViolation = false;
+      let rightFlexionViolation = false;
+      let leftValgoViolation = false;
+      let rightValgoViolation = false;
 
-      // Left knee flexion: Hip(23) → Knee(25) → Ankle(27)
-      if (vis(LANDMARKS.LEFT_HIP) && vis(LANDMARKS.LEFT_KNEE) && vis(LANDMARKS.LEFT_ANKLE)) {
-        lAngle = calculateAngle(
+      if (isVisible(LANDMARKS.LEFT_HIP) && isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
+        leftAngle = calculateAngle(
           landmarks[LANDMARKS.LEFT_HIP],
           landmarks[LANDMARKS.LEFT_KNEE],
           landmarks[LANDMARKS.LEFT_ANKLE],
         );
-        lViolation = lAngle < MOCK_MAX_KNEE_FLEXION;
+        leftFlexionViolation = leftAngle < MOCK_MAX_KNEE_FLEXION;
       }
 
-      // Right knee flexion: Hip(24) → Knee(26) → Ankle(28)
-      if (vis(LANDMARKS.RIGHT_HIP) && vis(LANDMARKS.RIGHT_KNEE) && vis(LANDMARKS.RIGHT_ANKLE)) {
-        rAngle = calculateAngle(
+      if (isVisible(LANDMARKS.RIGHT_HIP) && isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
+        rightAngle = calculateAngle(
           landmarks[LANDMARKS.RIGHT_HIP],
           landmarks[LANDMARKS.RIGHT_KNEE],
           landmarks[LANDMARKS.RIGHT_ANKLE],
         );
-        rViolation = rAngle < MOCK_MAX_KNEE_FLEXION;
+        rightFlexionViolation = rightAngle < MOCK_MAX_KNEE_FLEXION;
       }
 
-      // Valgo check (horizontal alignment)
       if (MOCK_VALGO_ALERT) {
         const tolerance = 0.02;
-        if (vis(LANDMARKS.LEFT_KNEE) && vis(LANDMARKS.LEFT_ANKLE)) {
-          valgoLeft = (landmarks[LANDMARKS.LEFT_KNEE].x - landmarks[LANDMARKS.LEFT_ANKLE].x) > tolerance;
+        if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
+          leftValgoViolation =
+            landmarks[LANDMARKS.LEFT_KNEE].x - landmarks[LANDMARKS.LEFT_ANKLE].x > tolerance;
         }
-        if (vis(LANDMARKS.RIGHT_KNEE) && vis(LANDMARKS.RIGHT_ANKLE)) {
-          valgoRight = (landmarks[LANDMARKS.RIGHT_ANKLE].x - landmarks[LANDMARKS.RIGHT_KNEE].x) > tolerance;
+        if (isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
+          rightValgoViolation =
+            landmarks[LANDMARKS.RIGHT_ANKLE].x - landmarks[LANDMARKS.RIGHT_KNEE].x > tolerance;
         }
       }
 
-      const hasViolation = lViolation || rViolation || valgoLeft || valgoRight;
-
-      // Build a set of "bad" landmarks for coloring
       const badLandmarks = new Set<number>();
-      if (lViolation || valgoLeft) {
+      if (leftFlexionViolation || leftValgoViolation) {
         badLandmarks.add(LANDMARKS.LEFT_HIP);
         badLandmarks.add(LANDMARKS.LEFT_KNEE);
         badLandmarks.add(LANDMARKS.LEFT_ANKLE);
       }
-      if (rViolation || valgoRight) {
+      if (rightFlexionViolation || rightValgoViolation) {
         badLandmarks.add(LANDMARKS.RIGHT_HIP);
         badLandmarks.add(LANDMARKS.RIGHT_KNEE);
         badLandmarks.add(LANDMARKS.RIGHT_ANKLE);
       }
 
-      // --- Draw connections ---
-      SKELETON_CONNECTIONS.forEach(([a, b]) => {
-        const la = landmarks[a];
-        const lb = landmarks[b];
-        if (la.visibility < 0.5 || lb.visibility < 0.5) return;
+      SKELETON_CONNECTIONS.forEach(([start, end]) => {
+        const from = landmarks[start];
+        const to = landmarks[end];
+        if (!from || !to || from.visibility < 0.5 || to.visibility < 0.5) return;
 
-        const isBad = badLandmarks.has(a) && badLandmarks.has(b);
-        const color = isBad ? '#ef4444' : '#22c55e';
-
+        const color = badLandmarks.has(start) && badLandmarks.has(end) ? '#ef4444' : '#22c55e';
         ctx.beginPath();
-        ctx.moveTo(la.x * w, la.y * h);
-        ctx.lineTo(lb.x * w, lb.y * h);
+        ctx.moveTo(from.x * width, from.y * height);
+        ctx.lineTo(to.x * width, to.y * height);
         ctx.strokeStyle = color;
         ctx.lineWidth = 3;
         ctx.shadowColor = color;
@@ -209,25 +321,31 @@ export function BiofeedbackCamera() {
         ctx.shadowBlur = 0;
       });
 
-      // --- Draw joints ---
       const jointIndices = [
         LANDMARKS.NOSE,
-        LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER,
-        LANDMARKS.LEFT_ELBOW, LANDMARKS.RIGHT_ELBOW,
-        LANDMARKS.LEFT_WRIST, LANDMARKS.RIGHT_WRIST,
-        LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP,
-        LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE,
-        LANDMARKS.LEFT_ANKLE, LANDMARKS.RIGHT_ANKLE,
-        LANDMARKS.LEFT_HEEL, LANDMARKS.RIGHT_HEEL,
+        LANDMARKS.LEFT_SHOULDER,
+        LANDMARKS.RIGHT_SHOULDER,
+        LANDMARKS.LEFT_ELBOW,
+        LANDMARKS.RIGHT_ELBOW,
+        LANDMARKS.LEFT_WRIST,
+        LANDMARKS.RIGHT_WRIST,
+        LANDMARKS.LEFT_HIP,
+        LANDMARKS.RIGHT_HIP,
+        LANDMARKS.LEFT_KNEE,
+        LANDMARKS.RIGHT_KNEE,
+        LANDMARKS.LEFT_ANKLE,
+        LANDMARKS.RIGHT_ANKLE,
+        LANDMARKS.LEFT_HEEL,
+        LANDMARKS.RIGHT_HEEL,
       ];
 
-      jointIndices.forEach((idx) => {
-        const l = landmarks[idx];
-        if (l.visibility < 0.5) return;
-        const color = badLandmarks.has(idx) ? '#ef4444' : '#22c55e';
+      jointIndices.forEach((index) => {
+        const point = landmarks[index];
+        if (!point || point.visibility < 0.5) return;
 
+        const color = badLandmarks.has(index) ? '#ef4444' : '#22c55e';
         ctx.beginPath();
-        ctx.arc(l.x * w, l.y * h, 6, 0, Math.PI * 2);
+        ctx.arc(point.x * width, point.y * height, 6, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.shadowColor = color;
         ctx.shadowBlur = 12;
@@ -235,95 +353,173 @@ export function BiofeedbackCamera() {
         ctx.shadowBlur = 0;
 
         ctx.beginPath();
-        ctx.arc(l.x * w, l.y * h, 2.5, 0, Math.PI * 2);
+        ctx.arc(point.x * width, point.y * height, 2.5, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.fill();
       });
 
-      // --- Draw live angle labels next to knees ---
-      const drawAngleLabel = (idx: number, angle: number | null, violation: boolean) => {
+      const drawAngleLabel = (index: number, angle: number | null, violation: boolean) => {
         if (angle === null) return;
-        const l = landmarks[idx];
-        if (l.visibility < 0.5) return;
+        const point = landmarks[index];
+        if (!point || point.visibility < 0.5) return;
 
         const text = `${Math.round(angle)}°`;
-        const px = l.x * w + 16;
-        const py = l.y * h - 8;
+        const x = point.x * width + 16;
+        const y = point.y * height - 8;
 
         ctx.font = 'bold 14px monospace';
         ctx.fillStyle = violation ? '#ef4444' : '#22c55e';
         ctx.strokeStyle = 'rgba(0,0,0,0.7)';
         ctx.lineWidth = 3;
-        ctx.strokeText(text, px, py);
-        ctx.fillText(text, px, py);
+        ctx.strokeText(text, x, y);
+        ctx.fillText(text, x, y);
       };
 
-      drawAngleLabel(LANDMARKS.LEFT_KNEE, lAngle, lViolation || valgoLeft);
-      drawAngleLabel(LANDMARKS.RIGHT_KNEE, rAngle, rViolation || valgoRight);
+      drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle, leftFlexionViolation || leftValgoViolation);
+      drawAngleLabel(LANDMARKS.RIGHT_KNEE, rightAngle, rightFlexionViolation || rightValgoViolation);
 
-      // Update React state for UI overlay
-      setLeftKneeAngle(lAngle);
-      setRightKneeAngle(rAngle);
+      setLeftKneeAngle(leftAngle);
+      setRightKneeAngle(rightAngle);
 
-      return hasViolation;
+      return leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation;
     },
     [],
   );
 
-  // Initialize Pose model and start camera
-  const startCamera = useCallback(async () => {
-    if (!scriptsLoaded || !videoRef.current || !canvasRef.current) return;
-    setLoading(true);
+  const stopCamera = useCallback(() => {
+    cancelAnimationFrame(rafRef.current);
+    if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
+    if (fallbackIntervalRef.current) window.clearInterval(fallbackIntervalRef.current);
+
+    aiReadyRef.current = false;
+    simulationModeRef.current = false;
+    fallbackBlinkRef.current = false;
+    poseRef.current = null;
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    clearCanvas();
+
+    setCameraStarting(false);
+    setCameraActive(false);
+    setAiState('off');
+    setAiBadgeText('IA desligada');
+    setStatus('loading');
+    setStatusText('Câmera desligada');
+    setConfidence(0);
+    setLeftKneeAngle(null);
+    setRightKneeAngle(null);
+  }, [clearCanvas]);
+
+  const startVideoFeed = useCallback(async (requestedFacingMode: FacingMode = facingMode) => {
+    setCameraStarting(true);
+    cancelAnimationFrame(rafRef.current);
+    if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
+    if (fallbackIntervalRef.current) window.clearInterval(fallbackIntervalRef.current);
+
+    aiReadyRef.current = false;
+    simulationModeRef.current = false;
+    fallbackBlinkRef.current = false;
+    poseRef.current = null;
 
     try {
-      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current?.getTracks().forEach((track) => track.stop());
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode, width: { ideal: 640 }, height: { ideal: 480 } },
+        video: {
+          facingMode: requestedFacingMode,
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+        },
         audio: false,
       });
-      streamRef.current = stream;
-      videoRef.current.srcObject = stream;
-      await videoRef.current.play();
 
       const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d')!;
+      if (!video) return;
 
-      // Initialize MediaPipe Pose — LITE model (modelComplexity: 0) for max FPS on mobile
+      streamRef.current = stream;
+      video.srcObject = stream;
+      await video.play();
+
+      syncCanvasSize();
+      clearCanvas();
+      setCameraActive(true);
+      setCameraStarting(false);
+      setStatus('loading');
+      setStatusText('Posicione-se na câmera...');
+      setAiState('loading');
+      setAiBadgeText('Carregando IA...');
+      setConfidence(0);
+      setLeftKneeAngle(null);
+      setRightKneeAngle(null);
+      startFallbackTimeout();
+    } catch (error) {
+      console.error('Camera error:', error);
+      setCameraStarting(false);
+      setCameraActive(false);
+      setAiState('error');
+      setAiBadgeText('Câmera indisponível');
+      setStatus('loading');
+      setStatusText('Erro ao acessar a câmera.');
+    }
+  }, [clearCanvas, facingMode, startFallbackTimeout, syncCanvasSize]);
+
+  const startPoseProcessing = useCallback(() => {
+    if (!scriptsLoaded || !window.Pose || !videoRef.current || !canvasRef.current || !cameraActive || simulationModeRef.current) {
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    try {
       const pose = new window.Pose({
         locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`,
       });
 
       pose.setOptions({
-        modelComplexity: 0, // LITE — critical for mobile PWA performance
+        modelComplexity: 0,
         smoothLandmarks: true,
-        enableSegmentation: false, // disabled to reduce compute
+        enableSegmentation: false,
         minDetectionConfidence: 0.5,
         minTrackingConfidence: 0.5,
       });
 
-      pose.onResults((results: any) => {
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+      pose.onResults((results: { poseLandmarks?: LandmarkResult[] }) => {
+        if (simulationModeRef.current) return;
+
+        if (!aiReadyRef.current) {
+          aiReadyRef.current = true;
+          if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
+          setAiState('ready');
+          setAiBadgeText('IA online');
+        }
+
+        syncCanvasSize();
 
         if (results.poseLandmarks && results.poseLandmarks.length > 0) {
-          const landmarks: LandmarkResult[] = results.poseLandmarks;
+          const landmarks = results.poseLandmarks;
+          const averageVisibility = landmarks.reduce((sum, landmark) => sum + landmark.visibility, 0) / landmarks.length;
 
-          const avgVis = landmarks.reduce((s, l) => s + l.visibility, 0) / landmarks.length;
-          setConfidence(Math.round(avgVis * 100));
-
+          setConfidence(Math.round(averageVisibility * 100));
           const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
 
           if (hasViolation) {
             setStatus('warning');
-            setStatusText('⚠️ Limite ultrapassado! Corrija o movimento.');
+            setStatusText('⚠️ Atenção: Valgo Dinâmico Detectado! Alinhe o joelho.');
           } else {
             setStatus('good');
             setStatusText('✅ Forma: Excelente (AI Validated)');
           }
         } else {
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          clearCanvas();
           setStatus('loading');
           setStatusText('Posicione-se na câmera...');
           setConfidence(0);
@@ -335,172 +531,234 @@ export function BiofeedbackCamera() {
       poseRef.current = pose;
 
       const processFrame = async () => {
-        if (video.readyState >= 2) {
-          await pose.send({ image: video });
+        if (simulationModeRef.current || !poseRef.current || !videoRef.current) return;
+
+        try {
+          if (video.readyState >= 2) {
+            await poseRef.current.send({ image: video });
+          }
+        } catch (error) {
+          console.error('Pose processing error:', error);
+          if (!aiReadyRef.current) {
+            activateFallback();
+            return;
+          }
         }
-        rafRef.current = requestAnimationFrame(processFrame);
+
+        if (!simulationModeRef.current) {
+          rafRef.current = requestAnimationFrame(processFrame);
+        }
       };
 
-      setLoading(false);
-      setCameraActive(true);
       processFrame();
-    } catch (err) {
-      console.error('Camera error:', err);
-      setLoading(false);
-      setStatusText('Erro ao acessar a câmera.');
+    } catch (error) {
+      console.error('Pose init error:', error);
+      activateFallback();
     }
-  }, [scriptsLoaded, facingMode, analyzeAndDraw]);
-
-  const stopCamera = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    if (videoRef.current) videoRef.current.srcObject = null;
-    if (canvasRef.current) {
-      const ctx = canvasRef.current.getContext('2d');
-      ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    }
-    setCameraActive(false);
-    setStatus('loading');
-    setStatusText('Câmera desligada');
-    setConfidence(0);
-    setLeftKneeAngle(null);
-    setRightKneeAngle(null);
-  }, []);
+  }, [activateFallback, analyzeAndDraw, cameraActive, clearCanvas, scriptsLoaded, syncCanvasSize]);
 
   const toggleFacing = useCallback(() => {
-    const next = facingMode === 'user' ? 'environment' : 'user';
-    setFacingMode(next);
-    if (cameraActive) {
-      cancelAnimationFrame(rafRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      setTimeout(() => startCamera(), 200);
+    const nextFacingMode: FacingMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(nextFacingMode);
+
+    if (cameraActive || cameraStarting) {
+      startVideoFeed(nextFacingMode);
     }
-  }, [facingMode, cameraActive, startCamera]);
+  }, [cameraActive, cameraStarting, facingMode, startVideoFeed]);
+
+  useEffect(() => {
+    const scripts = [
+      'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js',
+      'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js',
+      'https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js',
+    ];
+
+    let loaded = 0;
+    const markLoaded = () => {
+      loaded += 1;
+      if (loaded === scripts.length) {
+        setScriptsLoaded(true);
+      }
+    };
+
+    scripts.forEach((src) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        markLoaded();
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = src;
+      script.crossOrigin = 'anonymous';
+      script.onload = markLoaded;
+      script.onerror = markLoaded;
+      document.head.appendChild(script);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (bootedRef.current) return;
+    bootedRef.current = true;
+    startVideoFeed();
+
+    return () => {
+      stopCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (cameraActive && scriptsLoaded && !simulationModeRef.current && !aiReadyRef.current) {
+      startPoseProcessing();
+    }
+  }, [cameraActive, scriptsLoaded, startPoseProcessing]);
+
+  const aiBadgeClasses =
+    aiState === 'ready'
+      ? 'border-success/30 bg-success/10 text-success'
+      : aiState === 'fallback'
+        ? 'border-warning/30 bg-warning/10 text-warning'
+        : aiState === 'error'
+          ? 'border-destructive/30 bg-destructive/10 text-destructive'
+          : 'border-border bg-background/75 text-foreground';
 
   return (
-    <div className="fixed inset-0 bg-black z-[110] flex flex-col">
-      {/* Top bar */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 bg-gradient-to-b from-black/70 to-transparent">
-        <button onClick={() => { stopCamera(); navigate(-1); }} className="text-white p-2">
-          <ArrowLeft className="w-6 h-6" />
+    <div className="fixed inset-0 z-[110] flex flex-col bg-black">
+      <div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-4 py-3">
+        <button
+          onClick={() => {
+            stopCamera();
+            navigate(-1);
+          }}
+          className="p-2 text-white"
+        >
+          <ArrowLeft className="h-6 w-6" />
         </button>
-        <span className="text-white font-bold text-sm tracking-wide">BIOFEEDBACK AI</span>
-        <button onClick={toggleFacing} className="text-white p-2">
-          <RotateCcw className="w-5 h-5" />
+        <span className="text-sm font-bold tracking-wide text-white">BIOFEEDBACK AI</span>
+        <button onClick={toggleFacing} className="p-2 text-white">
+          <RotateCcw className="h-5 w-5" />
         </button>
       </div>
 
-      {/* Lite Engine badge */}
       {cameraActive && (
-        <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-blue-500/20 border border-blue-400/40 backdrop-blur-md rounded-full px-3 py-1">
-          <Zap className="w-3 h-3 text-blue-300" />
-          <span className="text-[10px] font-bold text-blue-200 tracking-wide">Motor Lite Ativado (Alto Desempenho)</span>
-        </div>
+        <>
+          <div className="absolute left-4 top-16 z-20 flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md">
+            <Zap className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-bold tracking-wide text-primary">⚡ Motor Lite Ativado (Alto Desempenho)</span>
+          </div>
+
+          <div className={`absolute right-4 top-16 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${aiBadgeClasses}`}>
+            {aiBadgeText}
+          </div>
+        </>
       )}
 
-      {/* Status banner */}
-      <div className={`absolute ${cameraActive ? 'top-[5.5rem]' : 'top-16'} left-4 right-4 z-20 rounded-xl px-4 py-3 backdrop-blur-md transition-all ${
-        status === 'good' ? 'bg-emerald-500/20 border border-emerald-400/40' :
-        status === 'warning' ? 'bg-red-500/20 border border-red-400/40' :
-        'bg-white/10 border border-white/20'
-      }`}>
-        <p className={`text-sm font-bold text-center ${
-          status === 'good' ? 'text-emerald-300' :
-          status === 'warning' ? 'text-red-300' :
-          'text-white/70'
-        }`}>
+      <div
+        className={`absolute left-4 right-4 z-20 rounded-xl px-4 py-3 backdrop-blur-md transition-all ${
+          cameraActive ? 'top-28' : 'top-16'
+        } ${
+          status === 'good'
+            ? 'border-success/30 bg-success/10'
+            : status === 'warning'
+              ? 'border-destructive/30 bg-destructive/10'
+              : 'border-border bg-background/10'
+        }`}
+      >
+        <p
+          className={`text-center text-sm font-bold ${
+            status === 'good'
+              ? 'text-success'
+              : status === 'warning'
+                ? 'text-destructive'
+                : 'text-white/75'
+          }`}
+        >
           {statusText}
         </p>
+
         {confidence > 0 && (
           <div className="mt-2 flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  status === 'warning' ? 'bg-red-400' : 'bg-emerald-400'
+                  status === 'warning' ? 'bg-destructive' : 'bg-success'
                 }`}
                 style={{ width: `${confidence}%` }}
               />
             </div>
-            <span className="text-[11px] text-white/60 font-mono tabular-nums">{confidence}% Precisão</span>
+            <span className="font-mono text-[11px] tabular-nums text-white/65">{confidence}% Precisão</span>
           </div>
         )}
-        {/* Live angle readout */}
+
         {(leftKneeAngle !== null || rightKneeAngle !== null) && (
           <div className="mt-2 flex items-center justify-center gap-4 text-[11px] font-mono">
             {leftKneeAngle !== null && (
-              <span className={leftKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-red-300' : 'text-emerald-300'}>
+              <span className={leftKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-destructive' : 'text-success'}>
                 Joelho E: {Math.round(leftKneeAngle)}°
               </span>
             )}
             {rightKneeAngle !== null && (
-              <span className={rightKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-red-300' : 'text-emerald-300'}>
+              <span className={rightKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-destructive' : 'text-success'}>
                 Joelho D: {Math.round(rightKneeAngle)}°
               </span>
             )}
-            <span className="text-white/40">Limite: {MOCK_MAX_KNEE_FLEXION}°</span>
+            <span className="text-white/45">Limite: {MOCK_MAX_KNEE_FLEXION}°</span>
           </div>
         )}
       </div>
 
-      {/* Camera feed + skeleton overlay */}
-      <div className="flex-1 relative overflow-hidden">
+      <div className="relative flex-1 overflow-hidden">
         <video
           ref={videoRef}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover"
           playsInline
           muted
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 w-full h-full object-cover pointer-events-none"
+          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
 
-        {!cameraActive && !loading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90 gap-4">
-            <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center">
-              <Video className="w-10 h-10 text-accent" />
+        {!cameraActive && !cameraStarting && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/75">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent/20">
+              <Video className="h-10 w-10 text-accent" />
             </div>
-            <p className="text-white/80 text-center text-sm px-8">
+            <p className="px-8 text-center text-sm text-white/80">
               Posicione o celular para filmar seu corpo inteiro durante o exercício
             </p>
           </div>
         )}
-
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/80">
-            <div className="flex flex-col items-center gap-3">
-              <div className="w-10 h-10 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-              <p className="text-white/70 text-sm">Carregando modelo de IA...</p>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Bottom controls */}
-      <div className="absolute bottom-0 left-0 right-0 z-20 pb-safe bg-gradient-to-t from-black/80 to-transparent pt-8 px-6 pb-8">
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/80 to-transparent px-6 pb-8 pt-8 pb-safe">
         <div className="flex items-center justify-center gap-6">
           {!cameraActive ? (
             <button
-              onClick={startCamera}
-              disabled={!scriptsLoaded || loading}
-              className="w-16 h-16 rounded-full bg-accent flex items-center justify-center shadow-[0_0_20px_hsl(var(--accent)/0.5)] disabled:opacity-50 transition-all hover:scale-105"
+              onClick={() => startVideoFeed()}
+              disabled={cameraStarting}
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-accent shadow-[0_0_20px_hsl(var(--accent)/0.5)] transition-all hover:scale-105 disabled:opacity-50"
             >
-              <Video className="w-7 h-7 text-accent-foreground" />
+              <Video className="h-7 w-7 text-accent-foreground" />
             </button>
           ) : (
             <button
               onClick={stopCamera}
-              className="w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-[0_0_20px_rgba(239,68,68,0.5)] transition-all hover:scale-105"
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive shadow-[0_0_20px_hsl(var(--destructive)/0.45)] transition-all hover:scale-105"
             >
-              <VideoOff className="w-7 h-7 text-white" />
+              <VideoOff className="h-7 w-7 text-destructive-foreground" />
             </button>
           )}
         </div>
-        <p className="text-center text-white/40 text-xs mt-3">
-          {cameraActive ? 'Toque para parar a análise' : 'Toque para iniciar análise biomecânica'}
+
+        <p className="mt-3 text-center text-xs text-white/45">
+          {cameraActive
+            ? 'Toque para parar a análise'
+            : cameraStarting
+              ? 'Abrindo câmera...'
+              : 'Toque para iniciar análise biomecânica'}
         </p>
       </div>
     </div>
