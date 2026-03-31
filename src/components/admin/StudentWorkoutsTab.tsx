@@ -114,6 +114,9 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
         reps: exReps,
         rest: exRest,
         video_url: exVideoUrl,
+        ai_enabled: exAiEnabled,
+        ai_max_knee_flexion: exMaxKneeFlexion ? parseInt(exMaxKneeFlexion) : null,
+        ai_valgo_alert: exValgoAlert,
         sort_order: currentExercises,
       });
       if (error) throw error;
