@@ -293,6 +293,40 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                       <Input placeholder="Reps" value={exReps} onChange={(e) => setExReps(e.target.value)} />
                       <Input placeholder="Descanso" value={exRest} onChange={(e) => setExRest(e.target.value)} />
                     </div>
+                    {/* AI Biofeedback Calibration Section */}
+                    <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl mt-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Brain className="w-4 h-4 text-blue-600" />
+                          <span className="text-xs font-semibold text-blue-800 uppercase">Parâmetros de IA (Biofeedback)</span>
+                        </div>
+                        <Switch checked={exAiEnabled} onCheckedChange={setExAiEnabled} />
+                      </div>
+                      {exAiEnabled && (
+                        <div className="space-y-3 pt-1">
+                          <div>
+                            <Label className="text-xs text-blue-700">Ângulo Máx. Flexão de Joelho (Graus)</Label>
+                            <Input
+                              type="number"
+                              placeholder="90"
+                              value={exMaxKneeFlexion}
+                              onChange={(e) => setExMaxKneeFlexion(e.target.value)}
+                              className="bg-white border-blue-200 rounded-lg w-24 text-sm focus:ring-2 focus:ring-blue-500 mt-1"
+                            />
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Label className="text-xs text-blue-700">Alinhamento Tornozelo/Joelho (Valgo)</Label>
+                              <p className="text-[10px] text-blue-500">{exValgoAlert ? 'Alertar desvio interno' : 'Permitir'}</p>
+                            </div>
+                            <Switch checked={exValgoAlert} onCheckedChange={setExValgoAlert} />
+                          </div>
+                          <p className="text-[10px] text-blue-400 leading-relaxed">
+                            O aluno receberá um alerta visual (linha vermelha) se ultrapassar esses limites durante a auto-gravação.
+                          </p>
+                        </div>
+                      )}
+                    </div>
                     <div className="relative">
                       <Link className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                       <Input
