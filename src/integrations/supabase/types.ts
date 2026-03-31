@@ -728,6 +728,9 @@ export type Database = {
       }
       workout_exercises: {
         Row: {
+          ai_enabled: boolean
+          ai_max_knee_flexion: number | null
+          ai_valgo_alert: boolean
           created_at: string
           id: string
           name: string
@@ -739,6 +742,9 @@ export type Database = {
           workout_id: string
         }
         Insert: {
+          ai_enabled?: boolean
+          ai_max_knee_flexion?: number | null
+          ai_valgo_alert?: boolean
           created_at?: string
           id?: string
           name: string
@@ -750,6 +756,9 @@ export type Database = {
           workout_id: string
         }
         Update: {
+          ai_enabled?: boolean
+          ai_max_knee_flexion?: number | null
+          ai_valgo_alert?: boolean
           created_at?: string
           id?: string
           name?: string
