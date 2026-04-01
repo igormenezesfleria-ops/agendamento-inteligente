@@ -320,21 +320,30 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                 <div className="space-y-3 pt-2 border-t">
                   {exercises && exercises.length > 0 ? (
                     exercises.map((ex) => (
-                      <div key={ex.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                      <div key={ex.id} className={`flex items-center justify-between p-2 rounded ${editingExerciseId === ex.id ? 'bg-accent/10 ring-1 ring-accent' : 'bg-muted/50'}`}>
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{ex.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {ex.sets} séries × {ex.reps} reps · {ex.rest} descanso
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive shrink-0"
-                          onClick={() => deleteExercise.mutate(ex.id)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditExercise(ex)}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => deleteExercise.mutate(ex.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (
