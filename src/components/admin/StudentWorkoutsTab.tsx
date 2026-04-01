@@ -57,6 +57,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const [exValgoAlert, setExValgoAlert] = useState(false);
   const [exMovementPattern, setExMovementPattern] = useState('');
   const [exSelectedErrors, setExSelectedErrors] = useState<string[]>([]);
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
 
   const templateKeys = Object.keys(BIOMECHANICS_TEMPLATES);
   const activeTemplate = exMovementPattern ? BIOMECHANICS_TEMPLATES[exMovementPattern] : null;
