@@ -122,14 +122,33 @@ export function ActiveWorkoutCard() {
                       </span>
                       <div className="min-w-0">
                         <span className="font-semibold text-foreground truncate block">{ex.name}</span>
-                        {ex.video_url && (
-                          <button
-                            onClick={() => setActiveVideoUrl(ex.video_url)}
-                            className="flex items-center gap-1 text-accent hover:text-accent/80 text-xs mt-1.5 font-bold transition-all"
-                          >
-                            <PlayCircle className="w-4 h-4" /> Ver execução
-                          </button>
-                        )}
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          {ex.video_url && (
+                            <button
+                              onClick={() => setActiveVideoUrl(ex.video_url)}
+                              className="flex items-center gap-1 text-accent hover:text-accent/80 text-xs font-bold transition-all"
+                            >
+                              <PlayCircle className="w-4 h-4" /> Ver execução
+                            </button>
+                          )}
+                          {ex.ai_enabled && ex.movement_pattern && (
+                            <button
+                              onClick={() => {
+                                setDrawerOpen(false);
+                                navigate('/biofeedback', {
+                                  state: {
+                                    movementPattern: ex.movement_pattern,
+                                    selectedErrors: ex.selected_errors || [],
+                                    exerciseName: ex.name,
+                                  },
+                                });
+                              }}
+                              className="flex items-center gap-1 bg-muted text-muted-foreground hover:bg-muted/80 px-2 py-1 rounded-lg text-xs font-bold transition-all"
+                            >
+                              <Camera className="w-3.5 h-3.5" /> Auto-Gravar AI
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right shrink-0 ml-4">
