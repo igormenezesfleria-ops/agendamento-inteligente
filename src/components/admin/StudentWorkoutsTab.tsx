@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp, Link, Brain } from 'lucide-react';
+import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp, Link, Brain, Pencil } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
