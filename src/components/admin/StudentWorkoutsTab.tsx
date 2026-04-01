@@ -55,6 +55,11 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const [exAiEnabled, setExAiEnabled] = useState(false);
   const [exMaxKneeFlexion, setExMaxKneeFlexion] = useState('');
   const [exValgoAlert, setExValgoAlert] = useState(false);
+  const [exMovementPattern, setExMovementPattern] = useState('');
+  const [exSelectedErrors, setExSelectedErrors] = useState<string[]>([]);
+
+  const templateKeys = Object.keys(BIOMECHANICS_TEMPLATES);
+  const activeTemplate = exMovementPattern ? BIOMECHANICS_TEMPLATES[exMovementPattern] : null;
 
   const { data: workouts, isLoading } = useQuery({
     queryKey: ['student-workouts', studentId],
