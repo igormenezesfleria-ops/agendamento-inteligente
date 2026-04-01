@@ -352,7 +352,9 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
 
                   {/* Add exercise form */}
                   <div className="space-y-2 pt-2 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">Adicionar Exercício</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">
+                      {editingExerciseId ? 'Editar Exercício' : 'Adicionar Exercício'}
+                    </p>
                     <Input placeholder="Nome do exercício" value={exName} onChange={(e) => setExName(e.target.value)} />
                     <div className="grid grid-cols-3 gap-2">
                       <Input placeholder="Séries" value={exSets} onChange={(e) => setExSets(e.target.value)} />
