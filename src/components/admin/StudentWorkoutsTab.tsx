@@ -141,6 +141,8 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
       setExAiEnabled(false);
       setExMaxKneeFlexion('');
       setExValgoAlert(false);
+      setExMovementPattern('');
+      setExSelectedErrors([]);
     },
     onError: () => toast({ title: 'Erro ao adicionar exercício', variant: 'destructive' }),
   });
