@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, PlayCircle, X } from 'lucide-react';
+import { Loader2, PlayCircle, Camera, X } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -19,10 +20,14 @@ interface Exercise {
   reps: string;
   rest: string;
   video_url: string;
+  ai_enabled: boolean;
+  movement_pattern: string | null;
+  selected_errors: string[] | null;
 }
 
 export function ActiveWorkoutCard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
@@ -45,7 +50,7 @@ export function ActiveWorkoutCard() {
 
       const { data: exercises, error: exErr } = await supabase
         .from('workout_exercises')
-        .select('id, name, sets, reps, rest, video_url')
+        .select('id, name, sets, reps, rest, video_url, ai_enabled, movement_pattern, selected_errors')
         .eq('workout_id', data.id)
         .order('sort_order');
       if (exErr) throw exErr;
@@ -117,14 +122,33 @@ export function ActiveWorkoutCard() {
                       </span>
                       <div className="min-w-0">
                         <span className="font-semibold text-foreground truncate block">{ex.name}</span>
-                        {ex.video_url && (
-                          <button
-                            onClick={() => setActiveVideoUrl(ex.video_url)}
-                            className="flex items-center gap-1 text-accent hover:text-accent/80 text-xs mt-1.5 font-bold transition-all"
-                          >
-                            <PlayCircle className="w-4 h-4" /> Ver execução
-                          </button>
-                        )}
+                        <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                          {ex.video_url && (
+                            <button
+                              onClick={() => setActiveVideoUrl(ex.video_url)}
+                              className="flex items-center gap-1 text-accent hover:text-accent/80 text-xs font-bold transition-all"
+                            >
+                              <PlayCircle className="w-4 h-4" /> Ver execução
+                            </button>
+                          )}
+                          {ex.ai_enabled && ex.movement_pattern && (
+                            <button
+                              onClick={() => {
+                                setDrawerOpen(false);
+                                navigate('/biofeedback', {
+                                  state: {
+                                    movementPattern: ex.movement_pattern,
+                                    selectedErrors: ex.selected_errors || [],
+                                    exerciseName: ex.name,
+                                  },
+                                });
+                              }}
+                              className="flex items-center gap-1 bg-muted text-muted-foreground hover:bg-muted/80 px-2 py-1 rounded-lg text-xs font-bold transition-all"
+                            >
+                              <Camera className="w-3.5 h-3.5" /> Auto-Gravar AI
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right shrink-0 ml-4">

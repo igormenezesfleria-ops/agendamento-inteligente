@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp, Link, Brain } from 'lucide-react';
+import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp, Link, Brain, Pencil } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
@@ -57,6 +57,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const [exValgoAlert, setExValgoAlert] = useState(false);
   const [exMovementPattern, setExMovementPattern] = useState('');
   const [exSelectedErrors, setExSelectedErrors] = useState<string[]>([]);
+  const [editingExerciseId, setEditingExerciseId] = useState<string | null>(null);
 
   const templateKeys = Object.keys(BIOMECHANICS_TEMPLATES);
   const activeTemplate = exMovementPattern ? BIOMECHANICS_TEMPLATES[exMovementPattern] : null;
@@ -133,18 +134,33 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
     onSuccess: () => {
       toast({ title: 'Exercício adicionado!' });
       qc.invalidateQueries({ queryKey: ['workout-exercises', expandedWorkout] });
-      setExName('');
-      setExSets('');
-      setExReps('');
-      setExRest('');
-      setExVideoUrl('');
-      setExAiEnabled(false);
-      setExMaxKneeFlexion('');
-      setExValgoAlert(false);
-      setExMovementPattern('');
-      setExSelectedErrors([]);
+      clearExerciseForm();
     },
     onError: () => toast({ title: 'Erro ao adicionar exercício', variant: 'destructive' }),
+  });
+
+  const updateExercise = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('workout_exercises').update({
+        name: exName,
+        sets: exSets,
+        reps: exReps,
+        rest: exRest,
+        video_url: exVideoUrl,
+        ai_enabled: exAiEnabled,
+        ai_max_knee_flexion: exMaxKneeFlexion ? parseInt(exMaxKneeFlexion) : null,
+        ai_valgo_alert: exValgoAlert,
+        movement_pattern: exMovementPattern,
+        selected_errors: exSelectedErrors,
+      } as any).eq('id', editingExerciseId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: 'Exercício atualizado!' });
+      qc.invalidateQueries({ queryKey: ['workout-exercises', expandedWorkout] });
+      clearExerciseForm();
+    },
+    onError: () => toast({ title: 'Erro ao atualizar exercício', variant: 'destructive' }),
   });
 
   const deleteExercise = useMutation({
@@ -153,9 +169,39 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
       if (error) throw error;
     },
     onSuccess: () => {
+      if (editingExerciseId) clearExerciseForm();
       qc.invalidateQueries({ queryKey: ['workout-exercises', expandedWorkout] });
+      toast({ title: 'Exercício removido' });
     },
   });
+
+  const clearExerciseForm = () => {
+    setExName('');
+    setExSets('');
+    setExReps('');
+    setExRest('');
+    setExVideoUrl('');
+    setExAiEnabled(false);
+    setExMaxKneeFlexion('');
+    setExValgoAlert(false);
+    setExMovementPattern('');
+    setExSelectedErrors([]);
+    setEditingExerciseId(null);
+  };
+
+  const startEditExercise = (ex: any) => {
+    setExName(ex.name || '');
+    setExSets(ex.sets || '');
+    setExReps(ex.reps || '');
+    setExRest(ex.rest || '');
+    setExVideoUrl(ex.video_url || '');
+    setExAiEnabled(ex.ai_enabled || false);
+    setExMaxKneeFlexion(ex.ai_max_knee_flexion?.toString() || '');
+    setExValgoAlert(ex.ai_valgo_alert || false);
+    setExMovementPattern(ex.movement_pattern || '');
+    setExSelectedErrors(ex.selected_errors || []);
+    setEditingExerciseId(ex.id);
+  };
 
   const deleteWorkout = useMutation({
     mutationFn: async (id: string) => {
@@ -274,21 +320,30 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                 <div className="space-y-3 pt-2 border-t">
                   {exercises && exercises.length > 0 ? (
                     exercises.map((ex) => (
-                      <div key={ex.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
+                      <div key={ex.id} className={`flex items-center justify-between p-2 rounded ${editingExerciseId === ex.id ? 'bg-accent/10 ring-1 ring-accent' : 'bg-muted/50'}`}>
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{ex.name}</p>
                           <p className="text-xs text-muted-foreground">
                             {ex.sets} séries × {ex.reps} reps · {ex.rest} descanso
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive shrink-0"
-                          onClick={() => deleteExercise.mutate(ex.id)}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => startEditExercise(ex)}
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive"
+                            onClick={() => deleteExercise.mutate(ex.id)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (
@@ -297,7 +352,9 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
 
                   {/* Add exercise form */}
                   <div className="space-y-2 pt-2 border-t">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase">Adicionar Exercício</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">
+                      {editingExerciseId ? 'Editar Exercício' : 'Adicionar Exercício'}
+                    </p>
                     <Input placeholder="Nome do exercício" value={exName} onChange={(e) => setExName(e.target.value)} />
                     <div className="grid grid-cols-3 gap-2">
                       <Input placeholder="Séries" value={exSets} onChange={(e) => setExSets(e.target.value)} />
@@ -392,15 +449,22 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                         className="pl-9"
                       />
                     </div>
-                    <Button
-                      size="sm"
-                      className="w-full gap-1"
-                      disabled={!exName || addExercise.isPending}
-                      onClick={() => addExercise.mutate()}
-                    >
-                      {addExercise.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                      Adicionar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 gap-1"
+                        disabled={!exName || addExercise.isPending || updateExercise.isPending}
+                        onClick={() => editingExerciseId ? updateExercise.mutate() : addExercise.mutate()}
+                      >
+                        {(addExercise.isPending || updateExercise.isPending) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : editingExerciseId ? <Pencil className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        {editingExerciseId ? 'Atualizar Exercício' : 'Adicionar'}
+                      </Button>
+                      {editingExerciseId && (
+                        <Button size="sm" variant="ghost" onClick={clearExerciseForm}>
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

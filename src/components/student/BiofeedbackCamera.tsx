@@ -73,7 +73,13 @@ function calculateAngle(
   return angle;
 }
 
-export function BiofeedbackCamera() {
+interface BiofeedbackCameraProps {
+  movementPattern?: string;
+  selectedErrors?: string[];
+  exerciseName?: string;
+}
+
+export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseName }: BiofeedbackCameraProps) {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
