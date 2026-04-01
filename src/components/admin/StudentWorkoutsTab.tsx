@@ -134,16 +134,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
     onSuccess: () => {
       toast({ title: 'Exercício adicionado!' });
       qc.invalidateQueries({ queryKey: ['workout-exercises', expandedWorkout] });
-      setExName('');
-      setExSets('');
-      setExReps('');
-      setExRest('');
-      setExVideoUrl('');
-      setExAiEnabled(false);
-      setExMaxKneeFlexion('');
-      setExValgoAlert(false);
-      setExMovementPattern('');
-      setExSelectedErrors([]);
+      clearExerciseForm();
     },
     onError: () => toast({ title: 'Erro ao adicionar exercício', variant: 'destructive' }),
   });
