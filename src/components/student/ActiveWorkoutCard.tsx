@@ -50,7 +50,7 @@ export function ActiveWorkoutCard() {
 
       const { data: exercises, error: exErr } = await supabase
         .from('workout_exercises')
-        .select('id, name, sets, reps, rest, video_url')
+        .select('id, name, sets, reps, rest, video_url, ai_enabled, movement_pattern, selected_errors')
         .eq('workout_id', data.id)
         .order('sort_order');
       if (exErr) throw exErr;
