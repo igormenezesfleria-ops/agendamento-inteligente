@@ -27,6 +27,7 @@ interface Exercise {
 
 export function ActiveWorkoutCard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
 
