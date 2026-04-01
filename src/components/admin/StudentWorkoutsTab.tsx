@@ -449,15 +449,22 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                         className="pl-9"
                       />
                     </div>
-                    <Button
-                      size="sm"
-                      className="w-full gap-1"
-                      disabled={!exName || addExercise.isPending}
-                      onClick={() => addExercise.mutate()}
-                    >
-                      {addExercise.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                      Adicionar
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 gap-1"
+                        disabled={!exName || addExercise.isPending || updateExercise.isPending}
+                        onClick={() => editingExerciseId ? updateExercise.mutate() : addExercise.mutate()}
+                      >
+                        {(addExercise.isPending || updateExercise.isPending) ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : editingExerciseId ? <Pencil className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
+                        {editingExerciseId ? 'Atualizar Exercício' : 'Adicionar'}
+                      </Button>
+                      {editingExerciseId && (
+                        <Button size="sm" variant="ghost" onClick={clearExerciseForm}>
+                          Cancelar
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
