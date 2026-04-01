@@ -148,15 +148,69 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
     onError: () => toast({ title: 'Erro ao adicionar exercício', variant: 'destructive' }),
   });
 
+  const updateExercise = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('workout_exercises').update({
+        name: exName,
+        sets: exSets,
+        reps: exReps,
+        rest: exRest,
+        video_url: exVideoUrl,
+        ai_enabled: exAiEnabled,
+        ai_max_knee_flexion: exMaxKneeFlexion ? parseInt(exMaxKneeFlexion) : null,
+        ai_valgo_alert: exValgoAlert,
+        movement_pattern: exMovementPattern,
+        selected_errors: exSelectedErrors,
+      } as any).eq('id', editingExerciseId!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: 'Exercício atualizado!' });
+      qc.invalidateQueries({ queryKey: ['workout-exercises', expandedWorkout] });
+      clearExerciseForm();
+    },
+    onError: () => toast({ title: 'Erro ao atualizar exercício', variant: 'destructive' }),
+  });
+
   const deleteExercise = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('workout_exercises').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
+      if (editingExerciseId) clearExerciseForm();
       qc.invalidateQueries({ queryKey: ['workout-exercises', expandedWorkout] });
+      toast({ title: 'Exercício removido' });
     },
   });
+
+  const clearExerciseForm = () => {
+    setExName('');
+    setExSets('');
+    setExReps('');
+    setExRest('');
+    setExVideoUrl('');
+    setExAiEnabled(false);
+    setExMaxKneeFlexion('');
+    setExValgoAlert(false);
+    setExMovementPattern('');
+    setExSelectedErrors([]);
+    setEditingExerciseId(null);
+  };
+
+  const startEditExercise = (ex: any) => {
+    setExName(ex.name || '');
+    setExSets(ex.sets || '');
+    setExReps(ex.reps || '');
+    setExRest(ex.rest || '');
+    setExVideoUrl(ex.video_url || '');
+    setExAiEnabled(ex.ai_enabled || false);
+    setExMaxKneeFlexion(ex.ai_max_knee_flexion?.toString() || '');
+    setExValgoAlert(ex.ai_valgo_alert || false);
+    setExMovementPattern(ex.movement_pattern || '');
+    setExSelectedErrors(ex.selected_errors || []);
+    setEditingExerciseId(ex.id);
+  };
 
   const deleteWorkout = useMutation({
     mutationFn: async (id: string) => {
