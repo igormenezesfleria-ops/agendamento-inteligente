@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, PlayCircle, X } from 'lucide-react';
+import { Loader2, PlayCircle, Camera, X } from 'lucide-react';
 import {
   Drawer,
   DrawerContent,
@@ -19,6 +20,9 @@ interface Exercise {
   reps: string;
   rest: string;
   video_url: string;
+  ai_enabled: boolean;
+  movement_pattern: string | null;
+  selected_errors: string[] | null;
 }
 
 export function ActiveWorkoutCard() {
