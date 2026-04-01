@@ -124,8 +124,10 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
         ai_enabled: exAiEnabled,
         ai_max_knee_flexion: exMaxKneeFlexion ? parseInt(exMaxKneeFlexion) : null,
         ai_valgo_alert: exValgoAlert,
+        movement_pattern: exMovementPattern,
+        selected_errors: exSelectedErrors,
         sort_order: currentExercises,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
