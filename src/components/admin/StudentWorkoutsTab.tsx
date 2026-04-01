@@ -315,6 +315,51 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                       </div>
                       {exAiEnabled && (
                         <div className="space-y-3 pt-1">
+                          {/* Step 1: Movement Pattern Dropdown */}
+                          <div>
+                            <Label className="text-xs text-blue-700">Padrão de Movimento</Label>
+                            <select
+                              value={exMovementPattern}
+                              onChange={(e) => {
+                                setExMovementPattern(e.target.value);
+                                setExSelectedErrors([]);
+                              }}
+                              className="mt-1 w-full bg-white border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            >
+                              <option value="">Selecione um padrão...</option>
+                              {templateKeys.map((key) => (
+                                <option key={key} value={key}>
+                                  {BIOMECHANICS_TEMPLATES[key].name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* Step 2: Error Checklist */}
+                          {activeTemplate && (
+                            <div>
+                              <Label className="text-xs text-blue-700">Erros a Monitorar</Label>
+                              <div className="mt-1 space-y-2">
+                                {activeTemplate.errors.map((err) => (
+                                  <label key={err.id} className="flex items-center gap-2 cursor-pointer">
+                                    <Checkbox
+                                      checked={exSelectedErrors.includes(err.id)}
+                                      onCheckedChange={(checked) => {
+                                        setExSelectedErrors((prev) =>
+                                          checked
+                                            ? [...prev, err.id]
+                                            : prev.filter((e) => e !== err.id)
+                                        );
+                                      }}
+                                    />
+                                    <span className="text-xs text-blue-800">{err.name}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Legacy manual inputs */}
                           <div>
                             <Label className="text-xs text-blue-700">Ângulo Máx. Flexão de Joelho (Graus)</Label>
                             <Input
