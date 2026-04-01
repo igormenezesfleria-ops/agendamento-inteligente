@@ -733,9 +733,11 @@ export type Database = {
           ai_valgo_alert: boolean
           created_at: string
           id: string
+          movement_pattern: string | null
           name: string
           reps: string
           rest: string
+          selected_errors: string[] | null
           sets: string
           sort_order: number
           video_url: string
@@ -747,9 +749,11 @@ export type Database = {
           ai_valgo_alert?: boolean
           created_at?: string
           id?: string
+          movement_pattern?: string | null
           name: string
           reps?: string
           rest?: string
+          selected_errors?: string[] | null
           sets?: string
           sort_order?: number
           video_url?: string
@@ -761,9 +765,11 @@ export type Database = {
           ai_valgo_alert?: boolean
           created_at?: string
           id?: string
+          movement_pattern?: string | null
           name?: string
           reps?: string
           rest?: string
+          selected_errors?: string[] | null
           sets?: string
           sort_order?: number
           video_url?: string
