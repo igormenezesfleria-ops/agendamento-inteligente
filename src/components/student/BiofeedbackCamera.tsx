@@ -716,6 +716,14 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
               ))}
             </div>
           )}
+
+          {sideProfileWarning && (
+            <div className={`absolute left-4 right-4 z-20 ${exerciseName ? 'top-[130px]' : 'top-[114px]'}`}>
+              <span className="inline-flex items-center gap-1 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5 text-[11px] font-semibold text-warning backdrop-blur-md">
+                ⚠️ Aviso: O Valgo Dinâmico é melhor analisado de frente.
+              </span>
+            </div>
+          )}
         </>
       )}
 
