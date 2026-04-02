@@ -11,9 +11,9 @@ export default function Biofeedback() {
 
   return (
     <BiofeedbackCamera
-      movementPattern={state?.movementPattern}
-      selectedErrors={state?.selectedErrors}
-      exerciseName={state?.exerciseName}
+      movementPattern={state?.movementPattern ?? undefined}
+      selectedErrors={state?.selectedErrors ?? undefined}
+      exerciseName={state?.exerciseName ?? undefined}
     />
   );
 }
