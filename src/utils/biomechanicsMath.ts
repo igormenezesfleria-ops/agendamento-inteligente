@@ -76,16 +76,27 @@ export function calculateAngle3D(a: Point3D, b: Point3D, c: Point3D): number {
 // 2. checkDynamicValgus — X-axis bilateral comparison
 // ---------------------------------------------------------------------------
 
+/**
+ * Returns true only when filmed roughly from the front (small Z delta between knees).
+ * Also exports a helper so the UI can warn when the camera plane is wrong.
+ */
+export function isFrontalView(leftKnee: Point3D, rightKnee: Point3D): boolean {
+  return Math.abs(leftKnee.z - rightKnee.z) <= 0.2;
+}
+
 export function checkDynamicValgus(
   leftKnee: Point3D,
   rightKnee: Point3D,
   leftAnkle: Point3D,
   rightAnkle: Point3D,
 ): boolean {
+  // Skip entirely if filmed from the side (Z-axis divergence)
+  if (!isFrontalView(leftKnee, rightKnee)) return false;
+
   const kneeGap = Math.abs(leftKnee.x - rightKnee.x);
   const ankleGap = Math.abs(leftAnkle.x - rightAnkle.x);
-  // Valgus = knees collapse inward → gap significantly smaller than ankles
-  return ankleGap > 0 && kneeGap < ankleGap * 0.75;
+  // Only trigger if knees are significantly inside the ankle line (60% threshold)
+  return ankleGap > 0.01 && kneeGap < ankleGap * 0.60;
 }
 
 // ---------------------------------------------------------------------------
