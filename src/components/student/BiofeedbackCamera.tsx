@@ -95,6 +95,20 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const simulationModeRef = useRef(false);
   const fallbackBlinkRef = useRef(false);
 
+  // Resolve the active biomechanics template, filtering to only trainer-selected errors
+  const activeTemplate = useMemo(() => {
+    if (!movementPattern) return null;
+    const template = BIOMECHANICS_TEMPLATES[movementPattern];
+    if (!template) return null;
+    if (!selectedErrors || selectedErrors.length === 0) return template;
+    return {
+      ...template,
+      errors: template.errors.filter((e) => selectedErrors.includes(e.id)),
+    };
+  }, [movementPattern, selectedErrors]);
+
+  const activeWarningsRef = useRef<FrameWarning[]>([]);
+
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraStarting, setCameraStarting] = useState(false);
   const [status, setStatus] = useState<PoseStatus>('loading');
@@ -106,6 +120,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [rightKneeAngle, setRightKneeAngle] = useState<number | null>(null);
   const [aiState, setAiState] = useState<AiState>('loading');
   const [aiBadgeText, setAiBadgeText] = useState('Carregando IA...');
+  const [activeWarnings, setActiveWarnings] = useState<FrameWarning[]>([]);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
