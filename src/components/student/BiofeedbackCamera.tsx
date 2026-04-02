@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
+import { evaluateFrame, type FrameWarning } from '@/utils/biomechanicsMath';
 
 const LANDMARKS = {
   NOSE: 0,
@@ -93,6 +95,20 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const simulationModeRef = useRef(false);
   const fallbackBlinkRef = useRef(false);
 
+  // Resolve the active biomechanics template, filtering to only trainer-selected errors
+  const activeTemplate = useMemo(() => {
+    if (!movementPattern) return null;
+    const template = BIOMECHANICS_TEMPLATES[movementPattern];
+    if (!template) return null;
+    if (!selectedErrors || selectedErrors.length === 0) return template;
+    return {
+      ...template,
+      errors: template.errors.filter((e) => selectedErrors.includes(e.id)),
+    };
+  }, [movementPattern, selectedErrors]);
+
+  const activeWarningsRef = useRef<FrameWarning[]>([]);
+
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraStarting, setCameraStarting] = useState(false);
   const [status, setStatus] = useState<PoseStatus>('loading');
@@ -104,6 +120,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [rightKneeAngle, setRightKneeAngle] = useState<number | null>(null);
   const [aiState, setAiState] = useState<AiState>('loading');
   const [aiBadgeText, setAiBadgeText] = useState('Carregando IA...');
+  const [activeWarnings, setActiveWarnings] = useState<FrameWarning[]>([]);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -515,14 +532,25 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           const averageVisibility = landmarks.reduce((sum, landmark) => sum + landmark.visibility, 0) / landmarks.length;
 
           setConfidence(Math.round(averageVisibility * 100));
-          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
 
-          if (hasViolation) {
+          // Run the biomechanics engine if a template is active
+          const warnings = evaluateFrame(landmarks, activeTemplate);
+          activeWarningsRef.current = warnings;
+          setActiveWarnings(warnings);
+
+          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
+          const hasTemplateWarning = warnings.length > 0;
+
+          if (hasTemplateWarning) {
+            const firstWarning = warnings[0];
             setStatus('warning');
-            setStatusText('⚠️ Atenção: Valgo Dinâmico Detectado! Alinhe o joelho.');
+            setStatusText(`⚠️ ${firstWarning.errorName} (${Math.round(firstWarning.value)}°)`);
+          } else if (hasViolation) {
+            setStatus('warning');
+            setStatusText('⚠️ Atenção: Correção necessária!');
           } else {
             setStatus('good');
-            setStatusText('✅ Forma: Excelente (AI Validated)');
+            setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente (AI Validated)');
           }
         } else {
           clearCanvas();
@@ -561,7 +589,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       console.error('Pose init error:', error);
       activateFallback();
     }
-  }, [activateFallback, analyzeAndDraw, cameraActive, clearCanvas, scriptsLoaded, syncCanvasSize]);
+  }, [activateFallback, activeTemplate, analyzeAndDraw, cameraActive, clearCanvas, exerciseName, scriptsLoaded, syncCanvasSize]);
 
   const toggleFacing = useCallback(() => {
     const nextFacingMode: FacingMode = facingMode === 'user' ? 'environment' : 'user';
@@ -648,14 +676,33 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       {cameraActive && (
         <>
-          <div className="absolute left-4 top-16 z-20 flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md">
+          {exerciseName && (
+            <div className="absolute left-4 right-4 top-[52px] z-20 flex items-center justify-center">
+              <span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md">
+                Analisando: {exerciseName}
+                {activeTemplate ? ` (${activeTemplate.name})` : ''}
+              </span>
+            </div>
+          )}
+
+          <div className={`absolute left-4 z-20 flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'}`}>
             <Zap className="h-3 w-3 text-primary" />
             <span className="text-[10px] font-bold tracking-wide text-primary">⚡ Motor Lite Ativado (Alto Desempenho)</span>
           </div>
 
-          <div className={`absolute right-4 top-16 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${aiBadgeClasses}`}>
+          <div className={`absolute right-4 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'} ${aiBadgeClasses}`}>
             {aiBadgeText}
           </div>
+
+          {activeWarnings.length > 0 && (
+            <div className={`absolute left-4 right-4 z-20 flex flex-wrap gap-1.5 ${exerciseName ? 'top-[106px]' : 'top-[90px]'}`}>
+              {activeWarnings.map((w) => (
+                <span key={w.errorId} className="rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
+                  {w.errorName}: {Math.round(w.value)}°
+                </span>
+              ))}
+            </div>
+          )}
         </>
       )}
 
