@@ -532,14 +532,25 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           const averageVisibility = landmarks.reduce((sum, landmark) => sum + landmark.visibility, 0) / landmarks.length;
 
           setConfidence(Math.round(averageVisibility * 100));
-          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
 
-          if (hasViolation) {
+          // Run the biomechanics engine if a template is active
+          const warnings = evaluateFrame(landmarks, activeTemplate);
+          activeWarningsRef.current = warnings;
+          setActiveWarnings(warnings);
+
+          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
+          const hasTemplateWarning = warnings.length > 0;
+
+          if (hasTemplateWarning) {
+            const firstWarning = warnings[0];
             setStatus('warning');
-            setStatusText('⚠️ Atenção: Valgo Dinâmico Detectado! Alinhe o joelho.');
+            setStatusText(`⚠️ ${firstWarning.errorName} (${Math.round(firstWarning.value)}°)`);
+          } else if (hasViolation) {
+            setStatus('warning');
+            setStatusText('⚠️ Atenção: Correção necessária!');
           } else {
             setStatus('good');
-            setStatusText('✅ Forma: Excelente (AI Validated)');
+            setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente (AI Validated)');
           }
         } else {
           clearCanvas();
