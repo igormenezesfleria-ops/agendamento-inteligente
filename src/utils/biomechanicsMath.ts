@@ -182,9 +182,9 @@ export function evaluateFrame(
         if (rule.threshold?.includes('LIFT') && yDiff < -0.02) {
           warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.02 });
         }
-        // HEEL vs FOOT_INDEX: heel lifted if heel.y < footIndex.y
-        if (rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX' && yDiff < -0.02) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.02 });
+        // HEEL vs FOOT_INDEX: only trigger with a significant margin (0.05 instead of 0.02)
+        if (rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX' && yDiff < -0.05) {
+          warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.05 });
         }
         break;
       }
