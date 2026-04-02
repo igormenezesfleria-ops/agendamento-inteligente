@@ -589,7 +589,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       console.error('Pose init error:', error);
       activateFallback();
     }
-  }, [activateFallback, analyzeAndDraw, cameraActive, clearCanvas, scriptsLoaded, syncCanvasSize]);
+  }, [activateFallback, activeTemplate, analyzeAndDraw, cameraActive, clearCanvas, exerciseName, scriptsLoaded, syncCanvasSize]);
 
   const toggleFacing = useCallback(() => {
     const nextFacingMode: FacingMode = facingMode === 'user' ? 'environment' : 'user';
