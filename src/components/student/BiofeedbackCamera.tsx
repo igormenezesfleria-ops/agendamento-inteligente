@@ -121,6 +121,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [aiState, setAiState] = useState<AiState>('loading');
   const [aiBadgeText, setAiBadgeText] = useState('Carregando IA...');
   const [activeWarnings, setActiveWarnings] = useState<FrameWarning[]>([]);
+  const [sideProfileWarning, setSideProfileWarning] = useState(false);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
