@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
+import { evaluateFrame, type FrameWarning } from '@/utils/biomechanicsMath';
 
 const LANDMARKS = {
   NOSE: 0,
