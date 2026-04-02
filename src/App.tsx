@@ -287,7 +287,7 @@ const App = () => (
             <Route
               path="/dashboard/biofeedback"
               element={
-                <ProtectedRoute allowedRoles={['student']}>
+                <ProtectedRoute allowedRoles={['student', 'admin', 'collaborator']}>
                   <Biofeedback />
                 </ProtectedRoute>
               }
