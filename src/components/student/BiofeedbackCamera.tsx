@@ -676,14 +676,33 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       {cameraActive && (
         <>
-          <div className="absolute left-4 top-16 z-20 flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md">
+          {exerciseName && (
+            <div className="absolute left-4 right-4 top-[52px] z-20 flex items-center justify-center">
+              <span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md">
+                Analisando: {exerciseName}
+                {activeTemplate ? ` (${activeTemplate.name})` : ''}
+              </span>
+            </div>
+          )}
+
+          <div className={`absolute left-4 z-20 flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'}`}>
             <Zap className="h-3 w-3 text-primary" />
             <span className="text-[10px] font-bold tracking-wide text-primary">⚡ Motor Lite Ativado (Alto Desempenho)</span>
           </div>
 
-          <div className={`absolute right-4 top-16 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${aiBadgeClasses}`}>
+          <div className={`absolute right-4 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'} ${aiBadgeClasses}`}>
             {aiBadgeText}
           </div>
+
+          {activeWarnings.length > 0 && (
+            <div className={`absolute left-4 right-4 z-20 flex flex-wrap gap-1.5 ${exerciseName ? 'top-[106px]' : 'top-[90px]'}`}>
+              {activeWarnings.map((w) => (
+                <span key={w.errorId} className="rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
+                  {w.errorName}: {Math.round(w.value)}°
+                </span>
+              ))}
+            </div>
+          )}
         </>
       )}
 
