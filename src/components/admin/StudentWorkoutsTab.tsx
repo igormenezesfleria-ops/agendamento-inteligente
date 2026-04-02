@@ -337,6 +337,23 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
+                          {(ex as any).ai_enabled && (ex as any).movement_pattern && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-accent"
+                              onClick={() => navigate('/dashboard/biofeedback', {
+                                state: {
+                                  movementPattern: (ex as any).movement_pattern,
+                                  selectedErrors: (ex as any).selected_errors || [],
+                                  exerciseName: ex.name,
+                                },
+                              })}
+                              title="Testar IA"
+                            >
+                              <Camera className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
