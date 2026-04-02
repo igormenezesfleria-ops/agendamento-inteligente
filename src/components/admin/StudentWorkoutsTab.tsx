@@ -39,6 +39,7 @@ interface Exercise {
 export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const qc = useQueryClient();
 
   const [creating, setCreating] = useState(false);
