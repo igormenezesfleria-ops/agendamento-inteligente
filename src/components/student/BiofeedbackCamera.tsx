@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
-import { evaluateFrame, type FrameWarning } from '@/utils/biomechanicsMath';
+import { evaluateFrame, isFrontalView, type FrameWarning } from '@/utils/biomechanicsMath';
 
 const LANDMARKS = {
   NOSE: 0,
@@ -121,6 +121,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [aiState, setAiState] = useState<AiState>('loading');
   const [aiBadgeText, setAiBadgeText] = useState('Carregando IA...');
   const [activeWarnings, setActiveWarnings] = useState<FrameWarning[]>([]);
+  const [sideProfileWarning, setSideProfileWarning] = useState(false);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -538,6 +539,18 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
+          // Detect side-profile when valgus is being monitored
+          const monitorsValgus = activeTemplate?.errors.some(e => e.id === 'valgus');
+          if (monitorsValgus) {
+            const lk = landmarks[LANDMARKS.LEFT_KNEE];
+            const rk = landmarks[LANDMARKS.RIGHT_KNEE];
+            if (lk && rk) {
+              setSideProfileWarning(!isFrontalView(lk, rk));
+            }
+          } else {
+            setSideProfileWarning(false);
+          }
+
           const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
           const hasTemplateWarning = warnings.length > 0;
 
@@ -701,6 +714,14 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
                   {w.errorName}: {Math.round(w.value)}°
                 </span>
               ))}
+            </div>
+          )}
+
+          {sideProfileWarning && (
+            <div className={`absolute left-4 right-4 z-20 ${exerciseName ? 'top-[130px]' : 'top-[114px]'}`}>
+              <span className="inline-flex items-center gap-1 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5 text-[11px] font-semibold text-warning backdrop-blur-md">
+                ⚠️ Aviso: O Valgo Dinâmico é melhor analisado de frente.
+              </span>
             </div>
           )}
         </>

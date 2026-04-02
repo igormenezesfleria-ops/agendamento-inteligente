@@ -76,16 +76,27 @@ export function calculateAngle3D(a: Point3D, b: Point3D, c: Point3D): number {
 // 2. checkDynamicValgus — X-axis bilateral comparison
 // ---------------------------------------------------------------------------
 
+/**
+ * Returns true only when filmed roughly from the front (small Z delta between knees).
+ * Also exports a helper so the UI can warn when the camera plane is wrong.
+ */
+export function isFrontalView(leftKnee: Point3D, rightKnee: Point3D): boolean {
+  return Math.abs(leftKnee.z - rightKnee.z) <= 0.2;
+}
+
 export function checkDynamicValgus(
   leftKnee: Point3D,
   rightKnee: Point3D,
   leftAnkle: Point3D,
   rightAnkle: Point3D,
 ): boolean {
+  // Skip entirely if filmed from the side (Z-axis divergence)
+  if (!isFrontalView(leftKnee, rightKnee)) return false;
+
   const kneeGap = Math.abs(leftKnee.x - rightKnee.x);
   const ankleGap = Math.abs(leftAnkle.x - rightAnkle.x);
-  // Valgus = knees collapse inward → gap significantly smaller than ankles
-  return ankleGap > 0 && kneeGap < ankleGap * 0.75;
+  // Only trigger if knees are significantly inside the ankle line (60% threshold)
+  return ankleGap > 0.01 && kneeGap < ankleGap * 0.60;
 }
 
 // ---------------------------------------------------------------------------
@@ -116,6 +127,15 @@ export function evaluateFrame(
         const b = resolve(landmarks, rule.joints[1]);
         const c = resolve(landmarks, rule.joints[2]);
         const angle = calculateAngle3D(a, b, c);
+
+        // Deep-flexion guard for butt_wink: only trigger when knee angle < 100°
+        if (rule.id === 'butt_wink') {
+          const hip = resolve(landmarks, 'HIP');
+          const knee = resolve(landmarks, 'KNEE');
+          const ankle = resolve(landmarks, 'ANKLE');
+          const kneeAngle = calculateAngle3D(hip, knee, ankle);
+          if (kneeAngle >= 100) break; // not deep enough to evaluate butt wink
+        }
 
         if (rule.minSafeAngle !== undefined && angle < rule.minSafeAngle) {
           warnings.push({ errorId: rule.id, errorName: rule.name, value: angle, limit: rule.minSafeAngle });
@@ -171,9 +191,9 @@ export function evaluateFrame(
         if (rule.threshold?.includes('LIFT') && yDiff < -0.02) {
           warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.02 });
         }
-        // HEEL vs FOOT_INDEX: heel lifted if heel.y < footIndex.y
-        if (rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX' && yDiff < -0.02) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.02 });
+        // HEEL vs FOOT_INDEX: only trigger with a significant margin (0.05 instead of 0.02)
+        if (rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX' && yDiff < -0.05) {
+          warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.05 });
         }
         break;
       }
