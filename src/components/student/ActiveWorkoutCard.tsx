@@ -135,7 +135,7 @@ export function ActiveWorkoutCard() {
                             <button
                               onClick={() => {
                                 setDrawerOpen(false);
-                                navigate('/biofeedback', {
+                                navigate('/dashboard/biofeedback', {
                                   state: {
                                     movementPattern: ex.movement_pattern,
                                     selectedErrors: ex.selected_errors || [],

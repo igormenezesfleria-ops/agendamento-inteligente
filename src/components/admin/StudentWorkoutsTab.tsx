@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp, Link, Brain, Pencil } from 'lucide-react';
+import { Plus, Trash2, Loader2, Dumbbell, ChevronDown, ChevronUp, Link, Brain, Pencil, Camera } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
@@ -38,6 +39,7 @@ interface Exercise {
 export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const qc = useQueryClient();
 
   const [creating, setCreating] = useState(false);
@@ -335,6 +337,23 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                           >
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
+                          {(ex as any).ai_enabled && (ex as any).movement_pattern && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-accent"
+                              onClick={() => navigate('/dashboard/biofeedback', {
+                                state: {
+                                  movementPattern: (ex as any).movement_pattern,
+                                  selectedErrors: (ex as any).selected_errors || [],
+                                  exerciseName: ex.name,
+                                },
+                              })}
+                              title="Testar IA"
+                            >
+                              <Camera className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
