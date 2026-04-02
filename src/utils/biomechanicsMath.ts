@@ -128,6 +128,15 @@ export function evaluateFrame(
         const c = resolve(landmarks, rule.joints[2]);
         const angle = calculateAngle3D(a, b, c);
 
+        // Deep-flexion guard for butt_wink: only trigger when knee angle < 100°
+        if (rule.id === 'butt_wink') {
+          const hip = resolve(landmarks, 'HIP');
+          const knee = resolve(landmarks, 'KNEE');
+          const ankle = resolve(landmarks, 'ANKLE');
+          const kneeAngle = calculateAngle3D(hip, knee, ankle);
+          if (kneeAngle >= 100) break; // not deep enough to evaluate butt wink
+        }
+
         if (rule.minSafeAngle !== undefined && angle < rule.minSafeAngle) {
           warnings.push({ errorId: rule.id, errorName: rule.name, value: angle, limit: rule.minSafeAngle });
         }
