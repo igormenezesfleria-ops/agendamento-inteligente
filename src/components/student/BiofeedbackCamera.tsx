@@ -539,6 +539,18 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
+          // Detect side-profile when valgus is being monitored
+          const monitorsValgus = activeTemplate?.errors.some(e => e.id === 'valgus');
+          if (monitorsValgus) {
+            const lk = landmarks[LANDMARKS.LEFT_KNEE];
+            const rk = landmarks[LANDMARKS.RIGHT_KNEE];
+            if (lk && rk) {
+              setSideProfileWarning(!isFrontalView(lk, rk));
+            }
+          } else {
+            setSideProfileWarning(false);
+          }
+
           const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
           const hasTemplateWarning = warnings.length > 0;
 
