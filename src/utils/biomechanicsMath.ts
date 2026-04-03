@@ -8,7 +8,7 @@
  * requestAnimationFrame without allocating garbage.
  */
 
-import { type MovementPattern } from './biomechanicsTemplates';
+import { type MovementPattern, type AffectedSegment } from './biomechanicsTemplates';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,6 +24,8 @@ export interface Point3D {
 export interface FrameWarning {
   errorId: string;
   errorName: string;
+  coachMessage: string;
+  affectedSegments: AffectedSegment[];
   value: number; // computed metric (angle in degrees, % oscillation, etc.)
   limit: number; // the threshold that was breached
 }
