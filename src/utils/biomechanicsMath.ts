@@ -1,8 +1,11 @@
 /**
- * Synton 3D Vector Math Engine
+ * Synton Hybrid Kinematics Engine (2D + 3D)
  *
  * Pure-math utilities that evaluate MediaPipe Pose landmarks against
  * the biomechanical ruleset defined in biomechanicsTemplates.ts.
+ *
+ * 3D math (dot-product) is used for complex multi-plane movements (squats).
+ * 2D math (atan2, x/y only) is used for strict lateral views to avoid Z-axis noise.
  *
  * All functions are stateless and designed to run at 30 fps inside
  * requestAnimationFrame without allocating garbage.
@@ -26,8 +29,8 @@ export interface FrameWarning {
   errorName: string;
   coachMessage: string;
   affectedSegments: AffectedSegment[];
-  value: number; // computed metric (angle in degrees, % oscillation, etc.)
-  limit: number; // the threshold that was breached
+  value: number;
+  limit: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -35,17 +38,16 @@ export interface FrameWarning {
 // ---------------------------------------------------------------------------
 
 const LANDMARK: Record<string, number> = {
-  EAR: 7,        // right ear (left = 8, we pick right as default)
-  SHOULDER: 12,  // right shoulder
-  ELBOW: 14,     // right elbow
-  WRIST: 16,     // right wrist
-  HIP: 24,       // right hip
-  KNEE: 26,      // right knee
-  ANKLE: 28,     // right ankle
-  HEEL: 30,      // right heel
-  FOOT_INDEX: 32,// right foot index
+  EAR: 7,
+  SHOULDER: 12,
+  ELBOW: 14,
+  WRIST: 16,
+  HIP: 24,
+  KNEE: 26,
+  ANKLE: 28,
+  HEEL: 30,
+  FOOT_INDEX: 32,
 
-  // Left-side duplicates (used for bilateral checks like valgus)
   L_SHOULDER: 11,
   L_ELBOW: 13,
   L_WRIST: 15,
@@ -57,7 +59,41 @@ const LANDMARK: Record<string, number> = {
 };
 
 // ---------------------------------------------------------------------------
-// 1. calculateAngle3D — 3-point angle via dot-product
+// Patterns that should use 2D-only math (lateral / side-profile view)
+// ---------------------------------------------------------------------------
+
+const LATERAL_PATTERNS = new Set([
+  'ISOLATION_ARM',
+  'ISOLATION_SHOULDER',
+  'CORE_PLANK',
+  'HINGE',
+  'PULL_VERTICAL',
+  'PUSH_HORIZONTAL',
+]);
+
+// ---------------------------------------------------------------------------
+// Camera placement hints per pattern
+// ---------------------------------------------------------------------------
+
+export type CameraHint = { emoji: string; text: string };
+
+const CAMERA_HINTS: Record<string, CameraHint> = {
+  SQUAT_BILATERAL: { emoji: '📍', text: 'Grave na DIAGONAL ou de FRENTE.' },
+  PUSH_HORIZONTAL: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
+  PULL_VERTICAL: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
+  HINGE: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
+  ISOLATION_ARM: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
+  ISOLATION_SHOULDER: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
+  CORE_PLANK: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
+};
+
+export function getCameraHint(patternId: string | undefined): CameraHint | null {
+  if (!patternId) return null;
+  return CAMERA_HINTS[patternId] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// 1. calculateAngle3D — 3-point angle via dot-product (uses X, Y, Z)
 // ---------------------------------------------------------------------------
 
 export function calculateAngle3D(a: Point3D, b: Point3D, c: Point3D): number {
@@ -75,13 +111,22 @@ export function calculateAngle3D(a: Point3D, b: Point3D, c: Point3D): number {
 }
 
 // ---------------------------------------------------------------------------
-// 2. checkDynamicValgus — X-axis bilateral comparison
+// 2. calculateAngle2D — 3-point angle via atan2 (uses ONLY X, Y)
+//    Eliminates Z-axis camera noise for lateral views.
 // ---------------------------------------------------------------------------
 
-/**
- * Returns true only when filmed roughly from the front (small Z delta between knees).
- * Also exports a helper so the UI can warn when the camera plane is wrong.
- */
+export function calculateAngle2D(a: Point3D, b: Point3D, c: Point3D): number {
+  const radians =
+    Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+  let angle = Math.abs((radians * 180) / Math.PI);
+  if (angle > 180) angle = 360 - angle;
+  return angle;
+}
+
+// ---------------------------------------------------------------------------
+// 3. checkDynamicValgus — X-axis bilateral comparison (frontal view only)
+// ---------------------------------------------------------------------------
+
 export function isFrontalView(leftKnee: Point3D, rightKnee: Point3D): boolean {
   return Math.abs(leftKnee.z - rightKnee.z) <= 0.2;
 }
@@ -92,32 +137,43 @@ export function checkDynamicValgus(
   leftAnkle: Point3D,
   rightAnkle: Point3D,
 ): boolean {
-  // Skip entirely if filmed from the side (Z-axis divergence)
   if (!isFrontalView(leftKnee, rightKnee)) return false;
 
   const kneeGap = Math.abs(leftKnee.x - rightKnee.x);
   const ankleGap = Math.abs(leftAnkle.x - rightAnkle.x);
-  // Only trigger if knees are significantly inside the ankle line (60% threshold)
   return ankleGap > 0.01 && kneeGap < ankleGap * 0.60;
 }
 
 // ---------------------------------------------------------------------------
-// 3. evaluateFrame — run all template rules against live landmarks
+// 4. evaluateFrame — hybrid routing: 2D for lateral patterns, 3D for squats
 // ---------------------------------------------------------------------------
 
 function resolve(landmarks: Point3D[], joint: string): Point3D {
   const idx = LANDMARK[joint];
   if (idx !== undefined && landmarks[idx]) return landmarks[idx];
-  // Fallback: return origin so calculations don't crash
   return { x: 0, y: 0, z: 0, visibility: 0 };
+}
+
+/**
+ * Selects the correct angle function based on which movement pattern is active.
+ * Lateral-view patterns (isolation, plank, hinge) → 2D only.
+ * Squat and other frontal patterns → 3D.
+ */
+function pickAngleFn(patternName: string | undefined): (a: Point3D, b: Point3D, c: Point3D) => number {
+  if (patternName && LATERAL_PATTERNS.has(patternName)) {
+    return calculateAngle2D;
+  }
+  return calculateAngle3D;
 }
 
 export function evaluateFrame(
   landmarks: Point3D[],
   activeTemplate: MovementPattern | null | undefined,
+  patternId?: string,
 ): FrameWarning[] {
   if (!activeTemplate || !landmarks || landmarks.length < 33) return [];
 
+  const angleFn = pickAngleFn(patternId);
   const warnings: FrameWarning[] = [];
 
   const warn = (rule: { id: string; name: string; coachMessage: string; affectedSegments: AffectedSegment[] }, value: number, limit: number) => {
@@ -126,20 +182,20 @@ export function evaluateFrame(
 
   for (const rule of activeTemplate.errors) {
     switch (rule.type) {
-      // ── ANGLE_3D ──────────────────────────────────────────────────────
+      // ── ANGLE_3D (name kept for backward compat; uses hybrid routing) ──
       case 'ANGLE_3D': {
         if (rule.joints.length < 3) break;
         const a = resolve(landmarks, rule.joints[0]);
         const b = resolve(landmarks, rule.joints[1]);
         const c = resolve(landmarks, rule.joints[2]);
-        const angle = calculateAngle3D(a, b, c);
+        const angle = angleFn(a, b, c);
 
-        // Deep-flexion guard for butt_wink: only trigger when knee angle < 100°
+        // Deep-flexion guard for butt_wink
         if (rule.id === 'butt_wink') {
           const hip = resolve(landmarks, 'HIP');
           const knee = resolve(landmarks, 'KNEE');
           const ankle = resolve(landmarks, 'ANKLE');
-          const kneeAngle = calculateAngle3D(hip, knee, ankle);
+          const kneeAngle = angleFn(hip, knee, ankle);
           if (kneeAngle >= 100) break;
         }
 
@@ -165,7 +221,6 @@ export function evaluateFrame(
             warn(rule, kneeGap, ankleGap);
           }
         }
-        // Generic X comparison for other thresholds
         if (rule.joints.length >= 2 && rule.threshold !== 'KNEES_CLOSER_THAN_ANKLES') {
           const j0 = resolve(landmarks, rule.joints[0]);
           const j1 = resolve(landmarks, rule.joints[1]);
@@ -203,11 +258,15 @@ export function evaluateFrame(
       }
 
       // ── Z_X_OSCILLATION ───────────────────────────────────────────────
+      // For lateral patterns, use only X-axis drift (ignore Z)
       case 'Z_X_OSCILLATION': {
         if (rule.joints.length < 2) break;
         const moving = resolve(landmarks, rule.joints[0]);
         const anchor = resolve(landmarks, rule.joints[1]);
-        const drift = Math.sqrt((moving.x - anchor.x) ** 2 + (moving.z - anchor.z) ** 2);
+        const isLateral = patternId ? LATERAL_PATTERNS.has(patternId) : false;
+        const drift = isLateral
+          ? Math.abs(moving.x - anchor.x)
+          : Math.sqrt((moving.x - anchor.x) ** 2 + (moving.z - anchor.z) ** 2);
         const maxDrift = (rule.maxOscillationPercent ?? 10) / 100;
 
         if (drift > maxDrift) {
