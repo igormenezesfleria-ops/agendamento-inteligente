@@ -557,7 +557,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
-            setStatusText(`⚠️ ${firstWarning.errorName} (${Math.round(firstWarning.value)}°)`);
+            setStatusText(`⚠️ ${firstWarning.coachMessage}`);
           } else if (hasViolation) {
             setStatus('warning');
             setStatusText('⚠️ Atenção: Correção necessária!');
