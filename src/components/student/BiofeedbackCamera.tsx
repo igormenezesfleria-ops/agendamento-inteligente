@@ -535,7 +535,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           setConfidence(Math.round(averageVisibility * 100));
 
           // Run the biomechanics engine if a template is active
-          const warnings = evaluateFrame(landmarks, activeTemplate);
+          const warnings = evaluateFrame(landmarks, activeTemplate, movementPattern);
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
