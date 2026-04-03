@@ -120,6 +120,10 @@ export function evaluateFrame(
 
   const warnings: FrameWarning[] = [];
 
+  const warn = (rule: { id: string; name: string; coachMessage: string; affectedSegments: AffectedSegment[] }, value: number, limit: number) => {
+    warnings.push({ errorId: rule.id, errorName: rule.name, coachMessage: rule.coachMessage, affectedSegments: rule.affectedSegments, value, limit });
+  };
+
   for (const rule of activeTemplate.errors) {
     switch (rule.type) {
       // ── ANGLE_3D ──────────────────────────────────────────────────────
@@ -136,14 +140,14 @@ export function evaluateFrame(
           const knee = resolve(landmarks, 'KNEE');
           const ankle = resolve(landmarks, 'ANKLE');
           const kneeAngle = calculateAngle3D(hip, knee, ankle);
-          if (kneeAngle >= 100) break; // not deep enough to evaluate butt wink
+          if (kneeAngle >= 100) break;
         }
 
         if (rule.minSafeAngle !== undefined && angle < rule.minSafeAngle) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: angle, limit: rule.minSafeAngle });
+          warn(rule, angle, rule.minSafeAngle);
         }
         if (rule.maxSafeAngle !== undefined && angle > rule.maxSafeAngle) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: angle, limit: rule.maxSafeAngle });
+          warn(rule, angle, rule.maxSafeAngle);
         }
         break;
       }
@@ -158,7 +162,7 @@ export function evaluateFrame(
           if (checkDynamicValgus(lk, rk, la, ra)) {
             const kneeGap = Math.abs(lk.x - rk.x);
             const ankleGap = Math.abs(la.x - ra.x);
-            warnings.push({ errorId: rule.id, errorName: rule.name, value: kneeGap, limit: ankleGap });
+            warn(rule, kneeGap, ankleGap);
           }
         }
         // Generic X comparison for other thresholds
@@ -166,12 +170,11 @@ export function evaluateFrame(
           const j0 = resolve(landmarks, rule.joints[0]);
           const j1 = resolve(landmarks, rule.joints[1]);
           const diff = j0.x - j1.x;
-          // Positive diff = joint 0 is to the right of joint 1
           if (rule.threshold?.includes('FORWARD') && diff > 0.05) {
-            warnings.push({ errorId: rule.id, errorName: rule.name, value: diff, limit: 0.05 });
+            warn(rule, diff, 0.05);
           }
           if (rule.threshold?.includes('OUTSIDE') && Math.abs(diff) > 0.08) {
-            warnings.push({ errorId: rule.id, errorName: rule.name, value: Math.abs(diff), limit: 0.08 });
+            warn(rule, Math.abs(diff), 0.08);
           }
         }
         break;
@@ -182,20 +185,19 @@ export function evaluateFrame(
         if (rule.joints.length < 2) break;
         const j0 = resolve(landmarks, rule.joints[0]);
         const j1 = resolve(landmarks, rule.joints[1]);
-        const yDiff = j0.y - j1.y; // MediaPipe: lower y = higher on screen
+        const yDiff = j0.y - j1.y;
 
         if (rule.threshold?.includes('ABOVE') && yDiff < -0.03) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.03 });
+          warn(rule, yDiff, -0.03);
         }
         if (rule.threshold?.includes('APPROACHING') && Math.abs(yDiff) < 0.05) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: Math.abs(yDiff), limit: 0.05 });
+          warn(rule, Math.abs(yDiff), 0.05);
         }
         if (rule.threshold?.includes('LIFT') && yDiff < -0.02) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.02 });
+          warn(rule, yDiff, -0.02);
         }
-        // HEEL vs FOOT_INDEX: only trigger with a significant margin (0.05 instead of 0.02)
         if (rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX' && yDiff < -0.05) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: yDiff, limit: -0.05 });
+          warn(rule, yDiff, -0.05);
         }
         break;
       }
@@ -209,7 +211,7 @@ export function evaluateFrame(
         const maxDrift = (rule.maxOscillationPercent ?? 10) / 100;
 
         if (drift > maxDrift) {
-          warnings.push({ errorId: rule.id, errorName: rule.name, value: drift * 100, limit: rule.maxOscillationPercent ?? 10 });
+          warn(rule, drift * 100, rule.maxOscillationPercent ?? 10);
         }
         break;
       }
