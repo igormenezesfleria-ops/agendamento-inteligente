@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
-import { evaluateFrame, isFrontalView, type FrameWarning } from '@/utils/biomechanicsMath';
+import { evaluateFrame, isFrontalView, getCameraHint, type FrameWarning } from '@/utils/biomechanicsMath';
 
 const LANDMARKS = {
   NOSE: 0,
@@ -535,7 +535,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           setConfidence(Math.round(averageVisibility * 100));
 
           // Run the biomechanics engine if a template is active
-          const warnings = evaluateFrame(landmarks, activeTemplate);
+          const warnings = evaluateFrame(landmarks, activeTemplate, movementPattern);
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
@@ -698,9 +698,20 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             </div>
           )}
 
-          <div className={`absolute left-4 z-20 flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'}`}>
-            <Zap className="h-3 w-3 text-primary" />
-            <span className="text-[10px] font-bold tracking-wide text-primary">⚡ Motor Lite Ativado (Alto Desempenho)</span>
+          <div className={`absolute left-4 z-20 flex flex-col gap-1.5 ${exerciseName ? 'top-[80px]' : 'top-16'}`}>
+            <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md">
+              <Zap className="h-3 w-3 text-primary" />
+              <span className="text-[10px] font-bold tracking-wide text-primary">⚡ Motor Lite Ativado (Alto Desempenho)</span>
+            </div>
+            {(() => {
+              const hint = getCameraHint(movementPattern);
+              if (!hint) return null;
+              return (
+                <div className="flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 backdrop-blur-md">
+                  <span className="text-[10px] font-bold text-accent">{hint.emoji} {hint.text}</span>
+                </div>
+              );
+            })()}
           </div>
 
           <div className={`absolute right-4 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'} ${aiBadgeClasses}`}>
