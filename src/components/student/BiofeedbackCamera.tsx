@@ -557,7 +557,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
-            setStatusText(`⚠️ ${firstWarning.errorName} (${Math.round(firstWarning.value)}°)`);
+            setStatusText(`⚠️ ${firstWarning.coachMessage}`);
           } else if (hasViolation) {
             setStatus('warning');
             setStatusText('⚠️ Atenção: Correção necessária!');
@@ -711,7 +711,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             <div className={`absolute left-4 right-4 z-20 flex flex-wrap gap-1.5 ${exerciseName ? 'top-[106px]' : 'top-[90px]'}`}>
               {activeWarnings.map((w) => (
                 <span key={w.errorId} className="rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
-                  {w.errorName}: {Math.round(w.value)}°
+                  {w.coachMessage}
                 </span>
               ))}
             </div>
