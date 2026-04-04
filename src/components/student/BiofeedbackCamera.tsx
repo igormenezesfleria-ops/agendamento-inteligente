@@ -24,24 +24,53 @@ const LANDMARKS = {
   RIGHT_FOOT_INDEX: 32,
 } as const;
 
-const SKELETON_CONNECTIONS: [number, number][] = [
-  [LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER],
-  [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW],
-  [LANDMARKS.LEFT_ELBOW, LANDMARKS.LEFT_WRIST],
-  [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW],
-  [LANDMARKS.RIGHT_ELBOW, LANDMARKS.RIGHT_WRIST],
-  [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP],
-  [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_HIP],
-  [LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP],
-  [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE],
-  [LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE],
-  [LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL],
-  [LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_FOOT_INDEX],
-  [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE],
-  [LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE],
-  [LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL],
-  [LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_FOOT_INDEX],
+// Each connection is tagged with the segment group it belongs to
+type SegmentTag = 'spine' | 'left_arm' | 'right_arm' | 'left_leg' | 'right_leg' | 'hip';
+
+const SKELETON_CONNECTIONS: { from: number; to: number; segment: SegmentTag }[] = [
+  // Spine
+  { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.RIGHT_SHOULDER, segment: 'spine' },
+  { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.LEFT_HIP, segment: 'spine' },
+  { from: LANDMARKS.RIGHT_SHOULDER, to: LANDMARKS.RIGHT_HIP, segment: 'spine' },
+  { from: LANDMARKS.LEFT_HIP, to: LANDMARKS.RIGHT_HIP, segment: 'hip' },
+  // Left arm
+  { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.LEFT_ELBOW, segment: 'left_arm' },
+  { from: LANDMARKS.LEFT_ELBOW, to: LANDMARKS.LEFT_WRIST, segment: 'left_arm' },
+  // Right arm
+  { from: LANDMARKS.RIGHT_SHOULDER, to: LANDMARKS.RIGHT_ELBOW, segment: 'right_arm' },
+  { from: LANDMARKS.RIGHT_ELBOW, to: LANDMARKS.RIGHT_WRIST, segment: 'right_arm' },
+  // Left leg
+  { from: LANDMARKS.LEFT_HIP, to: LANDMARKS.LEFT_KNEE, segment: 'left_leg' },
+  { from: LANDMARKS.LEFT_KNEE, to: LANDMARKS.LEFT_ANKLE, segment: 'left_leg' },
+  { from: LANDMARKS.LEFT_ANKLE, to: LANDMARKS.LEFT_HEEL, segment: 'left_leg' },
+  { from: LANDMARKS.LEFT_ANKLE, to: LANDMARKS.LEFT_FOOT_INDEX, segment: 'left_leg' },
+  // Right leg
+  { from: LANDMARKS.RIGHT_HIP, to: LANDMARKS.RIGHT_KNEE, segment: 'right_leg' },
+  { from: LANDMARKS.RIGHT_KNEE, to: LANDMARKS.RIGHT_ANKLE, segment: 'right_leg' },
+  { from: LANDMARKS.RIGHT_ANKLE, to: LANDMARKS.RIGHT_HEEL, segment: 'right_leg' },
+  { from: LANDMARKS.RIGHT_ANKLE, to: LANDMARKS.RIGHT_FOOT_INDEX, segment: 'right_leg' },
 ];
+
+// Map each landmark index to its segment(s) for joint coloring
+const LANDMARK_SEGMENTS: Record<number, SegmentTag[]> = {
+  [LANDMARKS.NOSE]: ['spine'],
+  [LANDMARKS.LEFT_SHOULDER]: ['spine', 'left_arm'],
+  [LANDMARKS.RIGHT_SHOULDER]: ['spine', 'right_arm'],
+  [LANDMARKS.LEFT_ELBOW]: ['left_arm'],
+  [LANDMARKS.RIGHT_ELBOW]: ['right_arm'],
+  [LANDMARKS.LEFT_WRIST]: ['left_arm'],
+  [LANDMARKS.RIGHT_WRIST]: ['right_arm'],
+  [LANDMARKS.LEFT_HIP]: ['hip', 'left_leg'],
+  [LANDMARKS.RIGHT_HIP]: ['hip', 'right_leg'],
+  [LANDMARKS.LEFT_KNEE]: ['left_leg'],
+  [LANDMARKS.RIGHT_KNEE]: ['right_leg'],
+  [LANDMARKS.LEFT_ANKLE]: ['left_leg'],
+  [LANDMARKS.RIGHT_ANKLE]: ['right_leg'],
+  [LANDMARKS.LEFT_HEEL]: ['left_leg'],
+  [LANDMARKS.RIGHT_HEEL]: ['right_leg'],
+  [LANDMARKS.LEFT_FOOT_INDEX]: ['left_leg'],
+  [LANDMARKS.RIGHT_FOOT_INDEX]: ['right_leg'],
+};
 
 const MOCK_MAX_KNEE_FLEXION = 90;
 const MOCK_VALGO_ALERT = true;
