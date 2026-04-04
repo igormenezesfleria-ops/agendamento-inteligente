@@ -776,16 +776,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         {(leftKneeAngle !== null || rightKneeAngle !== null) && (
           <div className="mt-2 flex items-center justify-center gap-4 text-[11px] font-mono">
             {leftKneeAngle !== null && (
-              <span className={leftKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-destructive' : 'text-success'}>
+              <span className={activeWarnings.length > 0 ? 'text-destructive' : 'text-success'}>
                 Joelho E: {Math.round(leftKneeAngle)}°
               </span>
             )}
             {rightKneeAngle !== null && (
-              <span className={rightKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-destructive' : 'text-success'}>
+              <span className={activeWarnings.length > 0 ? 'text-destructive' : 'text-success'}>
                 Joelho D: {Math.round(rightKneeAngle)}°
               </span>
             )}
-            <span className="text-white/45">Limite: {MOCK_MAX_KNEE_FLEXION}°</span>
           </div>
         )}
       </div>
