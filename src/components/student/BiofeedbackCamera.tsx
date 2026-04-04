@@ -24,27 +24,54 @@ const LANDMARKS = {
   RIGHT_FOOT_INDEX: 32,
 } as const;
 
-const SKELETON_CONNECTIONS: [number, number][] = [
-  [LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER],
-  [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW],
-  [LANDMARKS.LEFT_ELBOW, LANDMARKS.LEFT_WRIST],
-  [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW],
-  [LANDMARKS.RIGHT_ELBOW, LANDMARKS.RIGHT_WRIST],
-  [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP],
-  [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_HIP],
-  [LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP],
-  [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE],
-  [LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE],
-  [LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL],
-  [LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_FOOT_INDEX],
-  [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE],
-  [LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE],
-  [LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL],
-  [LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_FOOT_INDEX],
+// Each connection is tagged with the segment group it belongs to
+type SegmentTag = 'spine' | 'left_arm' | 'right_arm' | 'left_leg' | 'right_leg' | 'hip';
+
+const SKELETON_CONNECTIONS: { from: number; to: number; segment: SegmentTag }[] = [
+  // Spine
+  { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.RIGHT_SHOULDER, segment: 'spine' },
+  { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.LEFT_HIP, segment: 'spine' },
+  { from: LANDMARKS.RIGHT_SHOULDER, to: LANDMARKS.RIGHT_HIP, segment: 'spine' },
+  { from: LANDMARKS.LEFT_HIP, to: LANDMARKS.RIGHT_HIP, segment: 'hip' },
+  // Left arm
+  { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.LEFT_ELBOW, segment: 'left_arm' },
+  { from: LANDMARKS.LEFT_ELBOW, to: LANDMARKS.LEFT_WRIST, segment: 'left_arm' },
+  // Right arm
+  { from: LANDMARKS.RIGHT_SHOULDER, to: LANDMARKS.RIGHT_ELBOW, segment: 'right_arm' },
+  { from: LANDMARKS.RIGHT_ELBOW, to: LANDMARKS.RIGHT_WRIST, segment: 'right_arm' },
+  // Left leg
+  { from: LANDMARKS.LEFT_HIP, to: LANDMARKS.LEFT_KNEE, segment: 'left_leg' },
+  { from: LANDMARKS.LEFT_KNEE, to: LANDMARKS.LEFT_ANKLE, segment: 'left_leg' },
+  { from: LANDMARKS.LEFT_ANKLE, to: LANDMARKS.LEFT_HEEL, segment: 'left_leg' },
+  { from: LANDMARKS.LEFT_ANKLE, to: LANDMARKS.LEFT_FOOT_INDEX, segment: 'left_leg' },
+  // Right leg
+  { from: LANDMARKS.RIGHT_HIP, to: LANDMARKS.RIGHT_KNEE, segment: 'right_leg' },
+  { from: LANDMARKS.RIGHT_KNEE, to: LANDMARKS.RIGHT_ANKLE, segment: 'right_leg' },
+  { from: LANDMARKS.RIGHT_ANKLE, to: LANDMARKS.RIGHT_HEEL, segment: 'right_leg' },
+  { from: LANDMARKS.RIGHT_ANKLE, to: LANDMARKS.RIGHT_FOOT_INDEX, segment: 'right_leg' },
 ];
 
-const MOCK_MAX_KNEE_FLEXION = 90;
-const MOCK_VALGO_ALERT = true;
+// Map each landmark index to its segment(s) for joint coloring
+const LANDMARK_SEGMENTS: Record<number, SegmentTag[]> = {
+  [LANDMARKS.NOSE]: ['spine'],
+  [LANDMARKS.LEFT_SHOULDER]: ['spine', 'left_arm'],
+  [LANDMARKS.RIGHT_SHOULDER]: ['spine', 'right_arm'],
+  [LANDMARKS.LEFT_ELBOW]: ['left_arm'],
+  [LANDMARKS.RIGHT_ELBOW]: ['right_arm'],
+  [LANDMARKS.LEFT_WRIST]: ['left_arm'],
+  [LANDMARKS.RIGHT_WRIST]: ['right_arm'],
+  [LANDMARKS.LEFT_HIP]: ['hip', 'left_leg'],
+  [LANDMARKS.RIGHT_HIP]: ['hip', 'right_leg'],
+  [LANDMARKS.LEFT_KNEE]: ['left_leg'],
+  [LANDMARKS.RIGHT_KNEE]: ['right_leg'],
+  [LANDMARKS.LEFT_ANKLE]: ['left_leg'],
+  [LANDMARKS.RIGHT_ANKLE]: ['right_leg'],
+  [LANDMARKS.LEFT_HEEL]: ['left_leg'],
+  [LANDMARKS.RIGHT_HEEL]: ['right_leg'],
+  [LANDMARKS.LEFT_FOOT_INDEX]: ['left_leg'],
+  [LANDMARKS.RIGHT_FOOT_INDEX]: ['right_leg'],
+};
+
 
 type FacingMode = 'user' | 'environment';
 type PoseStatus = 'good' | 'warning' | 'loading';
@@ -274,17 +301,22 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   }, [activateFallback]);
 
   const analyzeAndDraw = useCallback(
-    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], width: number, height: number) => {
+    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], width: number, height: number, warnings: FrameWarning[]) => {
       ctx.clearRect(0, 0, width, height);
 
       const isVisible = (index: number) => landmarks[index]?.visibility > 0.5;
 
+      // Build the set of affected segments from active warnings
+      const affectedSet = new Set<string>();
+      for (const w of warnings) {
+        for (const seg of w.affectedSegments) {
+          affectedSet.add(seg);
+        }
+      }
+
+      // Compute knee angles for display
       let leftAngle: number | null = null;
       let rightAngle: number | null = null;
-      let leftFlexionViolation = false;
-      let rightFlexionViolation = false;
-      let leftValgoViolation = false;
-      let rightValgoViolation = false;
 
       if (isVisible(LANDMARKS.LEFT_HIP) && isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
         leftAngle = calculateAngle(
@@ -292,87 +324,50 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           landmarks[LANDMARKS.LEFT_KNEE],
           landmarks[LANDMARKS.LEFT_ANKLE],
         );
-        leftFlexionViolation = leftAngle < MOCK_MAX_KNEE_FLEXION;
       }
-
       if (isVisible(LANDMARKS.RIGHT_HIP) && isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
         rightAngle = calculateAngle(
           landmarks[LANDMARKS.RIGHT_HIP],
           landmarks[LANDMARKS.RIGHT_KNEE],
           landmarks[LANDMARKS.RIGHT_ANKLE],
         );
-        rightFlexionViolation = rightAngle < MOCK_MAX_KNEE_FLEXION;
       }
 
-      if (MOCK_VALGO_ALERT) {
-        const tolerance = 0.02;
-        if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
-          leftValgoViolation =
-            landmarks[LANDMARKS.LEFT_KNEE].x - landmarks[LANDMARKS.LEFT_ANKLE].x > tolerance;
-        }
-        if (isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
-          rightValgoViolation =
-            landmarks[LANDMARKS.RIGHT_ANKLE].x - landmarks[LANDMARKS.RIGHT_KNEE].x > tolerance;
-        }
-      }
+      // Draw skeleton connections with segment-aware coloring
+      SKELETON_CONNECTIONS.forEach(({ from: startIdx, to: endIdx, segment }) => {
+        const fromPt = landmarks[startIdx];
+        const toPt = landmarks[endIdx];
+        if (!fromPt || !toPt || fromPt.visibility < 0.5 || toPt.visibility < 0.5) return;
 
-      const badLandmarks = new Set<number>();
-      if (leftFlexionViolation || leftValgoViolation) {
-        badLandmarks.add(LANDMARKS.LEFT_HIP);
-        badLandmarks.add(LANDMARKS.LEFT_KNEE);
-        badLandmarks.add(LANDMARKS.LEFT_ANKLE);
-      }
-      if (rightFlexionViolation || rightValgoViolation) {
-        badLandmarks.add(LANDMARKS.RIGHT_HIP);
-        badLandmarks.add(LANDMARKS.RIGHT_KNEE);
-        badLandmarks.add(LANDMARKS.RIGHT_ANKLE);
-      }
-
-      SKELETON_CONNECTIONS.forEach(([start, end]) => {
-        const from = landmarks[start];
-        const to = landmarks[end];
-        if (!from || !to || from.visibility < 0.5 || to.visibility < 0.5) return;
-
-        const color = badLandmarks.has(start) && badLandmarks.has(end) ? '#ef4444' : '#22c55e';
+        const isAffected = affectedSet.has(segment);
+        const color = isAffected ? '#ef4444' : '#22c55e';
         ctx.beginPath();
-        ctx.moveTo(from.x * width, from.y * height);
-        ctx.lineTo(to.x * width, to.y * height);
+        ctx.moveTo(fromPt.x * width, fromPt.y * height);
+        ctx.lineTo(toPt.x * width, toPt.y * height);
         ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
+        ctx.lineWidth = isAffected ? 6 : 3;
         ctx.shadowColor = color;
-        ctx.shadowBlur = 8;
+        ctx.shadowBlur = isAffected ? 14 : 8;
         ctx.stroke();
         ctx.shadowBlur = 0;
       });
 
-      const jointIndices = [
-        LANDMARKS.NOSE,
-        LANDMARKS.LEFT_SHOULDER,
-        LANDMARKS.RIGHT_SHOULDER,
-        LANDMARKS.LEFT_ELBOW,
-        LANDMARKS.RIGHT_ELBOW,
-        LANDMARKS.LEFT_WRIST,
-        LANDMARKS.RIGHT_WRIST,
-        LANDMARKS.LEFT_HIP,
-        LANDMARKS.RIGHT_HIP,
-        LANDMARKS.LEFT_KNEE,
-        LANDMARKS.RIGHT_KNEE,
-        LANDMARKS.LEFT_ANKLE,
-        LANDMARKS.RIGHT_ANKLE,
-        LANDMARKS.LEFT_HEEL,
-        LANDMARKS.RIGHT_HEEL,
-      ];
+      // Draw joints with segment-aware coloring
+      const jointIndices = Object.keys(LANDMARK_SEGMENTS).map(Number);
 
       jointIndices.forEach((index) => {
         const point = landmarks[index];
         if (!point || point.visibility < 0.5) return;
 
-        const color = badLandmarks.has(index) ? '#ef4444' : '#22c55e';
+        const segments = LANDMARK_SEGMENTS[index] ?? [];
+        const isAffected = segments.some((s) => affectedSet.has(s));
+        const color = isAffected ? '#ef4444' : '#22c55e';
+
         ctx.beginPath();
-        ctx.arc(point.x * width, point.y * height, 6, 0, Math.PI * 2);
+        ctx.arc(point.x * width, point.y * height, isAffected ? 8 : 6, 0, Math.PI * 2);
         ctx.fillStyle = color;
         ctx.shadowColor = color;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = isAffected ? 16 : 12;
         ctx.fill();
         ctx.shadowBlur = 0;
 
@@ -382,30 +377,34 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         ctx.fill();
       });
 
-      const drawAngleLabel = (index: number, angle: number | null, violation: boolean) => {
+      // Draw angle labels at knees
+      const drawAngleLabel = (index: number, angle: number | null) => {
         if (angle === null) return;
         const point = landmarks[index];
         if (!point || point.visibility < 0.5) return;
+
+        const segs = LANDMARK_SEGMENTS[index] ?? [];
+        const isAffected = segs.some((s) => affectedSet.has(s));
 
         const text = `${Math.round(angle)}°`;
         const x = point.x * width + 16;
         const y = point.y * height - 8;
 
         ctx.font = 'bold 14px monospace';
-        ctx.fillStyle = violation ? '#ef4444' : '#22c55e';
+        ctx.fillStyle = isAffected ? '#ef4444' : '#22c55e';
         ctx.strokeStyle = 'rgba(0,0,0,0.7)';
         ctx.lineWidth = 3;
         ctx.strokeText(text, x, y);
         ctx.fillText(text, x, y);
       };
 
-      drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle, leftFlexionViolation || leftValgoViolation);
-      drawAngleLabel(LANDMARKS.RIGHT_KNEE, rightAngle, rightFlexionViolation || rightValgoViolation);
+      drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle);
+      drawAngleLabel(LANDMARKS.RIGHT_KNEE, rightAngle);
 
       setLeftKneeAngle(leftAngle);
       setRightKneeAngle(rightAngle);
 
-      return leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation;
+      return warnings.length > 0;
     },
     [],
   );
@@ -551,10 +550,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             setSideProfileWarning(false);
           }
 
-          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
-          const hasTemplateWarning = warnings.length > 0;
+          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
 
-          if (hasTemplateWarning) {
+          if (warnings.length > 0) {
             const firstWarning = warnings[0];
             setStatus('warning');
             setStatusText(`⚠️ ${firstWarning.coachMessage}`);
@@ -778,16 +776,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         {(leftKneeAngle !== null || rightKneeAngle !== null) && (
           <div className="mt-2 flex items-center justify-center gap-4 text-[11px] font-mono">
             {leftKneeAngle !== null && (
-              <span className={leftKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-destructive' : 'text-success'}>
+              <span className={activeWarnings.length > 0 ? 'text-destructive' : 'text-success'}>
                 Joelho E: {Math.round(leftKneeAngle)}°
               </span>
             )}
             {rightKneeAngle !== null && (
-              <span className={rightKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-destructive' : 'text-success'}>
+              <span className={activeWarnings.length > 0 ? 'text-destructive' : 'text-success'}>
                 Joelho D: {Math.round(rightKneeAngle)}°
               </span>
             )}
-            <span className="text-white/45">Limite: {MOCK_MAX_KNEE_FLEXION}°</span>
           </div>
         )}
       </div>
