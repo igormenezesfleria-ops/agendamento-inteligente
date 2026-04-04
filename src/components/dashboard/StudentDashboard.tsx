@@ -155,6 +155,7 @@ export function StudentDashboard() {
 
       {/* a) Welcome */}
       <div className="space-y-1">
+        <img src="/logo-synton-stacked.png" alt="Synton" className="h-20 w-auto object-contain mx-auto mb-12" />
         <h1 className="font-display text-3xl text-foreground">
           Olá, {profile?.name?.split(' ')[0] || 'Aluno'}! 👋
         </h1>
