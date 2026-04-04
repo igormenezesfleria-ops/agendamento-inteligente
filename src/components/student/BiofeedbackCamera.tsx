@@ -552,10 +552,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             setSideProfileWarning(false);
           }
 
-          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
-          const hasTemplateWarning = warnings.length > 0;
+          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
 
-          if (hasTemplateWarning) {
+          if (warnings.length > 0) {
             const firstWarning = warnings[0];
             setStatus('warning');
             setStatusText(`⚠️ ${firstWarning.coachMessage}`);
