@@ -72,8 +72,6 @@ const LANDMARK_SEGMENTS: Record<number, SegmentTag[]> = {
   [LANDMARKS.RIGHT_FOOT_INDEX]: ['right_leg'],
 };
 
-const MOCK_MAX_KNEE_FLEXION = 90;
-const MOCK_VALGO_ALERT = true;
 
 type FacingMode = 'user' | 'environment';
 type PoseStatus = 'good' | 'warning' | 'loading';
