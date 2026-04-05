@@ -461,6 +461,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     setConfidence(0);
     setLeftKneeAngle(null);
     setRightKneeAngle(null);
+    setActiveWarnings([]);
+    setSideProfileWarning(false);
+    setIsCalibrating(true);
   }, [clearCanvas]);
 
   const startVideoFeed = useCallback(async (requestedFacingMode: FacingMode = facingMode) => {
@@ -504,6 +507,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       setConfidence(0);
       setLeftKneeAngle(null);
       setRightKneeAngle(null);
+      setActiveWarnings([]);
+      setIsCalibrating(true);
       startFallbackTimeout();
     } catch (error) {
       console.error('Camera error:', error);
