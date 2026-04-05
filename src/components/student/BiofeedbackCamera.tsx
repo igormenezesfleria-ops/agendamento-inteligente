@@ -765,7 +765,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             {aiBadgeText}
           </div>
 
-          {activeWarnings.length > 0 && (
+          {!isCalibrating && activeWarnings.length > 0 && (
             <div className={`absolute left-4 right-4 z-20 flex flex-wrap gap-1.5 ${exerciseName ? 'top-[106px]' : 'top-[90px]'}`}>
               {activeWarnings.map((w) => (
                 <span key={w.errorId} className="rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
@@ -775,10 +775,18 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             </div>
           )}
 
-          {sideProfileWarning && (
+          {!isCalibrating && sideProfileWarning && (
             <div className={`absolute left-4 right-4 z-20 ${exerciseName ? 'top-[130px]' : 'top-[114px]'}`}>
               <span className="inline-flex items-center gap-1 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5 text-[11px] font-semibold text-warning backdrop-blur-md">
                 ⚠️ Aviso: O Valgo Dinâmico é melhor analisado de frente.
+              </span>
+            </div>
+          )}
+
+          {isCalibrating && aiState === 'ready' && (
+            <div className="absolute left-4 right-4 top-[90px] z-20 flex items-center justify-center">
+              <span className="rounded-xl border border-white/20 bg-black/50 px-4 py-2 text-[12px] font-semibold text-white/80 backdrop-blur-md">
+                📐 Aguardando posicionamento... Afaste-se da câmera.
               </span>
             </div>
           )}
