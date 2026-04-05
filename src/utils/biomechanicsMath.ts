@@ -24,11 +24,14 @@ export interface Point3D {
   visibility?: number;
 }
 
+export type Severity = 'ok' | 'warning' | 'critical';
+
 export interface FrameWarning {
   errorId: string;
   errorName: string;
   coachMessage: string;
   affectedSegments: AffectedSegment[];
+  severity: Severity;
   value: number;
   limit: number;
 }
@@ -112,7 +115,6 @@ export function calculateAngle3D(a: Point3D, b: Point3D, c: Point3D): number {
 
 // ---------------------------------------------------------------------------
 // 2. calculateAngle2D — 3-point angle via atan2 (uses ONLY X, Y)
-//    Eliminates Z-axis camera noise for lateral views.
 // ---------------------------------------------------------------------------
 
 export function calculateAngle2D(a: Point3D, b: Point3D, c: Point3D): number {
@@ -124,28 +126,129 @@ export function calculateAngle2D(a: Point3D, b: Point3D, c: Point3D): number {
 }
 
 // ---------------------------------------------------------------------------
-// 3. checkDynamicValgus — X-axis bilateral comparison (frontal view only)
+// 3. Valgus / Varus — 3-tier semaphore (frontal view only)
 // ---------------------------------------------------------------------------
 
 export function isFrontalView(leftKnee: Point3D, rightKnee: Point3D): boolean {
   return Math.abs(leftKnee.z - rightKnee.z) <= 0.2;
 }
 
+export interface ValgusVarusResult {
+  valgus: { active: boolean; severity: Severity; coachMessage: string; affectedSegments: AffectedSegment[] };
+  varus: { active: boolean; severity: Severity; coachMessage: string; affectedSegments: AffectedSegment[] };
+}
+
+export function checkValgusVarus(
+  leftKnee: Point3D,
+  rightKnee: Point3D,
+  leftAnkle: Point3D,
+  rightAnkle: Point3D,
+): ValgusVarusResult {
+  const none = { active: false, severity: 'ok' as Severity, coachMessage: '', affectedSegments: [] as AffectedSegment[] };
+  const result: ValgusVarusResult = { valgus: { ...none }, varus: { ...none } };
+
+  if (!isFrontalView(leftKnee, rightKnee)) return result;
+
+  const kneeDist = Math.abs(leftKnee.x - rightKnee.x);
+  const ankleDist = Math.abs(leftAnkle.x - rightAnkle.x);
+
+  if (ankleDist < 0.01) return result; // feet too close to evaluate
+
+  // --- VALGUS (knees collapsing inward) ---
+  if (kneeDist < ankleDist * 0.75) {
+    result.valgus = {
+      active: true,
+      severity: 'critical',
+      coachMessage: '🚨 Joelhos caindo para dentro! Force-os para fora.',
+      affectedSegments: ['left_leg', 'right_leg'],
+    };
+  } else if (kneeDist < ankleDist * 0.90) {
+    result.valgus = {
+      active: true,
+      severity: 'warning',
+      coachMessage: 'Atenção: Joelho querendo entrar. Segure a base!',
+      affectedSegments: ['left_leg', 'right_leg'],
+    };
+  }
+
+  // --- VARUS (knees pushing outward) ---
+  if (kneeDist > ankleDist * 1.40) {
+    result.varus = {
+      active: true,
+      severity: 'critical',
+      coachMessage: '🚨 Joelhos muito abertos! Alinhe com a ponta do pé.',
+      affectedSegments: ['left_leg', 'right_leg'],
+    };
+  } else if (kneeDist > ankleDist * 1.25) {
+    result.varus = {
+      active: true,
+      severity: 'warning',
+      coachMessage: 'Atenção: Base muito aberta.',
+      affectedSegments: ['left_leg', 'right_leg'],
+    };
+  }
+
+  return result;
+}
+
+// Legacy compat wrapper
 export function checkDynamicValgus(
   leftKnee: Point3D,
   rightKnee: Point3D,
   leftAnkle: Point3D,
   rightAnkle: Point3D,
 ): boolean {
-  if (!isFrontalView(leftKnee, rightKnee)) return false;
-
-  const kneeGap = Math.abs(leftKnee.x - rightKnee.x);
-  const ankleGap = Math.abs(leftAnkle.x - rightAnkle.x);
-  return ankleGap > 0.01 && kneeGap < ankleGap * 0.60;
+  const r = checkValgusVarus(leftKnee, rightKnee, leftAnkle, rightAnkle);
+  return r.valgus.active;
 }
 
 // ---------------------------------------------------------------------------
-// 4. evaluateFrame — hybrid routing: 2D for lateral patterns, 3D for squats
+// 4. Frame debounce — requires N consecutive frames to change state
+// ---------------------------------------------------------------------------
+
+const DEBOUNCE_FRAMES = 3;
+
+// Tracks consecutive frame counts per errorId
+const debounceCounters: Map<string, number> = new Map();
+const activeStates: Map<string, FrameWarning> = new Map();
+
+function debounceWarnings(rawWarnings: FrameWarning[]): FrameWarning[] {
+  const currentIds = new Set(rawWarnings.map(w => `${w.errorId}:${w.severity}`));
+
+  // Increment counters for present warnings
+  for (const w of rawWarnings) {
+    const key = `${w.errorId}:${w.severity}`;
+    debounceCounters.set(key, (debounceCounters.get(key) ?? 0) + 1);
+  }
+
+  // Decrement counters for absent warnings
+  for (const key of Array.from(debounceCounters.keys())) {
+    if (!currentIds.has(key)) {
+      const count = (debounceCounters.get(key) ?? 0) - 1;
+      if (count <= 0) {
+        debounceCounters.delete(key);
+        // Extract errorId from key
+        const errorId = key.split(':')[0];
+        activeStates.delete(errorId);
+      } else {
+        debounceCounters.set(key, count);
+      }
+    }
+  }
+
+  // Promote warnings that hit the threshold
+  for (const w of rawWarnings) {
+    const key = `${w.errorId}:${w.severity}`;
+    if ((debounceCounters.get(key) ?? 0) >= DEBOUNCE_FRAMES) {
+      activeStates.set(w.errorId, w);
+    }
+  }
+
+  return Array.from(activeStates.values());
+}
+
+// ---------------------------------------------------------------------------
+// 5. evaluateFrame — hybrid routing with 3-tier severity
 // ---------------------------------------------------------------------------
 
 function resolve(landmarks: Point3D[], joint: string): Point3D {
@@ -154,11 +257,6 @@ function resolve(landmarks: Point3D[], joint: string): Point3D {
   return { x: 0, y: 0, z: 0, visibility: 0 };
 }
 
-/**
- * Selects the correct angle function based on which movement pattern is active.
- * Lateral-view patterns (isolation, plank, hinge) → 2D only.
- * Squat and other frontal patterns → 3D.
- */
 function pickAngleFn(patternName: string | undefined): (a: Point3D, b: Point3D, c: Point3D) => number {
   if (patternName && LATERAL_PATTERNS.has(patternName)) {
     return calculateAngle2D;
@@ -174,10 +272,24 @@ export function evaluateFrame(
   if (!activeTemplate || !landmarks || landmarks.length < 33) return [];
 
   const angleFn = pickAngleFn(patternId);
-  const warnings: FrameWarning[] = [];
+  const rawWarnings: FrameWarning[] = [];
 
-  const warn = (rule: { id: string; name: string; coachMessage: string; affectedSegments: AffectedSegment[] }, value: number, limit: number) => {
-    warnings.push({ errorId: rule.id, errorName: rule.name, coachMessage: rule.coachMessage, affectedSegments: rule.affectedSegments, value, limit });
+  const pushWarning = (
+    rule: { id: string; name: string; coachMessage: string; affectedSegments: AffectedSegment[] },
+    severity: Severity,
+    coachMessage: string,
+    value: number,
+    limit: number,
+  ) => {
+    rawWarnings.push({
+      errorId: rule.id,
+      errorName: rule.name,
+      coachMessage,
+      affectedSegments: rule.affectedSegments,
+      severity,
+      value,
+      limit,
+    });
   };
 
   for (const rule of activeTemplate.errors) {
@@ -200,10 +312,16 @@ export function evaluateFrame(
         }
 
         if (rule.minSafeAngle !== undefined && angle < rule.minSafeAngle) {
-          warn(rule, angle, rule.minSafeAngle);
+          const deficit = rule.minSafeAngle - angle;
+          const severity: Severity = deficit > 15 ? 'critical' : 'warning';
+          const msg = severity === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage;
+          pushWarning(rule, severity, msg, angle, rule.minSafeAngle);
         }
         if (rule.maxSafeAngle !== undefined && angle > rule.maxSafeAngle) {
-          warn(rule, angle, rule.maxSafeAngle);
+          const excess = angle - rule.maxSafeAngle;
+          const severity: Severity = excess > 15 ? 'critical' : 'warning';
+          const msg = severity === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage;
+          pushWarning(rule, severity, msg, angle, rule.maxSafeAngle);
         }
         break;
       }
@@ -215,21 +333,39 @@ export function evaluateFrame(
           const rk = resolve(landmarks, 'KNEE');
           const la = resolve(landmarks, 'L_ANKLE');
           const ra = resolve(landmarks, 'ANKLE');
-          if (checkDynamicValgus(lk, rk, la, ra)) {
-            const kneeGap = Math.abs(lk.x - rk.x);
-            const ankleGap = Math.abs(la.x - ra.x);
-            warn(rule, kneeGap, ankleGap);
+          const vv = checkValgusVarus(lk, rk, la, ra);
+
+          if (vv.valgus.active) {
+            pushWarning(
+              { ...rule, id: 'valgus', affectedSegments: vv.valgus.affectedSegments },
+              vv.valgus.severity,
+              vv.valgus.coachMessage,
+              Math.abs(lk.x - rk.x),
+              Math.abs(la.x - ra.x),
+            );
           }
+          if (vv.varus.active) {
+            pushWarning(
+              { ...rule, id: 'varus', name: 'Varo Dinâmico', affectedSegments: vv.varus.affectedSegments },
+              vv.varus.severity,
+              vv.varus.coachMessage,
+              Math.abs(lk.x - rk.x),
+              Math.abs(la.x - ra.x),
+            );
+          }
+          break;
         }
-        if (rule.joints.length >= 2 && rule.threshold !== 'KNEES_CLOSER_THAN_ANKLES') {
+        if (rule.joints.length >= 2) {
           const j0 = resolve(landmarks, rule.joints[0]);
           const j1 = resolve(landmarks, rule.joints[1]);
           const diff = j0.x - j1.x;
           if (rule.threshold?.includes('FORWARD') && diff > 0.05) {
-            warn(rule, diff, 0.05);
+            const sev: Severity = diff > 0.10 ? 'critical' : 'warning';
+            pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, diff, 0.05);
           }
           if (rule.threshold?.includes('OUTSIDE') && Math.abs(diff) > 0.08) {
-            warn(rule, Math.abs(diff), 0.08);
+            const sev: Severity = Math.abs(diff) > 0.14 ? 'critical' : 'warning';
+            pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, Math.abs(diff), 0.08);
           }
         }
         break;
@@ -243,22 +379,25 @@ export function evaluateFrame(
         const yDiff = j0.y - j1.y;
 
         if (rule.threshold?.includes('ABOVE') && yDiff < -0.03) {
-          warn(rule, yDiff, -0.03);
+          const sev: Severity = yDiff < -0.06 ? 'critical' : 'warning';
+          pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, yDiff, -0.03);
         }
         if (rule.threshold?.includes('APPROACHING') && Math.abs(yDiff) < 0.05) {
-          warn(rule, Math.abs(yDiff), 0.05);
+          const sev: Severity = Math.abs(yDiff) < 0.02 ? 'critical' : 'warning';
+          pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, Math.abs(yDiff), 0.05);
         }
         if (rule.threshold?.includes('LIFT') && yDiff < -0.02) {
-          warn(rule, yDiff, -0.02);
+          const sev: Severity = yDiff < -0.05 ? 'critical' : 'warning';
+          pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, yDiff, -0.02);
         }
         if (rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX' && yDiff < -0.05) {
-          warn(rule, yDiff, -0.05);
+          const sev: Severity = yDiff < -0.08 ? 'critical' : 'warning';
+          pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, yDiff, -0.05);
         }
         break;
       }
 
       // ── Z_X_OSCILLATION ───────────────────────────────────────────────
-      // For lateral patterns, use only X-axis drift (ignore Z)
       case 'Z_X_OSCILLATION': {
         if (rule.joints.length < 2) break;
         const moving = resolve(landmarks, rule.joints[0]);
@@ -270,12 +409,14 @@ export function evaluateFrame(
         const maxDrift = (rule.maxOscillationPercent ?? 10) / 100;
 
         if (drift > maxDrift) {
-          warn(rule, drift * 100, rule.maxOscillationPercent ?? 10);
+          const excess = drift - maxDrift;
+          const sev: Severity = excess > maxDrift * 0.5 ? 'critical' : 'warning';
+          pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, drift * 100, rule.maxOscillationPercent ?? 10);
         }
         break;
       }
     }
   }
 
-  return warnings;
+  return debounceWarnings(rawWarnings);
 }

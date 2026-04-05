@@ -69,6 +69,15 @@ export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
         affectedSegments: ['left_leg', 'right_leg'],
       },
       {
+        id: 'varus',
+        name: 'Varo Dinâmico',
+        type: 'X_AXIS_COMPARE',
+        joints: ['KNEE', 'ANKLE'],
+        threshold: 'KNEES_WIDER_THAN_ANKLES',
+        coachMessage: 'Joelhos muito abertos! Alinhe com a ponta do pé.',
+        affectedSegments: ['left_leg', 'right_leg'],
+      },
+      {
         id: 'forward_lean',
         name: 'Inclinação Excessiva do Tronco',
         type: 'ANGLE_3D',
