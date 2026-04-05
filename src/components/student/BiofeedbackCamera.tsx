@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
-import { evaluateFrame, isFrontalView, getCameraHint, type FrameWarning } from '@/utils/biomechanicsMath';
+import { evaluateFrame, isFrontalView, getCameraHint, type FrameWarning, type Severity } from '@/utils/biomechanicsMath';
 
 const LANDMARKS = {
   NOSE: 0,
@@ -306,13 +306,24 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       const isVisible = (index: number) => landmarks[index]?.visibility > 0.5;
 
-      // Build the set of affected segments from active warnings
-      const affectedSet = new Set<string>();
+      // Build segment → highest severity map
+      const segmentSeverity = new Map<string, Severity>();
       for (const w of warnings) {
         for (const seg of w.affectedSegments) {
-          affectedSet.add(seg);
+          const current = segmentSeverity.get(seg);
+          if (!current || w.severity === 'critical' || (w.severity === 'warning' && current === 'ok')) {
+            segmentSeverity.set(seg, w.severity);
+          }
         }
       }
+
+      const getSeverityStyle = (severity: Severity | undefined) => {
+        switch (severity) {
+          case 'critical': return { color: '#ef4444', lineWidth: 6, shadowBlur: 14 };
+          case 'warning':  return { color: '#f59e0b', lineWidth: 4, shadowBlur: 10 };
+          default:         return { color: '#22c55e', lineWidth: 3, shadowBlur: 8 };
+        }
+      };
 
       // Compute knee angles for display
       let leftAngle: number | null = null;
@@ -333,26 +344,27 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         );
       }
 
-      // Draw skeleton connections with segment-aware coloring
+      // Draw skeleton connections with 3-tier severity coloring
       SKELETON_CONNECTIONS.forEach(({ from: startIdx, to: endIdx, segment }) => {
         const fromPt = landmarks[startIdx];
         const toPt = landmarks[endIdx];
         if (!fromPt || !toPt || fromPt.visibility < 0.5 || toPt.visibility < 0.5) return;
 
-        const isAffected = affectedSet.has(segment);
-        const color = isAffected ? '#ef4444' : '#22c55e';
+        const severity = segmentSeverity.get(segment);
+        const style = getSeverityStyle(severity);
+
         ctx.beginPath();
         ctx.moveTo(fromPt.x * width, fromPt.y * height);
         ctx.lineTo(toPt.x * width, toPt.y * height);
-        ctx.strokeStyle = color;
-        ctx.lineWidth = isAffected ? 6 : 3;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = isAffected ? 14 : 8;
+        ctx.strokeStyle = style.color;
+        ctx.lineWidth = style.lineWidth;
+        ctx.shadowColor = style.color;
+        ctx.shadowBlur = style.shadowBlur;
         ctx.stroke();
         ctx.shadowBlur = 0;
       });
 
-      // Draw joints with segment-aware coloring
+      // Draw joints with 3-tier severity coloring
       const jointIndices = Object.keys(LANDMARK_SEGMENTS).map(Number);
 
       jointIndices.forEach((index) => {
@@ -360,14 +372,20 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         if (!point || point.visibility < 0.5) return;
 
         const segments = LANDMARK_SEGMENTS[index] ?? [];
-        const isAffected = segments.some((s) => affectedSet.has(s));
-        const color = isAffected ? '#ef4444' : '#22c55e';
+        // Pick highest severity among all segments this joint belongs to
+        let maxSev: Severity = 'ok';
+        for (const s of segments) {
+          const sev = segmentSeverity.get(s);
+          if (sev === 'critical') { maxSev = 'critical'; break; }
+          if (sev === 'warning') maxSev = 'warning';
+        }
+        const style = getSeverityStyle(maxSev);
 
         ctx.beginPath();
-        ctx.arc(point.x * width, point.y * height, isAffected ? 8 : 6, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.shadowColor = color;
-        ctx.shadowBlur = isAffected ? 16 : 12;
+        ctx.arc(point.x * width, point.y * height, maxSev !== 'ok' ? 8 : 6, 0, Math.PI * 2);
+        ctx.fillStyle = style.color;
+        ctx.shadowColor = style.color;
+        ctx.shadowBlur = maxSev !== 'ok' ? 16 : 12;
         ctx.fill();
         ctx.shadowBlur = 0;
 
@@ -384,14 +402,19 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         if (!point || point.visibility < 0.5) return;
 
         const segs = LANDMARK_SEGMENTS[index] ?? [];
-        const isAffected = segs.some((s) => affectedSet.has(s));
+        let maxSev: Severity = 'ok';
+        for (const s of segs) {
+          const sev = segmentSeverity.get(s);
+          if (sev === 'critical') { maxSev = 'critical'; break; }
+          if (sev === 'warning') maxSev = 'warning';
+        }
 
         const text = `${Math.round(angle)}°`;
         const x = point.x * width + 16;
         const y = point.y * height - 8;
 
         ctx.font = 'bold 14px monospace';
-        ctx.fillStyle = isAffected ? '#ef4444' : '#22c55e';
+        ctx.fillStyle = getSeverityStyle(maxSev).color;
         ctx.strokeStyle = 'rgba(0,0,0,0.7)';
         ctx.lineWidth = 3;
         ctx.strokeText(text, x, y);
