@@ -576,9 +576,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
 
           if (warnings.length > 0) {
+            const hasCritical = warnings.some(w => w.severity === 'critical');
             const firstWarning = warnings[0];
             setStatus('warning');
-            setStatusText(`⚠️ ${firstWarning.coachMessage}`);
+            setStatusText(hasCritical ? `🚨 ${firstWarning.coachMessage}` : `⚠️ ${firstWarning.coachMessage}`);
           } else if (hasViolation) {
             setStatus('warning');
             setStatusText('⚠️ Atenção: Correção necessária!');
