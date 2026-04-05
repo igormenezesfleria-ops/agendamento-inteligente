@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
-import { evaluateFrame, isFrontalView, getCameraHint, type FrameWarning, type Severity } from '@/utils/biomechanicsMath';
+import { evaluateFrame, isFrontalView, getCameraHint, isBodyInFrame, type FrameWarning, type Severity } from '@/utils/biomechanicsMath';
 
 const LANDMARKS = {
   NOSE: 0,
@@ -149,6 +149,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [aiBadgeText, setAiBadgeText] = useState('Carregando IA...');
   const [activeWarnings, setActiveWarnings] = useState<FrameWarning[]>([]);
   const [sideProfileWarning, setSideProfileWarning] = useState(false);
+  const [isCalibrating, setIsCalibrating] = useState(true);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -556,6 +557,24 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
           setConfidence(Math.round(averageVisibility * 100));
 
+          // ── Visibility gate: check if body is properly in frame ──
+          const bodyVisible = isBodyInFrame(landmarks);
+
+          if (!bodyVisible) {
+            // Standby / calibration state — body not in frame yet
+            setIsCalibrating(true);
+            setActiveWarnings([]);
+            activeWarningsRef.current = [];
+            clearCanvas();
+            setStatus('loading');
+            setStatusText('📐 Aguardando posicionamento... Afaste-se da câmera.');
+            setSideProfileWarning(false);
+            return;
+          }
+
+          // Body is in frame — exit calibration
+          setIsCalibrating(false);
+
           // Run the biomechanics engine if a template is active
           const warnings = evaluateFrame(landmarks, activeTemplate, movementPattern);
           activeWarningsRef.current = warnings;
@@ -589,8 +608,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           }
         } else {
           clearCanvas();
+          setIsCalibrating(true);
           setStatus('loading');
-          setStatusText('Posicione-se na câmera...');
+          setStatusText('📐 Posicione-se na câmera...');
           setConfidence(0);
           setLeftKneeAngle(null);
           setRightKneeAngle(null);
