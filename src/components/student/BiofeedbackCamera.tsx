@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
-import { evaluateFrame, isFrontalView, getCameraHint, type FrameWarning, type Severity } from '@/utils/biomechanicsMath';
+import { evaluateFrame, isFrontalView, getCameraHint, isBodyInFrame, type FrameWarning, type Severity } from '@/utils/biomechanicsMath';
 
 const LANDMARKS = {
   NOSE: 0,
@@ -149,6 +149,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [aiBadgeText, setAiBadgeText] = useState('Carregando IA...');
   const [activeWarnings, setActiveWarnings] = useState<FrameWarning[]>([]);
   const [sideProfileWarning, setSideProfileWarning] = useState(false);
+  const [isCalibrating, setIsCalibrating] = useState(true);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -460,6 +461,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     setConfidence(0);
     setLeftKneeAngle(null);
     setRightKneeAngle(null);
+    setActiveWarnings([]);
+    setSideProfileWarning(false);
+    setIsCalibrating(true);
   }, [clearCanvas]);
 
   const startVideoFeed = useCallback(async (requestedFacingMode: FacingMode = facingMode) => {
@@ -503,6 +507,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       setConfidence(0);
       setLeftKneeAngle(null);
       setRightKneeAngle(null);
+      setActiveWarnings([]);
+      setIsCalibrating(true);
       startFallbackTimeout();
     } catch (error) {
       console.error('Camera error:', error);
@@ -556,6 +562,24 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
           setConfidence(Math.round(averageVisibility * 100));
 
+          // ── Visibility gate: check if body is properly in frame ──
+          const bodyVisible = isBodyInFrame(landmarks);
+
+          if (!bodyVisible) {
+            // Standby / calibration state — body not in frame yet
+            setIsCalibrating(true);
+            setActiveWarnings([]);
+            activeWarningsRef.current = [];
+            clearCanvas();
+            setStatus('loading');
+            setStatusText('📐 Aguardando posicionamento... Afaste-se da câmera.');
+            setSideProfileWarning(false);
+            return;
+          }
+
+          // Body is in frame — exit calibration
+          setIsCalibrating(false);
+
           // Run the biomechanics engine if a template is active
           const warnings = evaluateFrame(landmarks, activeTemplate, movementPattern);
           activeWarningsRef.current = warnings;
@@ -589,8 +613,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           }
         } else {
           clearCanvas();
+          setIsCalibrating(true);
           setStatus('loading');
-          setStatusText('Posicione-se na câmera...');
+          setStatusText('📐 Posicione-se na câmera...');
           setConfidence(0);
           setLeftKneeAngle(null);
           setRightKneeAngle(null);
@@ -740,7 +765,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             {aiBadgeText}
           </div>
 
-          {activeWarnings.length > 0 && (
+          {!isCalibrating && activeWarnings.length > 0 && (
             <div className={`absolute left-4 right-4 z-20 flex flex-wrap gap-1.5 ${exerciseName ? 'top-[106px]' : 'top-[90px]'}`}>
               {activeWarnings.map((w) => (
                 <span key={w.errorId} className="rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
@@ -750,10 +775,18 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             </div>
           )}
 
-          {sideProfileWarning && (
+          {!isCalibrating && sideProfileWarning && (
             <div className={`absolute left-4 right-4 z-20 ${exerciseName ? 'top-[130px]' : 'top-[114px]'}`}>
               <span className="inline-flex items-center gap-1 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5 text-[11px] font-semibold text-warning backdrop-blur-md">
                 ⚠️ Aviso: O Valgo Dinâmico é melhor analisado de frente.
+              </span>
+            </div>
+          )}
+
+          {isCalibrating && aiState === 'ready' && (
+            <div className="absolute left-4 right-4 top-[90px] z-20 flex items-center justify-center">
+              <span className="rounded-xl border border-white/20 bg-black/50 px-4 py-2 text-[12px] font-semibold text-white/80 backdrop-blur-md">
+                📐 Aguardando posicionamento... Afaste-se da câmera.
               </span>
             </div>
           )}
@@ -764,20 +797,24 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         className={`absolute left-4 right-4 z-20 rounded-xl px-4 py-3 backdrop-blur-md transition-all ${
           cameraActive ? 'top-28' : 'top-16'
         } ${
-          status === 'good'
-            ? 'border-success/30 bg-success/10'
-            : status === 'warning'
-              ? 'border-destructive/30 bg-destructive/10'
-              : 'border-border bg-background/10'
+          isCalibrating
+            ? 'border-white/20 bg-white/5'
+            : status === 'good'
+              ? 'border-success/30 bg-success/10'
+              : status === 'warning'
+                ? 'border-destructive/30 bg-destructive/10'
+                : 'border-border bg-background/10'
         }`}
       >
         <p
           className={`text-center text-sm font-bold ${
-            status === 'good'
-              ? 'text-success'
-              : status === 'warning'
-                ? 'text-destructive'
-                : 'text-white/75'
+            isCalibrating
+              ? 'text-white/60'
+              : status === 'good'
+                ? 'text-success'
+                : status === 'warning'
+                  ? 'text-destructive'
+                  : 'text-white/75'
           }`}
         >
           {statusText}

@@ -248,7 +248,42 @@ function debounceWarnings(rawWarnings: FrameWarning[]): FrameWarning[] {
 }
 
 // ---------------------------------------------------------------------------
-// 5. evaluateFrame — hybrid routing with 3-tier severity
+// 5. Visibility gate helpers
+// ---------------------------------------------------------------------------
+
+const MIN_VISIBILITY = 0.65;
+const STRICT_VISIBILITY = 0.80; // for heel-lift and foot landmarks
+
+/**
+ * Returns true when ALL listed joints exceed the given visibility threshold.
+ */
+function jointsVisible(landmarks: Point3D[], joints: string[], threshold = MIN_VISIBILITY): boolean {
+  for (const j of joints) {
+    const idx = LANDMARK[j];
+    if (idx === undefined) return false;
+    const lm = landmarks[idx];
+    if (!lm || (lm.visibility ?? 0) < threshold) return false;
+  }
+  return true;
+}
+
+/**
+ * Returns true when at least `ratio` (0-1) of 16 key body landmarks are visible.
+ * Used as the global "body-in-frame" gate to suppress analysis during setup.
+ */
+const KEY_BODY_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
+
+export function isBodyInFrame(landmarks: Point3D[], ratio = 0.6): boolean {
+  if (!landmarks || landmarks.length < 33) return false;
+  let visible = 0;
+  for (const idx of KEY_BODY_INDICES) {
+    if (landmarks[idx] && (landmarks[idx].visibility ?? 0) >= MIN_VISIBILITY) visible++;
+  }
+  return visible / KEY_BODY_INDICES.length >= ratio;
+}
+
+// ---------------------------------------------------------------------------
+// 6. evaluateFrame — hybrid routing with 3-tier severity + visibility gate
 // ---------------------------------------------------------------------------
 
 function resolve(landmarks: Point3D[], joint: string): Point3D {
@@ -270,6 +305,9 @@ export function evaluateFrame(
   patternId?: string,
 ): FrameWarning[] {
   if (!activeTemplate || !landmarks || landmarks.length < 33) return [];
+
+  // ── Global visibility gate: skip ALL analysis if body not in frame ──
+  if (!isBodyInFrame(landmarks)) return [];
 
   const angleFn = pickAngleFn(patternId);
   const rawWarnings: FrameWarning[] = [];
@@ -293,6 +331,9 @@ export function evaluateFrame(
   };
 
   for (const rule of activeTemplate.errors) {
+    // ── Per-rule visibility gate: skip if required joints aren't visible ──
+    if (rule.joints.length > 0 && !jointsVisible(landmarks, rule.joints)) continue;
+
     switch (rule.type) {
       // ── ANGLE_3D (name kept for backward compat; uses hybrid routing) ──
       case 'ANGLE_3D': {
@@ -307,6 +348,7 @@ export function evaluateFrame(
           const hip = resolve(landmarks, 'HIP');
           const knee = resolve(landmarks, 'KNEE');
           const ankle = resolve(landmarks, 'ANKLE');
+          if (!jointsVisible(landmarks, ['HIP', 'KNEE', 'ANKLE'])) break;
           const kneeAngle = angleFn(hip, knee, ankle);
           if (kneeAngle >= 100) break;
         }
@@ -329,6 +371,8 @@ export function evaluateFrame(
       // ── X_AXIS_COMPARE ────────────────────────────────────────────────
       case 'X_AXIS_COMPARE': {
         if (rule.threshold === 'KNEES_CLOSER_THAN_ANKLES') {
+          // Require all 4 knee/ankle landmarks visible
+          if (!jointsVisible(landmarks, ['L_KNEE', 'KNEE', 'L_ANKLE', 'ANKLE'])) break;
           const lk = resolve(landmarks, 'L_KNEE');
           const rk = resolve(landmarks, 'KNEE');
           const la = resolve(landmarks, 'L_ANKLE');
@@ -374,6 +418,11 @@ export function evaluateFrame(
       // ── Y_AXIS_COMPARE ────────────────────────────────────────────────
       case 'Y_AXIS_COMPARE': {
         if (rule.joints.length < 2) break;
+
+        // Heel-lift requires STRICT visibility on foot landmarks
+        const isHeelLift = rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX';
+        if (isHeelLift && !jointsVisible(landmarks, ['HEEL', 'FOOT_INDEX', 'ANKLE'], STRICT_VISIBILITY)) break;
+
         const j0 = resolve(landmarks, rule.joints[0]);
         const j1 = resolve(landmarks, rule.joints[1]);
         const yDiff = j0.y - j1.y;
@@ -390,7 +439,7 @@ export function evaluateFrame(
           const sev: Severity = yDiff < -0.05 ? 'critical' : 'warning';
           pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, yDiff, -0.02);
         }
-        if (rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX' && yDiff < -0.05) {
+        if (isHeelLift && yDiff < -0.05) {
           const sev: Severity = yDiff < -0.08 ? 'critical' : 'warning';
           pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, yDiff, -0.05);
         }
