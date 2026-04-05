@@ -222,7 +222,7 @@ function debounceWarnings(rawWarnings: FrameWarning[]): FrameWarning[] {
   }
 
   // Decrement counters for absent warnings
-  for (const [key] of debounceCounters) {
+  for (const key of Array.from(debounceCounters.keys())) {
     if (!currentIds.has(key)) {
       const count = (debounceCounters.get(key) ?? 0) - 1;
       if (count <= 0) {
