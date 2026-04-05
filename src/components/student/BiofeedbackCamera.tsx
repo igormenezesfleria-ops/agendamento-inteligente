@@ -808,11 +808,13 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       >
         <p
           className={`text-center text-sm font-bold ${
-            status === 'good'
-              ? 'text-success'
-              : status === 'warning'
-                ? 'text-destructive'
-                : 'text-white/75'
+            isCalibrating
+              ? 'text-white/60'
+              : status === 'good'
+                ? 'text-success'
+                : status === 'warning'
+                  ? 'text-destructive'
+                  : 'text-white/75'
           }`}
         >
           {statusText}
