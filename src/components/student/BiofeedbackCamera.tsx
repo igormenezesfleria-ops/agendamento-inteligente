@@ -797,11 +797,13 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         className={`absolute left-4 right-4 z-20 rounded-xl px-4 py-3 backdrop-blur-md transition-all ${
           cameraActive ? 'top-28' : 'top-16'
         } ${
-          status === 'good'
-            ? 'border-success/30 bg-success/10'
-            : status === 'warning'
-              ? 'border-destructive/30 bg-destructive/10'
-              : 'border-border bg-background/10'
+          isCalibrating
+            ? 'border-white/20 bg-white/5'
+            : status === 'good'
+              ? 'border-success/30 bg-success/10'
+              : status === 'warning'
+                ? 'border-destructive/30 bg-destructive/10'
+                : 'border-border bg-background/10'
         }`}
       >
         <p
