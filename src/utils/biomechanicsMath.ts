@@ -72,6 +72,7 @@ const LATERAL_PATTERNS = new Set([
   'HINGE',
   'PULL_VERTICAL',
   'PUSH_HORIZONTAL',
+  'SQUAT_LATERAL',
 ]);
 
 // ---------------------------------------------------------------------------
@@ -82,6 +83,8 @@ export type CameraHint = { emoji: string; text: string };
 
 const CAMERA_HINTS: Record<string, CameraHint> = {
   SQUAT_BILATERAL: { emoji: '📍', text: 'Grave na DIAGONAL ou de FRENTE.' },
+  SQUAT_FRONTAL: { emoji: '📍', text: 'Grave de FRENTE.' },
+  SQUAT_LATERAL: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
   PUSH_HORIZONTAL: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
   PULL_VERTICAL: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
   HINGE: { emoji: '📍', text: 'Grave de LADO (Perfil).' },
@@ -127,6 +130,7 @@ export function calculateAngle2D(a: Point3D, b: Point3D, c: Point3D): number {
 
 // ---------------------------------------------------------------------------
 // 3. Valgus / Varus — 3-tier semaphore (frontal view only)
+//    Phase 24.1: requires kneeAngle < 160 (user must be squatting)
 // ---------------------------------------------------------------------------
 
 export function isFrontalView(leftKnee: Point3D, rightKnee: Point3D): boolean {
@@ -143,9 +147,13 @@ export function checkValgusVarus(
   rightKnee: Point3D,
   leftAnkle: Point3D,
   rightAnkle: Point3D,
+  kneeAngle?: number,
 ): ValgusVarusResult {
   const none = { active: false, severity: 'ok' as Severity, coachMessage: '', affectedSegments: [] as AffectedSegment[] };
   const result: ValgusVarusResult = { valgus: { ...none }, varus: { ...none } };
+
+  // Standing gate: if knee angle > 160 the user is upright — no evaluation
+  if (kneeAngle !== undefined && kneeAngle > 160) return result;
 
   if (!isFrontalView(leftKnee, rightKnee)) return result;
 
@@ -227,7 +235,6 @@ function debounceWarnings(rawWarnings: FrameWarning[]): FrameWarning[] {
       const count = (debounceCounters.get(key) ?? 0) - 1;
       if (count <= 0) {
         debounceCounters.delete(key);
-        // Extract errorId from key
         const errorId = key.split(':')[0];
         activeStates.delete(errorId);
       } else {
@@ -252,11 +259,8 @@ function debounceWarnings(rawWarnings: FrameWarning[]): FrameWarning[] {
 // ---------------------------------------------------------------------------
 
 const MIN_VISIBILITY = 0.65;
-const STRICT_VISIBILITY = 0.80; // for heel-lift and foot landmarks
+const STRICT_VISIBILITY = 0.80;
 
-/**
- * Returns true when ALL listed joints exceed the given visibility threshold.
- */
 function jointsVisible(landmarks: Point3D[], joints: string[], threshold = MIN_VISIBILITY): boolean {
   for (const j of joints) {
     const idx = LANDMARK[j];
@@ -267,10 +271,6 @@ function jointsVisible(landmarks: Point3D[], joints: string[], threshold = MIN_V
   return true;
 }
 
-/**
- * Returns true when at least `ratio` (0-1) of 16 key body landmarks are visible.
- * Used as the global "body-in-frame" gate to suppress analysis during setup.
- */
 const KEY_BODY_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32];
 
 export function isBodyInFrame(landmarks: Point3D[], ratio = 0.6): boolean {
@@ -280,6 +280,19 @@ export function isBodyInFrame(landmarks: Point3D[], ratio = 0.6): boolean {
     if (landmarks[idx] && (landmarks[idx].visibility ?? 0) >= MIN_VISIBILITY) visible++;
   }
   return visible / KEY_BODY_INDICES.length >= ratio;
+}
+
+// ---------------------------------------------------------------------------
+// Helper: compute knee angle for standing gate
+// ---------------------------------------------------------------------------
+
+function computeKneeAngle(landmarks: Point3D[], angleFn: (a: Point3D, b: Point3D, c: Point3D) => number): number | undefined {
+  const hip = landmarks[LANDMARK.HIP];
+  const knee = landmarks[LANDMARK.KNEE];
+  const ankle = landmarks[LANDMARK.ANKLE];
+  if (!hip || !knee || !ankle) return undefined;
+  if ((hip.visibility ?? 0) < MIN_VISIBILITY || (knee.visibility ?? 0) < MIN_VISIBILITY || (ankle.visibility ?? 0) < MIN_VISIBILITY) return undefined;
+  return angleFn(hip, knee, ankle);
 }
 
 // ---------------------------------------------------------------------------
@@ -312,6 +325,9 @@ export function evaluateFrame(
   const angleFn = pickAngleFn(patternId);
   const rawWarnings: FrameWarning[] = [];
 
+  // Pre-compute knee angle for standing gate (valgus/varus/butt_wink)
+  const kneeAngle = computeKneeAngle(landmarks, angleFn);
+
   const pushWarning = (
     rule: { id: string; name: string; coachMessage: string; affectedSegments: AffectedSegment[] },
     severity: Severity,
@@ -331,11 +347,10 @@ export function evaluateFrame(
   };
 
   for (const rule of activeTemplate.errors) {
-    // ── Per-rule visibility gate: skip if required joints aren't visible ──
+    // ── Per-rule visibility gate ──
     if (rule.joints.length > 0 && !jointsVisible(landmarks, rule.joints)) continue;
 
     switch (rule.type) {
-      // ── ANGLE_3D (name kept for backward compat; uses hybrid routing) ──
       case 'ANGLE_3D': {
         if (rule.joints.length < 3) break;
         const a = resolve(landmarks, rule.joints[0]);
@@ -343,14 +358,16 @@ export function evaluateFrame(
         const c = resolve(landmarks, rule.joints[2]);
         const angle = angleFn(a, b, c);
 
-        // Deep-flexion guard for butt_wink
+        // Deep-flexion guard for butt_wink: only evaluate if kneeAngle < 100
         if (rule.id === 'butt_wink') {
-          const hip = resolve(landmarks, 'HIP');
-          const knee = resolve(landmarks, 'KNEE');
-          const ankle = resolve(landmarks, 'ANKLE');
-          if (!jointsVisible(landmarks, ['HIP', 'KNEE', 'ANKLE'])) break;
-          const kneeAngle = angleFn(hip, knee, ankle);
-          if (kneeAngle >= 100) break;
+          if (kneeAngle === undefined || kneeAngle >= 100) break;
+          // Custom 3-tier for butt_wink (Phase 24.1)
+          if (angle < 85) {
+            pushWarning(rule, 'critical', '🚨 Perdeu a lombar no fundo! Segure o abdômen.', angle, 85);
+          } else if (angle < 95) {
+            pushWarning(rule, 'warning', 'Atenção: Lombar começando a arredondar.', angle, 95);
+          }
+          break;
         }
 
         if (rule.minSafeAngle !== undefined && angle < rule.minSafeAngle) {
@@ -368,16 +385,15 @@ export function evaluateFrame(
         break;
       }
 
-      // ── X_AXIS_COMPARE ────────────────────────────────────────────────
       case 'X_AXIS_COMPARE': {
         if (rule.threshold === 'KNEES_CLOSER_THAN_ANKLES') {
-          // Require all 4 knee/ankle landmarks visible
           if (!jointsVisible(landmarks, ['L_KNEE', 'KNEE', 'L_ANKLE', 'ANKLE'])) break;
           const lk = resolve(landmarks, 'L_KNEE');
           const rk = resolve(landmarks, 'KNEE');
           const la = resolve(landmarks, 'L_ANKLE');
           const ra = resolve(landmarks, 'ANKLE');
-          const vv = checkValgusVarus(lk, rk, la, ra);
+          // Pass kneeAngle for standing gate
+          const vv = checkValgusVarus(lk, rk, la, ra, kneeAngle);
 
           if (vv.valgus.active) {
             pushWarning(
@@ -415,11 +431,9 @@ export function evaluateFrame(
         break;
       }
 
-      // ── Y_AXIS_COMPARE ────────────────────────────────────────────────
       case 'Y_AXIS_COMPARE': {
         if (rule.joints.length < 2) break;
 
-        // Heel-lift requires STRICT visibility on foot landmarks
         const isHeelLift = rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX';
         if (isHeelLift && !jointsVisible(landmarks, ['HEEL', 'FOOT_INDEX', 'ANKLE'], STRICT_VISIBILITY)) break;
 
@@ -446,7 +460,6 @@ export function evaluateFrame(
         break;
       }
 
-      // ── Z_X_OSCILLATION ───────────────────────────────────────────────
       case 'Z_X_OSCILLATION': {
         if (rule.joints.length < 2) break;
         const moving = resolve(landmarks, rule.joints[0]);
