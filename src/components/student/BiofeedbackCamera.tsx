@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Video, VideoOff, Zap, Trophy, CheckCircle2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
-import { evaluateFrame, isFrontalView, getCameraHint, isBodyInFrame, type FrameWarning, type Severity } from '@/utils/biomechanicsMath';
+import { evaluateFrame, isFrontalView, getCameraHint, isBodyInFrame, calculateAngle2D, type FrameWarning, type Severity } from '@/utils/biomechanicsMath';
 
 const LANDMARKS = {
   NOSE: 0,
@@ -24,34 +24,27 @@ const LANDMARKS = {
   RIGHT_FOOT_INDEX: 32,
 } as const;
 
-// Each connection is tagged with the segment group it belongs to
 type SegmentTag = 'spine' | 'left_arm' | 'right_arm' | 'left_leg' | 'right_leg' | 'hip';
 
 const SKELETON_CONNECTIONS: { from: number; to: number; segment: SegmentTag }[] = [
-  // Spine
   { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.RIGHT_SHOULDER, segment: 'spine' },
   { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.LEFT_HIP, segment: 'spine' },
   { from: LANDMARKS.RIGHT_SHOULDER, to: LANDMARKS.RIGHT_HIP, segment: 'spine' },
   { from: LANDMARKS.LEFT_HIP, to: LANDMARKS.RIGHT_HIP, segment: 'hip' },
-  // Left arm
   { from: LANDMARKS.LEFT_SHOULDER, to: LANDMARKS.LEFT_ELBOW, segment: 'left_arm' },
   { from: LANDMARKS.LEFT_ELBOW, to: LANDMARKS.LEFT_WRIST, segment: 'left_arm' },
-  // Right arm
   { from: LANDMARKS.RIGHT_SHOULDER, to: LANDMARKS.RIGHT_ELBOW, segment: 'right_arm' },
   { from: LANDMARKS.RIGHT_ELBOW, to: LANDMARKS.RIGHT_WRIST, segment: 'right_arm' },
-  // Left leg
   { from: LANDMARKS.LEFT_HIP, to: LANDMARKS.LEFT_KNEE, segment: 'left_leg' },
   { from: LANDMARKS.LEFT_KNEE, to: LANDMARKS.LEFT_ANKLE, segment: 'left_leg' },
   { from: LANDMARKS.LEFT_ANKLE, to: LANDMARKS.LEFT_HEEL, segment: 'left_leg' },
   { from: LANDMARKS.LEFT_ANKLE, to: LANDMARKS.LEFT_FOOT_INDEX, segment: 'left_leg' },
-  // Right leg
   { from: LANDMARKS.RIGHT_HIP, to: LANDMARKS.RIGHT_KNEE, segment: 'right_leg' },
   { from: LANDMARKS.RIGHT_KNEE, to: LANDMARKS.RIGHT_ANKLE, segment: 'right_leg' },
   { from: LANDMARKS.RIGHT_ANKLE, to: LANDMARKS.RIGHT_HEEL, segment: 'right_leg' },
   { from: LANDMARKS.RIGHT_ANKLE, to: LANDMARKS.RIGHT_FOOT_INDEX, segment: 'right_leg' },
 ];
 
-// Map each landmark index to its segment(s) for joint coloring
 const LANDMARK_SEGMENTS: Record<number, SegmentTag[]> = {
   [LANDMARKS.NOSE]: ['spine'],
   [LANDMARKS.LEFT_SHOULDER]: ['spine', 'left_arm'],
@@ -72,10 +65,13 @@ const LANDMARK_SEGMENTS: Record<number, SegmentTag[]> = {
   [LANDMARKS.RIGHT_FOOT_INDEX]: ['right_leg'],
 };
 
-
 type FacingMode = 'user' | 'environment';
 type PoseStatus = 'good' | 'warning' | 'loading';
 type AiState = 'loading' | 'ready' | 'fallback' | 'error' | 'off';
+
+// Phase 24.1 — Validation protocol types
+type ValidationPhase = 'FRONTAL' | 'TRANSITION' | 'LATERAL' | 'COMPLETE';
+type RepPhase = 'standing' | 'moving';
 
 interface LandmarkResult {
   x: number;
@@ -108,6 +104,11 @@ interface BiofeedbackCameraProps {
   exerciseName?: string;
 }
 
+// Check if pattern is a squat that supports the validation protocol
+function isSquatProtocol(pattern: string | undefined): boolean {
+  return pattern === 'SQUAT_BILATERAL' || pattern === 'SQUAT_FRONTAL' || pattern === 'SQUAT_LATERAL';
+}
+
 export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseName }: BiofeedbackCameraProps) {
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -122,8 +123,20 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const simulationModeRef = useRef(false);
   const fallbackBlinkRef = useRef(false);
 
-  // Resolve the active biomechanics template, filtering to only trainer-selected errors
+  // Phase 24.1 — Validation protocol state
+  const useProtocol = isSquatProtocol(movementPattern);
+  const [validationPhase, setValidationPhase] = useState<ValidationPhase>('FRONTAL');
+  const repPhaseRef = useRef<RepPhase>('standing');
+  const [perfectRepCount, setPerfectRepCount] = useState(0);
+  const hasErrorInCurrentRepRef = useRef(false);
+  const perfectRepCountRef = useRef(0);
+
+  // Resolve which template to use based on protocol phase
   const activeTemplate = useMemo(() => {
+    if (useProtocol) {
+      const phasePatternId = validationPhase === 'LATERAL' ? 'SQUAT_LATERAL' : 'SQUAT_FRONTAL';
+      return BIOMECHANICS_TEMPLATES[phasePatternId] ?? null;
+    }
     if (!movementPattern) return null;
     const template = BIOMECHANICS_TEMPLATES[movementPattern];
     if (!template) return null;
@@ -132,7 +145,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       ...template,
       errors: template.errors.filter((e) => selectedErrors.includes(e.id)),
     };
-  }, [movementPattern, selectedErrors]);
+  }, [movementPattern, selectedErrors, useProtocol, validationPhase]);
+
+  // Resolve which patternId to pass to evaluateFrame
+  const activePatternId = useMemo(() => {
+    if (useProtocol) {
+      return validationPhase === 'LATERAL' ? 'SQUAT_LATERAL' : 'SQUAT_FRONTAL';
+    }
+    return movementPattern;
+  }, [useProtocol, validationPhase, movementPattern]);
 
   const activeWarningsRef = useRef<FrameWarning[]>([]);
 
@@ -150,6 +171,61 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [activeWarnings, setActiveWarnings] = useState<FrameWarning[]>([]);
   const [sideProfileWarning, setSideProfileWarning] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(true);
+
+  // ---- Rep tracking logic (called per frame) ----
+  const processRepTracking = useCallback((landmarks: LandmarkResult[], warnings: FrameWarning[]) => {
+    if (!useProtocol || validationPhase === 'TRANSITION' || validationPhase === 'COMPLETE') return;
+
+    // Compute knee angle
+    const hip = landmarks[LANDMARKS.RIGHT_HIP];
+    const knee = landmarks[LANDMARKS.RIGHT_KNEE];
+    const ankle = landmarks[LANDMARKS.RIGHT_ANKLE];
+    if (!hip || !knee || !ankle || hip.visibility < 0.5 || knee.visibility < 0.5 || ankle.visibility < 0.5) return;
+
+    const kneeAngle = calculateAngle(hip, knee, ankle);
+
+    const prevPhase = repPhaseRef.current;
+
+    if (kneeAngle < 160 && prevPhase === 'standing') {
+      // Started descending — begin rep
+      repPhaseRef.current = 'moving';
+      hasErrorInCurrentRepRef.current = false;
+    }
+
+    // Track errors during movement
+    if (repPhaseRef.current === 'moving') {
+      if (warnings.some(w => w.severity === 'warning' || w.severity === 'critical')) {
+        hasErrorInCurrentRepRef.current = true;
+      }
+    }
+
+    if (kneeAngle > 160 && prevPhase === 'moving') {
+      // Rep completed — returned to standing
+      repPhaseRef.current = 'standing';
+
+      if (!hasErrorInCurrentRepRef.current) {
+        const newCount = perfectRepCountRef.current + 1;
+        perfectRepCountRef.current = newCount;
+        setPerfectRepCount(newCount);
+
+        if (newCount >= 3) {
+          if (validationPhase === 'FRONTAL') {
+            setValidationPhase('TRANSITION');
+            perfectRepCountRef.current = 0;
+            setPerfectRepCount(0);
+          } else if (validationPhase === 'LATERAL') {
+            setValidationPhase('COMPLETE');
+          }
+        }
+      } else {
+        // Error in rep — reset streak
+        perfectRepCountRef.current = 0;
+        setPerfectRepCount(0);
+      }
+
+      hasErrorInCurrentRepRef.current = false;
+    }
+  }, [useProtocol, validationPhase]);
 
   const clearCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -307,7 +383,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       const isVisible = (index: number) => landmarks[index]?.visibility > 0.5;
 
-      // Build segment → highest severity map
       const segmentSeverity = new Map<string, Severity>();
       for (const w of warnings) {
         for (const seg of w.affectedSegments) {
@@ -326,7 +401,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         }
       };
 
-      // Compute knee angles for display
       let leftAngle: number | null = null;
       let rightAngle: number | null = null;
 
@@ -345,7 +419,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         );
       }
 
-      // Draw skeleton connections with 3-tier severity coloring
       SKELETON_CONNECTIONS.forEach(({ from: startIdx, to: endIdx, segment }) => {
         const fromPt = landmarks[startIdx];
         const toPt = landmarks[endIdx];
@@ -365,7 +438,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         ctx.shadowBlur = 0;
       });
 
-      // Draw joints with 3-tier severity coloring
       const jointIndices = Object.keys(LANDMARK_SEGMENTS).map(Number);
 
       jointIndices.forEach((index) => {
@@ -373,7 +445,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         if (!point || point.visibility < 0.5) return;
 
         const segments = LANDMARK_SEGMENTS[index] ?? [];
-        // Pick highest severity among all segments this joint belongs to
         let maxSev: Severity = 'ok';
         for (const s of segments) {
           const sev = segmentSeverity.get(s);
@@ -396,7 +467,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         ctx.fill();
       });
 
-      // Draw angle labels at knees
       const drawAngleLabel = (index: number, angle: number | null) => {
         if (angle === null) return;
         const point = landmarks[index];
@@ -464,6 +534,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     setActiveWarnings([]);
     setSideProfileWarning(false);
     setIsCalibrating(true);
+    // Reset protocol state
+    setValidationPhase('FRONTAL');
+    setPerfectRepCount(0);
+    perfectRepCountRef.current = 0;
+    repPhaseRef.current = 'standing';
+    hasErrorInCurrentRepRef.current = false;
   }, [clearCanvas]);
 
   const startVideoFeed = useCallback(async (requestedFacingMode: FacingMode = facingMode) => {
@@ -562,11 +638,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
           setConfidence(Math.round(averageVisibility * 100));
 
-          // ── Visibility gate: check if body is properly in frame ──
           const bodyVisible = isBodyInFrame(landmarks);
 
           if (!bodyVisible) {
-            // Standby / calibration state — body not in frame yet
             setIsCalibrating(true);
             setActiveWarnings([]);
             activeWarningsRef.current = [];
@@ -577,15 +651,26 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             return;
           }
 
-          // Body is in frame — exit calibration
           setIsCalibrating(false);
 
-          // Run the biomechanics engine if a template is active
-          const warnings = evaluateFrame(landmarks, activeTemplate, movementPattern);
+          // Skip analysis during TRANSITION and COMPLETE
+          if (validationPhase === 'TRANSITION' || validationPhase === 'COMPLETE') {
+            analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, []);
+            setActiveWarnings([]);
+            activeWarningsRef.current = [];
+            setStatus('good');
+            setStatusText('✅ Aguardando...');
+            return;
+          }
+
+          const warnings = evaluateFrame(landmarks, activeTemplate, activePatternId);
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
-          // Detect side-profile when valgus is being monitored
+          // Rep tracking for protocol
+          processRepTracking(landmarks, warnings);
+
+          // Side-profile detection for frontal squat
           const monitorsValgus = activeTemplate?.errors.some(e => e.id === 'valgus');
           if (monitorsValgus) {
             const lk = landmarks[LANDMARKS.LEFT_KNEE];
@@ -649,7 +734,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       console.error('Pose init error:', error);
       activateFallback();
     }
-  }, [activateFallback, activeTemplate, analyzeAndDraw, cameraActive, clearCanvas, exerciseName, scriptsLoaded, syncCanvasSize]);
+  }, [activateFallback, activeTemplate, activePatternId, analyzeAndDraw, cameraActive, clearCanvas, exerciseName, scriptsLoaded, syncCanvasSize, validationPhase, processRepTracking]);
 
   const toggleFacing = useCallback(() => {
     const nextFacingMode: FacingMode = facingMode === 'user' ? 'environment' : 'user';
@@ -716,6 +801,24 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           ? 'border-destructive/30 bg-destructive/10 text-destructive'
           : 'border-border bg-background/75 text-foreground';
 
+  // Phase instruction text
+  const phaseInstruction = useMemo(() => {
+    if (!useProtocol) return null;
+    switch (validationPhase) {
+      case 'FRONTAL': return 'Fase 1: Alinhamento de Joelhos (Grave de FRENTE)';
+      case 'LATERAL': return 'Fase 2: Estabilidade da Coluna (Grave de LADO)';
+      default: return null;
+    }
+  }, [useProtocol, validationPhase]);
+
+  const handleTransitionReady = useCallback(() => {
+    setValidationPhase('LATERAL');
+    perfectRepCountRef.current = 0;
+    setPerfectRepCount(0);
+    repPhaseRef.current = 'standing';
+    hasErrorInCurrentRepRef.current = false;
+  }, []);
+
   return (
     <div className="fixed inset-0 z-[110] flex flex-col bg-black">
       <div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-4 py-3">
@@ -736,7 +839,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       {cameraActive && (
         <>
-          {exerciseName && (
+          {/* Phase instruction badge (protocol mode) */}
+          {phaseInstruction && (
+            <div className="absolute left-4 right-4 top-[52px] z-20 flex items-center justify-center">
+              <span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md">
+                {phaseInstruction}
+              </span>
+            </div>
+          )}
+
+          {/* Exercise name badge (non-protocol mode) */}
+          {!useProtocol && exerciseName && (
             <div className="absolute left-4 right-4 top-[52px] z-20 flex items-center justify-center">
               <span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md">
                 Analisando: {exerciseName}
@@ -745,13 +858,14 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             </div>
           )}
 
-          <div className={`absolute left-4 z-20 flex flex-col gap-1.5 ${exerciseName ? 'top-[80px]' : 'top-16'}`}>
+          <div className={`absolute left-4 z-20 flex flex-col gap-1.5 ${(phaseInstruction || exerciseName) ? 'top-[80px]' : 'top-16'}`}>
             <div className="flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md">
               <Zap className="h-3 w-3 text-primary" />
-              <span className="text-[10px] font-bold tracking-wide text-primary">⚡ Motor Lite Ativado (Alto Desempenho)</span>
+              <span className="text-[10px] font-bold tracking-wide text-primary">⚡ Motor Lite Ativado</span>
             </div>
             {(() => {
-              const hint = getCameraHint(movementPattern);
+              const hintId = useProtocol ? activePatternId : movementPattern;
+              const hint = getCameraHint(hintId);
               if (!hint) return null;
               return (
                 <div className="flex items-center gap-1.5 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 backdrop-blur-md">
@@ -761,12 +875,32 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             })()}
           </div>
 
-          <div className={`absolute right-4 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'} ${aiBadgeClasses}`}>
-            {aiBadgeText}
-          </div>
+          {/* Perfect rep streak badge (protocol mode) */}
+          {useProtocol && validationPhase !== 'TRANSITION' && validationPhase !== 'COMPLETE' && (
+            <div className={`absolute right-4 z-20 ${(phaseInstruction || exerciseName) ? 'top-[80px]' : 'top-16'}`}>
+              <div className="flex flex-col gap-1.5">
+                <div className={`rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${aiBadgeClasses}`}>
+                  {aiBadgeText}
+                </div>
+                <div className="flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 backdrop-blur-md">
+                  <Trophy className="h-3 w-3 text-amber-400" />
+                  <span className="text-[10px] font-bold text-amber-400">
+                    🔥 Sequência Perfeita: {perfectRepCount}/3
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* AI badge for non-protocol or transition/complete */}
+          {(!useProtocol || validationPhase === 'TRANSITION' || validationPhase === 'COMPLETE') && (
+            <div className={`absolute right-4 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${(phaseInstruction || exerciseName) ? 'top-[80px]' : 'top-16'} ${aiBadgeClasses}`}>
+              {aiBadgeText}
+            </div>
+          )}
 
           {!isCalibrating && activeWarnings.length > 0 && (
-            <div className={`absolute left-4 right-4 z-20 flex flex-wrap gap-1.5 ${exerciseName ? 'top-[106px]' : 'top-[90px]'}`}>
+            <div className={`absolute left-4 right-4 z-20 flex flex-wrap gap-1.5 ${(phaseInstruction || exerciseName) ? 'top-[106px]' : 'top-[90px]'}`}>
               {activeWarnings.map((w) => (
                 <span key={w.errorId} className="rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
                   {w.coachMessage}
@@ -776,7 +910,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           )}
 
           {!isCalibrating && sideProfileWarning && (
-            <div className={`absolute left-4 right-4 z-20 ${exerciseName ? 'top-[130px]' : 'top-[114px]'}`}>
+            <div className={`absolute left-4 right-4 z-20 ${(phaseInstruction || exerciseName) ? 'top-[130px]' : 'top-[114px]'}`}>
               <span className="inline-flex items-center gap-1 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5 text-[11px] font-semibold text-warning backdrop-blur-md">
                 ⚠️ Aviso: O Valgo Dinâmico é melhor analisado de frente.
               </span>
@@ -863,6 +997,51 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           className="pointer-events-none absolute inset-0 h-full w-full object-cover"
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
+
+        {/* TRANSITION MODAL */}
+        {validationPhase === 'TRANSITION' && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="mx-6 max-w-sm rounded-2xl border border-success/30 bg-background/95 p-8 text-center shadow-2xl">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/20">
+                <CheckCircle2 className="h-8 w-8 text-success" />
+              </div>
+              <h2 className="mb-2 text-xl font-extrabold text-foreground">✅ Vista Frontal Aprovada!</h2>
+              <p className="mb-6 text-sm text-muted-foreground">
+                Agora, posicione o celular de <strong>LADO (Perfil)</strong> para validarmos sua coluna.
+              </p>
+              <button
+                onClick={handleTransitionReady}
+                className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-lg transition-all hover:scale-[1.02] hover:bg-accent/90"
+              >
+                Pronto, posicionei
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* COMPLETE / CELEBRATION MODAL */}
+        {validationPhase === 'COMPLETE' && (
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="mx-6 max-w-sm rounded-2xl border border-amber-500/30 bg-background/95 p-8 text-center shadow-2xl">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-500/20">
+                <Trophy className="h-8 w-8 text-amber-500" />
+              </div>
+              <h2 className="mb-2 text-xl font-extrabold text-foreground">🎉 MOVIMENTO VALIDADO!</h2>
+              <p className="mb-6 text-sm text-muted-foreground">
+                Sua técnica está <strong>excelente</strong> em todos os ângulos. Parabéns!
+              </p>
+              <button
+                onClick={() => {
+                  stopCamera();
+                  navigate(-1);
+                }}
+                className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-lg transition-all hover:scale-[1.02] hover:bg-accent/90"
+              >
+                Finalizar
+              </button>
+            </div>
+          </div>
+        )}
 
         {!cameraActive && !cameraStarting && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-900/75">
