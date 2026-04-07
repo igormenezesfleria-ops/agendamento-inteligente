@@ -174,7 +174,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [sideProfileWarning, setSideProfileWarning] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(true);
 
-  // ---- Rep tracking logic (called per frame) ----
+  // ---- Strict Rep tracking logic (called per frame) ----
   const processRepTracking = useCallback((landmarks: LandmarkResult[], warnings: FrameWarning[]) => {
     if (!useProtocol || validationPhase === 'TRANSITION' || validationPhase === 'COMPLETE') return;
 
@@ -186,24 +186,28 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
     const kneeAngle = calculateAngle(hip, knee, ankle);
 
-    const prevPhase = repPhaseRef.current;
-
-    if (kneeAngle < 160 && prevPhase === 'standing') {
-      // Started descending — begin rep
-      repPhaseRef.current = 'moving';
-      hasErrorInCurrentRepRef.current = false;
-    }
-
-    // Track errors during movement
-    if (repPhaseRef.current === 'moving') {
+    // Track errors while descending
+    if (hasDescendedRef.current) {
       if (warnings.some(w => w.severity === 'warning' || w.severity === 'critical')) {
         hasErrorInCurrentRepRef.current = true;
       }
     }
 
-    if (kneeAngle > 160 && prevPhase === 'moving') {
-      // Rep completed — returned to standing
-      repPhaseRef.current = 'standing';
+    // Strict descent gate: must reach < 120 degrees
+    if (kneeAngle < 120) {
+      if (!hasDescendedRef.current) {
+        hasDescendedRef.current = true;
+        hasErrorInCurrentRepRef.current = false;
+      }
+      // Also check errors during bottom
+      if (warnings.some(w => w.severity === 'warning' || w.severity === 'critical')) {
+        hasErrorInCurrentRepRef.current = true;
+      }
+    }
+
+    // Rep completes only if user descended AND returned to standing (> 160)
+    if (hasDescendedRef.current && kneeAngle > 160) {
+      hasDescendedRef.current = false;
 
       if (!hasErrorInCurrentRepRef.current) {
         const newCount = perfectRepCountRef.current + 1;
@@ -212,9 +216,18 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
         if (newCount >= 3) {
           if (validationPhase === 'FRONTAL') {
+            // Pix-style auto-transition
+            setShowTransitionToast(true);
             setValidationPhase('TRANSITION');
             perfectRepCountRef.current = 0;
             setPerfectRepCount(0);
+            // Auto-advance after 3.5s
+            transitionTimerRef.current = window.setTimeout(() => {
+              setShowTransitionToast(false);
+              setValidationPhase('LATERAL');
+              hasDescendedRef.current = false;
+              hasErrorInCurrentRepRef.current = false;
+            }, 3500);
           } else if (validationPhase === 'LATERAL') {
             setValidationPhase('COMPLETE');
           }
