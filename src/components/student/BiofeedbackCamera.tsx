@@ -826,12 +826,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     }
   }, [useProtocol, validationPhase]);
 
-  const handleTransitionReady = useCallback(() => {
-    setValidationPhase('LATERAL');
-    perfectRepCountRef.current = 0;
-    setPerfectRepCount(0);
-    hasDescendedRef.current = false;
-    hasErrorInCurrentRepRef.current = false;
+  // Cleanup transition timer
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
+    };
   }, []);
 
   return (
