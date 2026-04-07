@@ -522,6 +522,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     cancelAnimationFrame(rafRef.current);
     if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
     if (fallbackIntervalRef.current) window.clearInterval(fallbackIntervalRef.current);
+    if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
 
     aiReadyRef.current = false;
     simulationModeRef.current = false;
@@ -555,6 +556,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     perfectRepCountRef.current = 0;
     hasDescendedRef.current = false;
     hasErrorInCurrentRepRef.current = false;
+    setShowTransitionToast(false);
   }, [clearCanvas]);
 
   const startVideoFeed = useCallback(async (requestedFacingMode: FacingMode = facingMode) => {
