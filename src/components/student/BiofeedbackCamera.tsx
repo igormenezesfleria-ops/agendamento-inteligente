@@ -106,7 +106,7 @@ interface BiofeedbackCameraProps {
 
 // Check if pattern is a squat that supports the validation protocol
 function isSquatProtocol(pattern: string | undefined): boolean {
-  return pattern === 'SQUAT_BILATERAL' || pattern === 'SQUAT_FRONTAL' || pattern === 'SQUAT_LATERAL';
+  return pattern === 'SQUAT_BILATERAL';
 }
 
 export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseName }: BiofeedbackCameraProps) {
