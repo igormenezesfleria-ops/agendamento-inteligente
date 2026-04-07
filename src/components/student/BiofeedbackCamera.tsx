@@ -1012,23 +1012,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
 
-        {/* TRANSITION MODAL */}
-        {validationPhase === 'TRANSITION' && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="mx-6 max-w-sm rounded-2xl border border-success/30 bg-background/95 p-8 text-center shadow-2xl">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/20">
-                <CheckCircle2 className="h-8 w-8 text-success" />
+        {/* PIX-STYLE TRANSITION TOAST (auto-dismisses) */}
+        {showTransitionToast && (
+          <div className="absolute left-4 right-4 top-1/3 z-30 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="rounded-2xl border border-success/40 bg-success/20 px-8 py-6 text-center shadow-2xl backdrop-blur-xl">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-success/30">
+                <CheckCircle2 className="h-7 w-7 text-success" />
               </div>
-              <h2 className="mb-2 text-xl font-extrabold text-foreground">✅ Vista Frontal Aprovada!</h2>
-              <p className="mb-6 text-sm text-muted-foreground">
-                Agora, posicione o celular de <strong>LADO (Perfil)</strong> para validarmos sua coluna.
-              </p>
-              <button
-                onClick={handleTransitionReady}
-                className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-lg transition-all hover:scale-[1.02] hover:bg-accent/90"
-              >
-                Pronto, posicionei
-              </button>
+              <p className="text-lg font-extrabold text-white">✅ Vista Frontal Aprovada!</p>
+              <p className="mt-1 text-xs text-white/70">Vire o celular de LADO para a Fase 2...</p>
             </div>
           </div>
         )}
