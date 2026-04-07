@@ -393,7 +393,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   }, [activateFallback]);
 
   const analyzeAndDraw = useCallback(
-    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], width: number, height: number, warnings: FrameWarning[]) => {
+    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], width: number, height: number, warnings: FrameWarning[], isMirrored: boolean) => {
       ctx.clearRect(0, 0, width, height);
 
       const isVisible = (index: number) => landmarks[index]?.visibility > 0.5;
@@ -496,15 +496,30 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         }
 
         const text = `${Math.round(angle)}°`;
-        const x = point.x * width + 16;
-        const y = point.y * height - 8;
+        const px = point.x * width + 16;
+        const py = point.y * height - 8;
 
         ctx.font = 'bold 14px monospace';
-        ctx.fillStyle = getSeverityStyle(maxSev).color;
-        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-        ctx.lineWidth = 3;
-        ctx.strokeText(text, x, y);
-        ctx.fillText(text, x, y);
+        const style = getSeverityStyle(maxSev);
+
+        if (isMirrored) {
+          // Counter CSS scaleX(-1) so text reads normally
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.scale(-1, 1);
+          ctx.fillStyle = style.color;
+          ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+          ctx.lineWidth = 3;
+          ctx.strokeText(text, 0, 0);
+          ctx.fillText(text, 0, 0);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = style.color;
+          ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+          ctx.lineWidth = 3;
+          ctx.strokeText(text, px, py);
+          ctx.fillText(text, px, py);
+        }
       };
 
       drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle);
@@ -672,7 +687,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
           // Skip analysis during TRANSITION and COMPLETE
           if (validationPhase === 'TRANSITION' || validationPhase === 'COMPLETE') {
-            analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, []);
+            analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, [], facingMode === 'user');
             setActiveWarnings([]);
             activeWarningsRef.current = [];
             setStatus('good');
@@ -699,7 +714,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             setSideProfileWarning(false);
           }
 
-          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
+          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings, facingMode === 'user');
 
           if (warnings.length > 0) {
             const hasCritical = warnings.some(w => w.severity === 'critical');
@@ -988,12 +1003,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           <div className="mt-2 flex items-center justify-center gap-4 text-[11px] font-mono">
             {leftKneeAngle !== null && (
               <span className={activeWarnings.length > 0 ? 'text-destructive' : 'text-success'}>
-                Joelho E: {Math.round(leftKneeAngle)}°
+                {facingMode === 'user' ? 'Joelho D' : 'Joelho E'}: {Math.round(leftKneeAngle)}°
               </span>
             )}
             {rightKneeAngle !== null && (
               <span className={activeWarnings.length > 0 ? 'text-destructive' : 'text-success'}>
-                Joelho D: {Math.round(rightKneeAngle)}°
+                {facingMode === 'user' ? 'Joelho E' : 'Joelho D'}: {Math.round(rightKneeAngle)}°
               </span>
             )}
           </div>

@@ -152,8 +152,8 @@ export function checkValgusVarus(
   const none = { active: false, severity: 'ok' as Severity, coachMessage: '', affectedSegments: [] as AffectedSegment[] };
   const result: ValgusVarusResult = { valgus: { ...none }, varus: { ...none } };
 
-  // Standing gate: if knee angle > 150 the user is upright — no evaluation
-  if (kneeAngle !== undefined && kneeAngle > 150) return result;
+  // Standing gate: if knee angle unknown OR > 150 the user is upright — no evaluation
+  if (kneeAngle === undefined || kneeAngle > 150) return result;
 
   if (!isFrontalView(leftKnee, rightKnee)) return result;
 
@@ -287,12 +287,27 @@ export function isBodyInFrame(landmarks: Point3D[], ratio = 0.6): boolean {
 // ---------------------------------------------------------------------------
 
 function computeKneeAngle(landmarks: Point3D[], angleFn: (a: Point3D, b: Point3D, c: Point3D) => number): number | undefined {
-  const hip = landmarks[LANDMARK.HIP];
-  const knee = landmarks[LANDMARK.KNEE];
-  const ankle = landmarks[LANDMARK.ANKLE];
-  if (!hip || !knee || !ankle) return undefined;
-  if ((hip.visibility ?? 0) < MIN_VISIBILITY || (knee.visibility ?? 0) < MIN_VISIBILITY || (ankle.visibility ?? 0) < MIN_VISIBILITY) return undefined;
-  return angleFn(hip, knee, ankle);
+  // Try right side first
+  let hip = landmarks[LANDMARK.HIP];
+  let knee = landmarks[LANDMARK.KNEE];
+  let ankle = landmarks[LANDMARK.ANKLE];
+  if (hip && knee && ankle &&
+    (hip.visibility ?? 0) >= MIN_VISIBILITY &&
+    (knee.visibility ?? 0) >= MIN_VISIBILITY &&
+    (ankle.visibility ?? 0) >= MIN_VISIBILITY) {
+    return angleFn(hip, knee, ankle);
+  }
+  // Fallback to left side
+  hip = landmarks[LANDMARK.L_HIP];
+  knee = landmarks[LANDMARK.L_KNEE];
+  ankle = landmarks[LANDMARK.L_ANKLE];
+  if (hip && knee && ankle &&
+    (hip.visibility ?? 0) >= MIN_VISIBILITY &&
+    (knee.visibility ?? 0) >= MIN_VISIBILITY &&
+    (ankle.visibility ?? 0) >= MIN_VISIBILITY) {
+    return angleFn(hip, knee, ankle);
+  }
+  return undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -435,7 +450,36 @@ export function evaluateFrame(
         if (rule.joints.length < 2) break;
 
         const isHeelLift = rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX';
-        if (isHeelLift && !jointsVisible(landmarks, ['HEEL', 'FOOT_INDEX', 'ANKLE'], STRICT_VISIBILITY)) break;
+
+        // Heel lift: strict visibility + direct Y comparison
+        if (isHeelLift) {
+          // Try right side first, fallback to left
+          const heelR = landmarks[LANDMARK.HEEL];
+          const footR = landmarks[LANDMARK.FOOT_INDEX];
+          const heelL = landmarks[LANDMARK.L_HEEL];
+          const footL = landmarks[LANDMARK.L_FOOT_INDEX];
+
+          let heel: Point3D | null = null;
+          let foot: Point3D | null = null;
+
+          if (heelR && footR && (heelR.visibility ?? 0) >= STRICT_VISIBILITY && (footR.visibility ?? 0) >= STRICT_VISIBILITY) {
+            heel = heelR; foot = footR;
+          } else if (heelL && footL && (heelL.visibility ?? 0) >= STRICT_VISIBILITY && (footL.visibility ?? 0) >= STRICT_VISIBILITY) {
+            heel = heelL; foot = footL;
+          }
+
+          if (heel && foot) {
+            // In camera coords: lower Y = higher position. Heel above toe = heel lifted.
+            if (heel.y < foot.y) {
+              const lift = foot.y - heel.y;
+              const sev: Severity = lift > 0.03 ? 'critical' : 'warning';
+              pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, lift, 0);
+            }
+          }
+          break;
+        }
+
+        if (!jointsVisible(landmarks, rule.joints)) break;
 
         const j0 = resolve(landmarks, rule.joints[0]);
         const j1 = resolve(landmarks, rule.joints[1]);
@@ -452,10 +496,6 @@ export function evaluateFrame(
         if (rule.threshold?.includes('LIFT') && yDiff < -0.02) {
           const sev: Severity = yDiff < -0.05 ? 'critical' : 'warning';
           pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, yDiff, -0.02);
-        }
-        if (isHeelLift && yDiff < -0.05) {
-          const sev: Severity = yDiff < -0.08 ? 'critical' : 'warning';
-          pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, yDiff, -0.05);
         }
         break;
       }
