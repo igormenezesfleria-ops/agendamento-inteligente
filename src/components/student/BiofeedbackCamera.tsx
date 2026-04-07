@@ -553,7 +553,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     setValidationPhase('FRONTAL');
     setPerfectRepCount(0);
     perfectRepCountRef.current = 0;
-    repPhaseRef.current = 'standing';
+    hasDescendedRef.current = false;
     hasErrorInCurrentRepRef.current = false;
   }, [clearCanvas]);
 
@@ -830,7 +830,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     setValidationPhase('LATERAL');
     perfectRepCountRef.current = 0;
     setPerfectRepCount(0);
-    repPhaseRef.current = 'standing';
+    hasDescendedRef.current = false;
     hasErrorInCurrentRepRef.current = false;
   }, []);
 
