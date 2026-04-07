@@ -71,7 +71,7 @@ type AiState = 'loading' | 'ready' | 'fallback' | 'error' | 'off';
 
 // Phase 24.1 — Validation protocol types
 type ValidationPhase = 'FRONTAL' | 'TRANSITION' | 'LATERAL' | 'COMPLETE';
-type RepPhase = 'standing' | 'moving';
+// RepPhase removed — replaced by hasDescended boolean
 
 interface LandmarkResult {
   x: number;
@@ -126,10 +126,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   // Phase 24.1 — Validation protocol state
   const useProtocol = isSquatProtocol(movementPattern);
   const [validationPhase, setValidationPhase] = useState<ValidationPhase>('FRONTAL');
-  const repPhaseRef = useRef<RepPhase>('standing');
+  const hasDescendedRef = useRef(false);
   const [perfectRepCount, setPerfectRepCount] = useState(0);
   const hasErrorInCurrentRepRef = useRef(false);
   const perfectRepCountRef = useRef(0);
+  const transitionTimerRef = useRef<number | null>(null);
+  const [showTransitionToast, setShowTransitionToast] = useState(false);
 
   // Resolve which template to use based on protocol phase
   const activeTemplate = useMemo(() => {
