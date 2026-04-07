@@ -687,7 +687,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
           // Skip analysis during TRANSITION and COMPLETE
           if (validationPhase === 'TRANSITION' || validationPhase === 'COMPLETE') {
-            analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, []);
+            analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, [], facingMode === 'user');
             setActiveWarnings([]);
             activeWarningsRef.current = [];
             setStatus('good');
