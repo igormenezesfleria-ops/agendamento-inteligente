@@ -714,7 +714,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             setSideProfileWarning(false);
           }
 
-          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
+          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings, facingMode === 'user');
 
           if (warnings.length > 0) {
             const hasCritical = warnings.some(w => w.severity === 'critical');
@@ -1003,12 +1003,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           <div className="mt-2 flex items-center justify-center gap-4 text-[11px] font-mono">
             {leftKneeAngle !== null && (
               <span className={activeWarnings.length > 0 ? 'text-destructive' : 'text-success'}>
-                Joelho E: {Math.round(leftKneeAngle)}°
+                {facingMode === 'user' ? 'Joelho D' : 'Joelho E'}: {Math.round(leftKneeAngle)}°
               </span>
             )}
             {rightKneeAngle !== null && (
               <span className={activeWarnings.length > 0 ? 'text-destructive' : 'text-success'}>
-                Joelho D: {Math.round(rightKneeAngle)}°
+                {facingMode === 'user' ? 'Joelho E' : 'Joelho D'}: {Math.round(rightKneeAngle)}°
               </span>
             )}
           </div>
