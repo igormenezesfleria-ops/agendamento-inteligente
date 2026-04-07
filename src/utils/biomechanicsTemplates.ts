@@ -84,22 +84,24 @@ const SQUAT_LATERAL_ERRORS: BiomechanicsError[] = [
 ];
 
 export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
-  // Legacy combined template (kept for backward compatibility)
+  // User-facing combined template — engine auto-splits into FRONTAL/LATERAL phases
   SQUAT_BILATERAL: {
     name: 'Agachamento Bilateral',
     errors: [...SQUAT_FRONTAL_ERRORS, ...SQUAT_LATERAL_ERRORS],
   },
 
-  // Phase 24.1 — separated views
+  // Internal-only templates (NOT shown in dropdown — used by the protocol engine)
   SQUAT_FRONTAL: {
     name: 'Agachamento — Vista Frontal',
     errors: SQUAT_FRONTAL_ERRORS,
-  },
+    _internal: true,
+  } as MovementPattern,
 
   SQUAT_LATERAL: {
     name: 'Agachamento — Vista Lateral',
     errors: SQUAT_LATERAL_ERRORS,
-  },
+    _internal: true,
+  } as MovementPattern,
 
   PUSH_HORIZONTAL: {
     name: 'Empurrar Horizontal (Supinos/Flexão)',

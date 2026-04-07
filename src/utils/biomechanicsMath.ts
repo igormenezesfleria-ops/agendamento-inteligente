@@ -152,8 +152,8 @@ export function checkValgusVarus(
   const none = { active: false, severity: 'ok' as Severity, coachMessage: '', affectedSegments: [] as AffectedSegment[] };
   const result: ValgusVarusResult = { valgus: { ...none }, varus: { ...none } };
 
-  // Standing gate: if knee angle > 160 the user is upright — no evaluation
-  if (kneeAngle !== undefined && kneeAngle > 160) return result;
+  // Standing gate: if knee angle > 150 the user is upright — no evaluation
+  if (kneeAngle !== undefined && kneeAngle > 150) return result;
 
   if (!isFrontalView(leftKnee, rightKnee)) return result;
 

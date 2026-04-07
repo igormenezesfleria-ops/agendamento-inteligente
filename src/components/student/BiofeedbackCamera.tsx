@@ -71,7 +71,7 @@ type AiState = 'loading' | 'ready' | 'fallback' | 'error' | 'off';
 
 // Phase 24.1 — Validation protocol types
 type ValidationPhase = 'FRONTAL' | 'TRANSITION' | 'LATERAL' | 'COMPLETE';
-type RepPhase = 'standing' | 'moving';
+// RepPhase removed — replaced by hasDescended boolean
 
 interface LandmarkResult {
   x: number;
@@ -106,7 +106,7 @@ interface BiofeedbackCameraProps {
 
 // Check if pattern is a squat that supports the validation protocol
 function isSquatProtocol(pattern: string | undefined): boolean {
-  return pattern === 'SQUAT_BILATERAL' || pattern === 'SQUAT_FRONTAL' || pattern === 'SQUAT_LATERAL';
+  return pattern === 'SQUAT_BILATERAL';
 }
 
 export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseName }: BiofeedbackCameraProps) {
@@ -126,10 +126,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   // Phase 24.1 — Validation protocol state
   const useProtocol = isSquatProtocol(movementPattern);
   const [validationPhase, setValidationPhase] = useState<ValidationPhase>('FRONTAL');
-  const repPhaseRef = useRef<RepPhase>('standing');
+  const hasDescendedRef = useRef(false);
   const [perfectRepCount, setPerfectRepCount] = useState(0);
   const hasErrorInCurrentRepRef = useRef(false);
   const perfectRepCountRef = useRef(0);
+  const transitionTimerRef = useRef<number | null>(null);
+  const [showTransitionToast, setShowTransitionToast] = useState(false);
 
   // Resolve which template to use based on protocol phase
   const activeTemplate = useMemo(() => {
@@ -172,7 +174,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const [sideProfileWarning, setSideProfileWarning] = useState(false);
   const [isCalibrating, setIsCalibrating] = useState(true);
 
-  // ---- Rep tracking logic (called per frame) ----
+  // ---- Strict Rep tracking logic (called per frame) ----
   const processRepTracking = useCallback((landmarks: LandmarkResult[], warnings: FrameWarning[]) => {
     if (!useProtocol || validationPhase === 'TRANSITION' || validationPhase === 'COMPLETE') return;
 
@@ -184,24 +186,28 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
     const kneeAngle = calculateAngle(hip, knee, ankle);
 
-    const prevPhase = repPhaseRef.current;
-
-    if (kneeAngle < 160 && prevPhase === 'standing') {
-      // Started descending — begin rep
-      repPhaseRef.current = 'moving';
-      hasErrorInCurrentRepRef.current = false;
-    }
-
-    // Track errors during movement
-    if (repPhaseRef.current === 'moving') {
+    // Track errors while descending
+    if (hasDescendedRef.current) {
       if (warnings.some(w => w.severity === 'warning' || w.severity === 'critical')) {
         hasErrorInCurrentRepRef.current = true;
       }
     }
 
-    if (kneeAngle > 160 && prevPhase === 'moving') {
-      // Rep completed — returned to standing
-      repPhaseRef.current = 'standing';
+    // Strict descent gate: must reach < 120 degrees
+    if (kneeAngle < 120) {
+      if (!hasDescendedRef.current) {
+        hasDescendedRef.current = true;
+        hasErrorInCurrentRepRef.current = false;
+      }
+      // Also check errors during bottom
+      if (warnings.some(w => w.severity === 'warning' || w.severity === 'critical')) {
+        hasErrorInCurrentRepRef.current = true;
+      }
+    }
+
+    // Rep completes only if user descended AND returned to standing (> 160)
+    if (hasDescendedRef.current && kneeAngle > 160) {
+      hasDescendedRef.current = false;
 
       if (!hasErrorInCurrentRepRef.current) {
         const newCount = perfectRepCountRef.current + 1;
@@ -210,9 +216,18 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
         if (newCount >= 3) {
           if (validationPhase === 'FRONTAL') {
+            // Pix-style auto-transition
+            setShowTransitionToast(true);
             setValidationPhase('TRANSITION');
             perfectRepCountRef.current = 0;
             setPerfectRepCount(0);
+            // Auto-advance after 3.5s
+            transitionTimerRef.current = window.setTimeout(() => {
+              setShowTransitionToast(false);
+              setValidationPhase('LATERAL');
+              hasDescendedRef.current = false;
+              hasErrorInCurrentRepRef.current = false;
+            }, 3500);
           } else if (validationPhase === 'LATERAL') {
             setValidationPhase('COMPLETE');
           }
@@ -507,6 +522,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     cancelAnimationFrame(rafRef.current);
     if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
     if (fallbackIntervalRef.current) window.clearInterval(fallbackIntervalRef.current);
+    if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
 
     aiReadyRef.current = false;
     simulationModeRef.current = false;
@@ -538,8 +554,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     setValidationPhase('FRONTAL');
     setPerfectRepCount(0);
     perfectRepCountRef.current = 0;
-    repPhaseRef.current = 'standing';
+    hasDescendedRef.current = false;
     hasErrorInCurrentRepRef.current = false;
+    setShowTransitionToast(false);
   }, [clearCanvas]);
 
   const startVideoFeed = useCallback(async (requestedFacingMode: FacingMode = facingMode) => {
@@ -811,12 +828,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     }
   }, [useProtocol, validationPhase]);
 
-  const handleTransitionReady = useCallback(() => {
-    setValidationPhase('LATERAL');
-    perfectRepCountRef.current = 0;
-    setPerfectRepCount(0);
-    repPhaseRef.current = 'standing';
-    hasErrorInCurrentRepRef.current = false;
+  // Cleanup transition timer
+  useEffect(() => {
+    return () => {
+      if (transitionTimerRef.current) window.clearTimeout(transitionTimerRef.current);
+    };
   }, []);
 
   return (
@@ -998,23 +1014,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
 
-        {/* TRANSITION MODAL */}
-        {validationPhase === 'TRANSITION' && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="mx-6 max-w-sm rounded-2xl border border-success/30 bg-background/95 p-8 text-center shadow-2xl">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/20">
-                <CheckCircle2 className="h-8 w-8 text-success" />
+        {/* PIX-STYLE TRANSITION TOAST (auto-dismisses) */}
+        {showTransitionToast && (
+          <div className="absolute left-4 right-4 top-1/3 z-30 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="rounded-2xl border border-success/40 bg-success/20 px-8 py-6 text-center shadow-2xl backdrop-blur-xl">
+              <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-success/30">
+                <CheckCircle2 className="h-7 w-7 text-success" />
               </div>
-              <h2 className="mb-2 text-xl font-extrabold text-foreground">✅ Vista Frontal Aprovada!</h2>
-              <p className="mb-6 text-sm text-muted-foreground">
-                Agora, posicione o celular de <strong>LADO (Perfil)</strong> para validarmos sua coluna.
-              </p>
-              <button
-                onClick={handleTransitionReady}
-                className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-bold text-accent-foreground shadow-lg transition-all hover:scale-[1.02] hover:bg-accent/90"
-              >
-                Pronto, posicionei
-              </button>
+              <p className="text-lg font-extrabold text-white">✅ Vista Frontal Aprovada!</p>
+              <p className="mt-1 text-xs text-white/70">Vire o celular de LADO para a Fase 2...</p>
             </div>
           </div>
         )}
