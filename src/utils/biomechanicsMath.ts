@@ -214,7 +214,7 @@ export function checkValgusVarus(
   }
 
   const varusSegs: AffectedSegment[] = [];
-  let varusMaxSev: Severity = 'ok';
+  let varusMaxSev = 'ok' as Severity;
 
   // VARUS — Left leg (outward = knee.x decreases away from center)
   if (leftOutward > refWidth * 0.30) {
