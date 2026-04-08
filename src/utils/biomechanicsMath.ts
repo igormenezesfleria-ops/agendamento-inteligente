@@ -458,7 +458,20 @@ export function evaluateFrame(
           const ra = resolve(landmarks, 'ANKLE');
           const lh = resolve(landmarks, 'L_HIP');
           const rh = resolve(landmarks, 'HIP');
-          // Pass kneeAngle + hips for plumb-line evaluation
+
+          // BRUTE FORCE STANDING OVERRIDE: compute local knee angles as redundant guard
+          const localRightKneeAngle = jointsVisible(landmarks, ['HIP', 'KNEE', 'ANKLE'])
+            ? angleFn(resolve(landmarks, 'HIP'), rk, ra)
+            : undefined;
+          const localLeftKneeAngle = jointsVisible(landmarks, ['L_HIP', 'L_KNEE', 'L_ANKLE'])
+            ? angleFn(resolve(landmarks, 'L_HIP'), lk, la)
+            : undefined;
+          const bestKnee = Math.max(kneeAngle ?? 0, localRightKneeAngle ?? 0, localLeftKneeAngle ?? 0);
+
+          // If ANY knee reading says standing (>150°), skip valgus/varus entirely
+          if (bestKnee > 150) break;
+
+          // Pass kneeAngle + hips for plumb-line evaluation (gate inside will also check)
           const vv = checkValgusVarus(lk, rk, la, ra, kneeAngle, lh, rh);
 
           if (vv.valgus.active) {
