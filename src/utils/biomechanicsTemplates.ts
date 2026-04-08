@@ -38,70 +38,47 @@ export interface MovementPattern {
   errors: BiomechanicsError[];
 }
 
-// ---------------------------------------------------------------------------
-// SQUAT — separated into FRONTAL and LATERAL views
-// ---------------------------------------------------------------------------
-
-const SQUAT_FRONTAL_ERRORS: BiomechanicsError[] = [
-  {
-    id: 'valgus',
-    name: 'Valgo Dinâmico',
-    type: 'X_AXIS_COMPARE',
-    joints: ['KNEE', 'ANKLE'],
-    threshold: 'KNEES_CLOSER_THAN_ANKLES',
-    coachMessage: 'Joelhos caindo para dentro! Force-os para fora.',
-    affectedSegments: ['left_leg', 'right_leg'],
-  },
-  {
-    id: 'varus',
-    name: 'Varo Dinâmico',
-    type: 'X_AXIS_COMPARE',
-    joints: ['KNEE', 'ANKLE'],
-    threshold: 'KNEES_WIDER_THAN_ANKLES',
-    coachMessage: 'Joelhos muito abertos! Alinhe com a ponta do pé.',
-    affectedSegments: ['left_leg', 'right_leg'],
-  },
-];
-
-const SQUAT_LATERAL_ERRORS: BiomechanicsError[] = [
-  {
-    id: 'butt_wink',
-    name: 'Retroversão Pélvica',
-    type: 'ANGLE_3D',
-    joints: ['SHOULDER', 'HIP', 'KNEE'],
-    minSafeAngle: 85,
-    coachMessage: 'Perdeu a lombar no fundo! Segure o abdômen.',
-    affectedSegments: ['spine', 'hip'],
-  },
-  {
-    id: 'heel_lift',
-    name: 'Calcanhar Elevado',
-    type: 'Y_AXIS_COMPARE',
-    joints: ['HEEL', 'FOOT_INDEX'],
-    coachMessage: 'Calcanhar subindo! Mantenha os pés firmes no chão.',
-    affectedSegments: ['left_leg', 'right_leg'],
-  },
-];
-
 export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
-  // User-facing combined template — engine auto-splits into FRONTAL/LATERAL phases
   SQUAT_BILATERAL: {
     name: 'Agachamento Bilateral',
-    errors: [...SQUAT_FRONTAL_ERRORS, ...SQUAT_LATERAL_ERRORS],
+    errors: [
+      {
+        id: 'valgus',
+        name: 'Valgo Dinâmico',
+        type: 'X_AXIS_COMPARE',
+        joints: ['KNEE', 'ANKLE'],
+        threshold: 'KNEES_CLOSER_THAN_ANKLES',
+        coachMessage: 'Joelhos caindo para dentro! Force-os para fora.',
+        affectedSegments: ['left_leg', 'right_leg'],
+      },
+      {
+        id: 'butt_wink',
+        name: 'Retroversão Pélvica',
+        type: 'ANGLE_3D',
+        joints: ['SHOULDER', 'HIP', 'KNEE'],
+        minSafeAngle: 60,
+        coachMessage: 'Perdeu a lombar no fundo! Segure o abdômen e não desça tanto.',
+        affectedSegments: ['spine', 'hip'],
+      },
+      {
+        id: 'heel_lift',
+        name: 'Calcanhar Elevado',
+        type: 'Y_AXIS_COMPARE',
+        joints: ['HEEL', 'FOOT_INDEX'],
+        coachMessage: 'Calcanhar subindo! Mantenha os pés firmes no chão.',
+        affectedSegments: ['left_leg', 'right_leg'],
+      },
+      {
+        id: 'forward_lean',
+        name: 'Inclinação Excessiva do Tronco',
+        type: 'ANGLE_3D',
+        joints: ['SHOULDER', 'HIP', 'ANKLE'],
+        minSafeAngle: 45,
+        coachMessage: 'Tronco inclinando demais! Peito para cima, olhe para frente.',
+        affectedSegments: ['spine'],
+      },
+    ],
   },
-
-  // Internal-only templates (NOT shown in dropdown — used by the protocol engine)
-  SQUAT_FRONTAL: {
-    name: 'Agachamento — Vista Frontal',
-    errors: SQUAT_FRONTAL_ERRORS,
-    _internal: true,
-  } as MovementPattern,
-
-  SQUAT_LATERAL: {
-    name: 'Agachamento — Vista Lateral',
-    errors: SQUAT_LATERAL_ERRORS,
-    _internal: true,
-  } as MovementPattern,
 
   PUSH_HORIZONTAL: {
     name: 'Empurrar Horizontal (Supinos/Flexão)',

@@ -14,8 +14,8 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
       <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
         <div className="w-full max-w-md mx-auto">
           {/* Logo - Centered */}
-          <Link to="/" className="flex justify-center mb-16 group">
-            <img src="/logo-synton.png" alt="Synton" className="h-48 md:h-56 w-auto object-contain mx-auto group-hover:scale-105 transition-transform" />
+          <Link to="/" className="flex justify-center mb-6 group">
+            <img src="/logo-synton.png" alt="Synton" className="h-16 w-auto object-contain group-hover:scale-105 transition-transform" />
           </Link>
 
           {/* Header - Centered */}
