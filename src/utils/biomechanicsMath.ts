@@ -182,7 +182,7 @@ export function checkValgusVarus(
   const rightOutward = vRightKnee.x - vRightAnkle.x; // positive = knee moves right (outward)
 
   const valgusSegs: AffectedSegment[] = [];
-  let valgusMaxSev: Severity = 'ok';
+  let valgusMaxSev = 'ok' as Severity;
 
   // VALGUS — Left leg (inward = knee.x increases toward center)
   if (leftInward > refWidth * 0.25) {
