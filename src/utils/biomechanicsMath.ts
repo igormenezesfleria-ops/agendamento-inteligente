@@ -148,6 +148,8 @@ export function checkValgusVarus(
   leftAnkle: Point3D,
   rightAnkle: Point3D,
   kneeAngle?: number,
+  leftHip?: Point3D,
+  rightHip?: Point3D,
 ): ValgusVarusResult {
   const none = { active: false, severity: 'ok' as Severity, coachMessage: '', affectedSegments: [] as AffectedSegment[] };
   const result: ValgusVarusResult = { valgus: { ...none }, varus: { ...none } };
@@ -157,42 +159,89 @@ export function checkValgusVarus(
 
   if (!isFrontalView(leftKnee, rightKnee)) return result;
 
-  const kneeDist = Math.abs(leftKnee.x - rightKnee.x);
-  const ankleDist = Math.abs(leftAnkle.x - rightAnkle.x);
+  // Dynamic scale reference based on hip width; fallback to ankle distance
+  const refWidth = (leftHip && rightHip)
+    ? Math.abs(rightHip.x - leftHip.x)
+    : Math.abs(rightAnkle.x - leftAnkle.x);
 
-  if (ankleDist < 0.01) return result; // feet too close to evaluate
+  if (refWidth < 0.01) return result; // too close to evaluate
 
-  // --- VALGUS (knees collapsing inward) ---
-  if (kneeDist < ankleDist * 0.75) {
+  // Determine visual left (lower X) and visual right (higher X)
+  const isLeftLower = leftKnee.x <= rightKnee.x;
+  const vLeftKnee = isLeftLower ? leftKnee : rightKnee;
+  const vLeftAnkle = isLeftLower ? leftAnkle : rightAnkle;
+  const vRightKnee = isLeftLower ? rightKnee : leftKnee;
+  const vRightAnkle = isLeftLower ? rightAnkle : leftAnkle;
+  const vLeftSeg: AffectedSegment = isLeftLower ? 'left_leg' : 'right_leg';
+  const vRightSeg: AffectedSegment = isLeftLower ? 'right_leg' : 'left_leg';
+
+  // --- Per-leg plumb line deviations ---
+  const leftInward = vLeftKnee.x - vLeftAnkle.x;   // positive = knee moves right (inward)
+  const rightInward = vRightAnkle.x - vRightKnee.x; // positive = knee moves left (inward)
+  const leftOutward = vLeftAnkle.x - vLeftKnee.x;   // positive = knee moves left (outward)
+  const rightOutward = vRightKnee.x - vRightAnkle.x; // positive = knee moves right (outward)
+
+  const valgusSegs: AffectedSegment[] = [];
+  let valgusMaxSev = 'ok' as Severity;
+
+  // VALGUS — Left leg (inward = knee.x increases toward center)
+  if (leftInward > refWidth * 0.25) {
+    valgusSegs.push(vLeftSeg);
+    valgusMaxSev = 'critical';
+  } else if (leftInward > refWidth * 0.15) {
+    valgusSegs.push(vLeftSeg);
+    if (valgusMaxSev !== 'critical') valgusMaxSev = 'warning';
+  }
+
+  // VALGUS — Right leg (inward = knee.x decreases toward center)
+  if (rightInward > refWidth * 0.25) {
+    valgusSegs.push(vRightSeg);
+    valgusMaxSev = 'critical';
+  } else if (rightInward > refWidth * 0.15) {
+    valgusSegs.push(vRightSeg);
+    if (valgusMaxSev !== 'critical') valgusMaxSev = 'warning';
+  }
+
+  if (valgusSegs.length > 0) {
     result.valgus = {
       active: true,
-      severity: 'critical',
-      coachMessage: '🚨 Joelhos caindo para dentro! Force-os para fora.',
-      affectedSegments: ['left_leg', 'right_leg'],
-    };
-  } else if (kneeDist < ankleDist * 0.90) {
-    result.valgus = {
-      active: true,
-      severity: 'warning',
-      coachMessage: 'Atenção: Joelho querendo entrar. Segure a base!',
-      affectedSegments: ['left_leg', 'right_leg'],
+      severity: valgusMaxSev,
+      coachMessage: valgusMaxSev === 'critical'
+        ? '🚨 Joelhos caindo para dentro! Force-os para fora.'
+        : 'Atenção: Joelho querendo entrar. Segure a base!',
+      affectedSegments: valgusSegs,
     };
   }
 
-  // --- VARUS (knees pushing outward) ---
-  if (kneeDist > ankleDist * 1.40) {
+  const varusSegs: AffectedSegment[] = [];
+  let varusMaxSev = 'ok' as Severity;
+
+  // VARUS — Left leg (outward = knee.x decreases away from center)
+  if (leftOutward > refWidth * 0.30) {
+    varusSegs.push(vLeftSeg);
+    varusMaxSev = 'critical';
+  } else if (leftOutward > refWidth * 0.20) {
+    varusSegs.push(vLeftSeg);
+    if (varusMaxSev !== 'critical') varusMaxSev = 'warning';
+  }
+
+  // VARUS — Right leg (outward = knee.x increases away from center)
+  if (rightOutward > refWidth * 0.30) {
+    varusSegs.push(vRightSeg);
+    varusMaxSev = 'critical';
+  } else if (rightOutward > refWidth * 0.20) {
+    varusSegs.push(vRightSeg);
+    if (varusMaxSev !== 'critical') varusMaxSev = 'warning';
+  }
+
+  if (varusSegs.length > 0) {
     result.varus = {
       active: true,
-      severity: 'critical',
-      coachMessage: '🚨 Joelhos muito abertos! Alinhe com a ponta do pé.',
-      affectedSegments: ['left_leg', 'right_leg'],
-    };
-  } else if (kneeDist > ankleDist * 1.25) {
-    result.varus = {
-      active: true,
-      severity: 'warning',
-      coachMessage: 'Atenção: Base muito aberta.',
-      affectedSegments: ['left_leg', 'right_leg'],
+      severity: varusMaxSev,
+      coachMessage: varusMaxSev === 'critical'
+        ? '🚨 Joelhos muito abertos! Alinhe com a ponta do pé.'
+        : 'Atenção: Base muito aberta.',
+      affectedSegments: varusSegs,
     };
   }
 
@@ -407,8 +456,10 @@ export function evaluateFrame(
           const rk = resolve(landmarks, 'KNEE');
           const la = resolve(landmarks, 'L_ANKLE');
           const ra = resolve(landmarks, 'ANKLE');
-          // Pass kneeAngle for standing gate
-          const vv = checkValgusVarus(lk, rk, la, ra, kneeAngle);
+          const lh = resolve(landmarks, 'L_HIP');
+          const rh = resolve(landmarks, 'HIP');
+          // Pass kneeAngle + hips for plumb-line evaluation
+          const vv = checkValgusVarus(lk, rk, la, ra, kneeAngle, lh, rh);
 
           if (vv.valgus.active) {
             pushWarning(
