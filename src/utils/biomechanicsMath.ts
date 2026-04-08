@@ -1,14 +1,9 @@
 /**
- * Synton Hybrid Kinematics Engine (2D + 3D)
+ * Synton Biomechanics Engine — MVP Baseline
  *
- * Pure-math utilities that evaluate MediaPipe Pose landmarks against
- * the biomechanical ruleset defined in biomechanicsTemplates.ts.
- *
- * 3D math (dot-product) is used for complex multi-plane movements (squats).
- * 2D math (atan2, x/y only) is used for strict lateral views to avoid Z-axis noise.
- *
- * All functions are stateless and designed to run at 30 fps inside
- * requestAnimationFrame without allocating garbage.
+ * Simple real-time evaluation of MediaPipe Pose landmarks.
+ * Only evaluates basic angle checks and distance comparisons.
+ * No gamification, no standing gates, no plumb lines.
  */
 
 import { type MovementPattern, type AffectedSegment } from './biomechanicsTemplates';
@@ -129,134 +124,25 @@ export function calculateAngle2D(a: Point3D, b: Point3D, c: Point3D): number {
 }
 
 // ---------------------------------------------------------------------------
-// 3. Valgus / Varus — 3-tier semaphore (frontal view only)
-//    Phase 24.1: requires kneeAngle < 160 (user must be squatting)
+// 3. Simple Valgus check (bilateral distance comparison)
 // ---------------------------------------------------------------------------
 
 export function isFrontalView(leftKnee: Point3D, rightKnee: Point3D): boolean {
   return Math.abs(leftKnee.z - rightKnee.z) <= 0.2;
 }
 
-export interface ValgusVarusResult {
-  valgus: { active: boolean; severity: Severity; coachMessage: string; affectedSegments: AffectedSegment[] };
-  varus: { active: boolean; severity: Severity; coachMessage: string; affectedSegments: AffectedSegment[] };
-}
-
-export function checkValgusVarus(
-  leftKnee: Point3D,
-  rightKnee: Point3D,
-  leftAnkle: Point3D,
-  rightAnkle: Point3D,
-  kneeAngle?: number,
-  leftHip?: Point3D,
-  rightHip?: Point3D,
-): ValgusVarusResult {
-  const none = { active: false, severity: 'ok' as Severity, coachMessage: '', affectedSegments: [] as AffectedSegment[] };
-  const result: ValgusVarusResult = { valgus: { ...none }, varus: { ...none } };
-
-  // Standing gate: if knee angle unknown OR > 150 the user is upright — no evaluation
-  if (kneeAngle === undefined || kneeAngle > 150) return result;
-
-  if (!isFrontalView(leftKnee, rightKnee)) return result;
-
-  // Dynamic scale reference based on hip width; fallback to ankle distance
-  const refWidth = (leftHip && rightHip)
-    ? Math.abs(rightHip.x - leftHip.x)
-    : Math.abs(rightAnkle.x - leftAnkle.x);
-
-  if (refWidth < 0.01) return result; // too close to evaluate
-
-  // Determine visual left (lower X) and visual right (higher X)
-  const isLeftLower = leftKnee.x <= rightKnee.x;
-  const vLeftKnee = isLeftLower ? leftKnee : rightKnee;
-  const vLeftAnkle = isLeftLower ? leftAnkle : rightAnkle;
-  const vRightKnee = isLeftLower ? rightKnee : leftKnee;
-  const vRightAnkle = isLeftLower ? rightAnkle : leftAnkle;
-  const vLeftSeg: AffectedSegment = isLeftLower ? 'left_leg' : 'right_leg';
-  const vRightSeg: AffectedSegment = isLeftLower ? 'right_leg' : 'left_leg';
-
-  // --- Per-leg plumb line deviations ---
-  const leftInward = vLeftKnee.x - vLeftAnkle.x;   // positive = knee moves right (inward)
-  const rightInward = vRightAnkle.x - vRightKnee.x; // positive = knee moves left (inward)
-  const leftOutward = vLeftAnkle.x - vLeftKnee.x;   // positive = knee moves left (outward)
-  const rightOutward = vRightKnee.x - vRightAnkle.x; // positive = knee moves right (outward)
-
-  const valgusSegs: AffectedSegment[] = [];
-  let valgusMaxSev = 'ok' as Severity;
-
-  // VALGUS — Left leg (inward = knee.x increases toward center)
-  if (leftInward > refWidth * 0.25) {
-    valgusSegs.push(vLeftSeg);
-    valgusMaxSev = 'critical';
-  } else if (leftInward > refWidth * 0.15) {
-    valgusSegs.push(vLeftSeg);
-    if (valgusMaxSev !== 'critical') valgusMaxSev = 'warning';
-  }
-
-  // VALGUS — Right leg (inward = knee.x decreases toward center)
-  if (rightInward > refWidth * 0.25) {
-    valgusSegs.push(vRightSeg);
-    valgusMaxSev = 'critical';
-  } else if (rightInward > refWidth * 0.15) {
-    valgusSegs.push(vRightSeg);
-    if (valgusMaxSev !== 'critical') valgusMaxSev = 'warning';
-  }
-
-  if (valgusSegs.length > 0) {
-    result.valgus = {
-      active: true,
-      severity: valgusMaxSev,
-      coachMessage: valgusMaxSev === 'critical'
-        ? '🚨 Joelhos caindo para dentro! Force-os para fora.'
-        : 'Atenção: Joelho querendo entrar. Segure a base!',
-      affectedSegments: valgusSegs,
-    };
-  }
-
-  const varusSegs: AffectedSegment[] = [];
-  let varusMaxSev = 'ok' as Severity;
-
-  // VARUS — Left leg (outward = knee.x decreases away from center)
-  if (leftOutward > refWidth * 0.30) {
-    varusSegs.push(vLeftSeg);
-    varusMaxSev = 'critical';
-  } else if (leftOutward > refWidth * 0.20) {
-    varusSegs.push(vLeftSeg);
-    if (varusMaxSev !== 'critical') varusMaxSev = 'warning';
-  }
-
-  // VARUS — Right leg (outward = knee.x increases away from center)
-  if (rightOutward > refWidth * 0.30) {
-    varusSegs.push(vRightSeg);
-    varusMaxSev = 'critical';
-  } else if (rightOutward > refWidth * 0.20) {
-    varusSegs.push(vRightSeg);
-    if (varusMaxSev !== 'critical') varusMaxSev = 'warning';
-  }
-
-  if (varusSegs.length > 0) {
-    result.varus = {
-      active: true,
-      severity: varusMaxSev,
-      coachMessage: varusMaxSev === 'critical'
-        ? '🚨 Joelhos muito abertos! Alinhe com a ponta do pé.'
-        : 'Atenção: Base muito aberta.',
-      affectedSegments: varusSegs,
-    };
-  }
-
-  return result;
-}
-
-// Legacy compat wrapper
 export function checkDynamicValgus(
   leftKnee: Point3D,
   rightKnee: Point3D,
   leftAnkle: Point3D,
   rightAnkle: Point3D,
 ): boolean {
-  const r = checkValgusVarus(leftKnee, rightKnee, leftAnkle, rightAnkle);
-  return r.valgus.active;
+  if (!isFrontalView(leftKnee, rightKnee)) return false;
+
+  const kneeDistance = Math.abs(leftKnee.x - rightKnee.x);
+  const ankleDistance = Math.abs(leftAnkle.x - rightAnkle.x);
+
+  return kneeDistance < ankleDistance * 0.85;
 }
 
 // ---------------------------------------------------------------------------
@@ -265,20 +151,17 @@ export function checkDynamicValgus(
 
 const DEBOUNCE_FRAMES = 3;
 
-// Tracks consecutive frame counts per errorId
 const debounceCounters: Map<string, number> = new Map();
 const activeStates: Map<string, FrameWarning> = new Map();
 
 function debounceWarnings(rawWarnings: FrameWarning[]): FrameWarning[] {
   const currentIds = new Set(rawWarnings.map(w => `${w.errorId}:${w.severity}`));
 
-  // Increment counters for present warnings
   for (const w of rawWarnings) {
     const key = `${w.errorId}:${w.severity}`;
     debounceCounters.set(key, (debounceCounters.get(key) ?? 0) + 1);
   }
 
-  // Decrement counters for absent warnings
   for (const key of Array.from(debounceCounters.keys())) {
     if (!currentIds.has(key)) {
       const count = (debounceCounters.get(key) ?? 0) - 1;
@@ -292,7 +175,6 @@ function debounceWarnings(rawWarnings: FrameWarning[]): FrameWarning[] {
     }
   }
 
-  // Promote warnings that hit the threshold
   for (const w of rawWarnings) {
     const key = `${w.errorId}:${w.severity}`;
     if ((debounceCounters.get(key) ?? 0) >= DEBOUNCE_FRAMES) {
@@ -308,7 +190,6 @@ function debounceWarnings(rawWarnings: FrameWarning[]): FrameWarning[] {
 // ---------------------------------------------------------------------------
 
 const MIN_VISIBILITY = 0.65;
-const STRICT_VISIBILITY = 0.80;
 
 function jointsVisible(landmarks: Point3D[], joints: string[], threshold = MIN_VISIBILITY): boolean {
   for (const j of joints) {
@@ -332,35 +213,7 @@ export function isBodyInFrame(landmarks: Point3D[], ratio = 0.6): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: compute knee angle for standing gate
-// ---------------------------------------------------------------------------
-
-function computeKneeAngle(landmarks: Point3D[], angleFn: (a: Point3D, b: Point3D, c: Point3D) => number): number | undefined {
-  // Try right side first
-  let hip = landmarks[LANDMARK.HIP];
-  let knee = landmarks[LANDMARK.KNEE];
-  let ankle = landmarks[LANDMARK.ANKLE];
-  if (hip && knee && ankle &&
-    (hip.visibility ?? 0) >= MIN_VISIBILITY &&
-    (knee.visibility ?? 0) >= MIN_VISIBILITY &&
-    (ankle.visibility ?? 0) >= MIN_VISIBILITY) {
-    return angleFn(hip, knee, ankle);
-  }
-  // Fallback to left side
-  hip = landmarks[LANDMARK.L_HIP];
-  knee = landmarks[LANDMARK.L_KNEE];
-  ankle = landmarks[LANDMARK.L_ANKLE];
-  if (hip && knee && ankle &&
-    (hip.visibility ?? 0) >= MIN_VISIBILITY &&
-    (knee.visibility ?? 0) >= MIN_VISIBILITY &&
-    (ankle.visibility ?? 0) >= MIN_VISIBILITY) {
-    return angleFn(hip, knee, ankle);
-  }
-  return undefined;
-}
-
-// ---------------------------------------------------------------------------
-// 6. evaluateFrame — hybrid routing with 3-tier severity + visibility gate
+// 6. evaluateFrame — simple real-time evaluation
 // ---------------------------------------------------------------------------
 
 function resolve(landmarks: Point3D[], joint: string): Point3D {
@@ -383,14 +236,11 @@ export function evaluateFrame(
 ): FrameWarning[] {
   if (!activeTemplate || !landmarks || landmarks.length < 33) return [];
 
-  // ── Global visibility gate: skip ALL analysis if body not in frame ──
+  // Global visibility gate
   if (!isBodyInFrame(landmarks)) return [];
 
   const angleFn = pickAngleFn(patternId);
   const rawWarnings: FrameWarning[] = [];
-
-  // Pre-compute knee angle for standing gate (valgus/varus/butt_wink)
-  const kneeAngle = computeKneeAngle(landmarks, angleFn);
 
   const pushWarning = (
     rule: { id: string; name: string; coachMessage: string; affectedSegments: AffectedSegment[] },
@@ -411,7 +261,6 @@ export function evaluateFrame(
   };
 
   for (const rule of activeTemplate.errors) {
-    // ── Per-rule visibility gate ──
     if (rule.joints.length > 0 && !jointsVisible(landmarks, rule.joints)) continue;
 
     switch (rule.type) {
@@ -421,18 +270,6 @@ export function evaluateFrame(
         const b = resolve(landmarks, rule.joints[1]);
         const c = resolve(landmarks, rule.joints[2]);
         const angle = angleFn(a, b, c);
-
-        // Deep-flexion guard for butt_wink: only evaluate if kneeAngle < 100
-        if (rule.id === 'butt_wink') {
-          if (kneeAngle === undefined || kneeAngle >= 100) break;
-          // Custom 3-tier for butt_wink (Phase 24.1)
-          if (angle < 85) {
-            pushWarning(rule, 'critical', '🚨 Perdeu a lombar no fundo! Segure o abdômen.', angle, 85);
-          } else if (angle < 95) {
-            pushWarning(rule, 'warning', 'Atenção: Lombar começando a arredondar.', angle, 95);
-          }
-          break;
-        }
 
         if (rule.minSafeAngle !== undefined && angle < rule.minSafeAngle) {
           const deficit = rule.minSafeAngle - angle;
@@ -456,41 +293,14 @@ export function evaluateFrame(
           const rk = resolve(landmarks, 'KNEE');
           const la = resolve(landmarks, 'L_ANKLE');
           const ra = resolve(landmarks, 'ANKLE');
-          const lh = resolve(landmarks, 'L_HIP');
-          const rh = resolve(landmarks, 'HIP');
 
-          // BRUTE FORCE STANDING OVERRIDE: compute local knee angles as redundant guard
-          const localRightKneeAngle = jointsVisible(landmarks, ['HIP', 'KNEE', 'ANKLE'])
-            ? angleFn(resolve(landmarks, 'HIP'), rk, ra)
-            : undefined;
-          const localLeftKneeAngle = jointsVisible(landmarks, ['L_HIP', 'L_KNEE', 'L_ANKLE'])
-            ? angleFn(resolve(landmarks, 'L_HIP'), lk, la)
-            : undefined;
-          const bestKnee = Math.max(kneeAngle ?? 0, localRightKneeAngle ?? 0, localLeftKneeAngle ?? 0);
-
-          // If ANY knee reading says standing (>150°), skip valgus/varus entirely
-          if (bestKnee > 150) break;
-
-          // Pass kneeAngle + hips for plumb-line evaluation (gate inside will also check)
-          const vv = checkValgusVarus(lk, rk, la, ra, kneeAngle, lh, rh);
-
-          if (vv.valgus.active) {
-            pushWarning(
-              { ...rule, id: 'valgus', affectedSegments: vv.valgus.affectedSegments },
-              vv.valgus.severity,
-              vv.valgus.coachMessage,
-              Math.abs(lk.x - rk.x),
-              Math.abs(la.x - ra.x),
-            );
-          }
-          if (vv.varus.active) {
-            pushWarning(
-              { ...rule, id: 'varus', name: 'Varo Dinâmico', affectedSegments: vv.varus.affectedSegments },
-              vv.varus.severity,
-              vv.varus.coachMessage,
-              Math.abs(lk.x - rk.x),
-              Math.abs(la.x - ra.x),
-            );
+          const valgus = checkDynamicValgus(lk, rk, la, ra);
+          if (valgus) {
+            const kneeD = Math.abs(lk.x - rk.x);
+            const ankleD = Math.abs(la.x - ra.x);
+            const ratio = kneeD / ankleD;
+            const sev: Severity = ratio < 0.70 ? 'critical' : 'warning';
+            pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, kneeD, ankleD);
           }
           break;
         }
@@ -512,37 +322,6 @@ export function evaluateFrame(
 
       case 'Y_AXIS_COMPARE': {
         if (rule.joints.length < 2) break;
-
-        const isHeelLift = rule.joints[0] === 'HEEL' && rule.joints[1] === 'FOOT_INDEX';
-
-        // Heel lift: strict visibility + direct Y comparison
-        if (isHeelLift) {
-          // Try right side first, fallback to left
-          const heelR = landmarks[LANDMARK.HEEL];
-          const footR = landmarks[LANDMARK.FOOT_INDEX];
-          const heelL = landmarks[LANDMARK.L_HEEL];
-          const footL = landmarks[LANDMARK.L_FOOT_INDEX];
-
-          let heel: Point3D | null = null;
-          let foot: Point3D | null = null;
-
-          if (heelR && footR && (heelR.visibility ?? 0) >= STRICT_VISIBILITY && (footR.visibility ?? 0) >= STRICT_VISIBILITY) {
-            heel = heelR; foot = footR;
-          } else if (heelL && footL && (heelL.visibility ?? 0) >= STRICT_VISIBILITY && (footL.visibility ?? 0) >= STRICT_VISIBILITY) {
-            heel = heelL; foot = footL;
-          }
-
-          if (heel && foot) {
-            // In camera coords: lower Y = higher position. Heel above toe = heel lifted.
-            if (heel.y < foot.y) {
-              const lift = foot.y - heel.y;
-              const sev: Severity = lift > 0.03 ? 'critical' : 'warning';
-              pushWarning(rule, sev, sev === 'critical' ? `🚨 ${rule.coachMessage}` : rule.coachMessage, lift, 0);
-            }
-          }
-          break;
-        }
-
         if (!jointsVisible(landmarks, rule.joints)) break;
 
         const j0 = resolve(landmarks, rule.joints[0]);
