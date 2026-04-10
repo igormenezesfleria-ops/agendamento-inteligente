@@ -429,13 +429,13 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         ctx.restore();
       };
 
-      drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle, leftFlexionViolation || leftValgoViolation);
-      drawAngleLabel(LANDMARKS.RIGHT_KNEE, rightAngle, rightFlexionViolation || rightValgoViolation);
+      drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle, leftFlexionViolation || leftValgoViolation || leftVaroViolation);
+      drawAngleLabel(LANDMARKS.RIGHT_KNEE, rightAngle, rightFlexionViolation || rightValgoViolation || rightVaroViolation);
 
       setLeftKneeAngle(leftAngle);
       setRightKneeAngle(rightAngle);
 
-      return leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation;
+      return leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation || leftVaroViolation || rightVaroViolation;
     },
     [],
   );
