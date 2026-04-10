@@ -328,11 +328,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         badLandmarks.add(LANDMARKS.LEFT_HIP);
         badLandmarks.add(LANDMARKS.LEFT_KNEE);
         badLandmarks.add(LANDMARKS.LEFT_ANKLE);
+        badLandmarks.add(LANDMARKS.LEFT_HEEL);
+        badLandmarks.add(LANDMARKS.LEFT_FOOT_INDEX);
       }
       if (rightFlexionViolation || rightValgoViolation) {
         badLandmarks.add(LANDMARKS.RIGHT_HIP);
         badLandmarks.add(LANDMARKS.RIGHT_KNEE);
         badLandmarks.add(LANDMARKS.RIGHT_ANKLE);
+        badLandmarks.add(LANDMARKS.RIGHT_HEEL);
+        badLandmarks.add(LANDMARKS.RIGHT_FOOT_INDEX);
       }
 
       SKELETON_CONNECTIONS.forEach(([start, end]) => {
