@@ -281,7 +281,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   }, [activateFallback]);
 
   const analyzeAndDraw = useCallback(
-    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], width: number, height: number) => {
+    (ctx: CanvasRenderingContext2D, landmarks: LandmarkResult[], width: number, height: number, frameWarnings: FrameWarning[] = []) => {
       ctx.clearRect(0, 0, width, height);
 
       const isVisible = (index: number) => landmarks[index]?.visibility > 0.5;
@@ -323,20 +323,36 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         }
       }
 
+      // Map affectedSegments from warnings to landmark indices
+      const SEGMENT_TO_LANDMARKS: Record<string, number[]> = {
+        left_leg: [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX],
+        right_leg: [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX],
+        left_upper_leg: [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE],
+        left_lower_leg: [LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX],
+        right_upper_leg: [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE],
+        right_lower_leg: [LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX],
+        spine: [LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP],
+        hip: [LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP],
+        left_arm: [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW, LANDMARKS.LEFT_WRIST],
+        right_arm: [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW, LANDMARKS.RIGHT_WRIST],
+      };
+
       const badLandmarks = new Set<number>();
+
+      // Populate from frameWarnings' affectedSegments
+      for (const w of frameWarnings) {
+        for (const seg of w.affectedSegments) {
+          const indices = SEGMENT_TO_LANDMARKS[seg];
+          if (indices) indices.forEach(i => badLandmarks.add(i));
+        }
+      }
+
+      // Also add from local flexion/valgus checks as fallback
       if (leftFlexionViolation || leftValgoViolation) {
-        badLandmarks.add(LANDMARKS.LEFT_HIP);
-        badLandmarks.add(LANDMARKS.LEFT_KNEE);
-        badLandmarks.add(LANDMARKS.LEFT_ANKLE);
-        badLandmarks.add(LANDMARKS.LEFT_HEEL);
-        badLandmarks.add(LANDMARKS.LEFT_FOOT_INDEX);
+        [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
       }
       if (rightFlexionViolation || rightValgoViolation) {
-        badLandmarks.add(LANDMARKS.RIGHT_HIP);
-        badLandmarks.add(LANDMARKS.RIGHT_KNEE);
-        badLandmarks.add(LANDMARKS.RIGHT_ANKLE);
-        badLandmarks.add(LANDMARKS.RIGHT_HEEL);
-        badLandmarks.add(LANDMARKS.RIGHT_FOOT_INDEX);
+        [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
       }
 
       SKELETON_CONNECTIONS.forEach(([start, end]) => {
@@ -567,7 +583,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             setSideProfileWarning(false);
           }
 
-          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height);
+          const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
           const hasTemplateWarning = warnings.length > 0;
 
           if (hasTemplateWarning) {
