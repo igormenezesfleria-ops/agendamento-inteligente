@@ -313,13 +313,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       if (MOCK_VALGO_ALERT) {
         const tolerance = 0.02;
-        if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
-          leftValgoViolation =
-            landmarks[LANDMARKS.LEFT_KNEE].x - landmarks[LANDMARKS.LEFT_ANKLE].x > tolerance;
-        }
+        // Visual left leg = MediaPipe RIGHT landmarks (mirrored canvas)
+        // Valgus = knee moves INWARD (right on screen) → RIGHT_KNEE.x > RIGHT_ANKLE.x
         if (isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
+          leftValgoViolation =
+            landmarks[LANDMARKS.RIGHT_KNEE].x > landmarks[LANDMARKS.RIGHT_ANKLE].x + tolerance;
+        }
+        // Visual right leg = MediaPipe LEFT landmarks (mirrored canvas)
+        // Valgus = knee moves INWARD (left on screen) → LEFT_KNEE.x < LEFT_ANKLE.x
+        if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
           rightValgoViolation =
-            landmarks[LANDMARKS.RIGHT_ANKLE].x - landmarks[LANDMARKS.RIGHT_KNEE].x > tolerance;
+            landmarks[LANDMARKS.LEFT_KNEE].x < landmarks[LANDMARKS.LEFT_ANKLE].x - tolerance;
         }
       }
 
@@ -348,10 +352,18 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       }
 
       // Also add from local flexion/valgus checks as fallback
-      if (leftFlexionViolation || leftValgoViolation) {
+      // leftValgoViolation uses RIGHT landmarks (visual left = mirrored)
+      if (leftValgoViolation) {
+        [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
+      }
+      if (leftFlexionViolation) {
         [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
       }
-      if (rightFlexionViolation || rightValgoViolation) {
+      // rightValgoViolation uses LEFT landmarks (visual right = mirrored)
+      if (rightValgoViolation) {
+        [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
+      }
+      if (rightFlexionViolation) {
         [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
       }
 
