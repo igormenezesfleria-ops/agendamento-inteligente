@@ -225,10 +225,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(0,0,0,0.72)';
     ctx.fillStyle = kneeColor;
-    ctx.strokeText(label, points.leftKnee.x + 18, points.leftKnee.y - 10);
-    ctx.fillText(label, points.leftKnee.x + 18, points.leftKnee.y - 10);
-    ctx.strokeText(label, points.rightKnee.x + 18, points.rightKnee.y - 10);
-    ctx.fillText(label, points.rightKnee.x + 18, points.rightKnee.y - 10);
+    // Un-flip text so it's readable on the mirrored canvas
+    const drawMirroredText = (text: string, tx: number, ty: number) => {
+      ctx.save();
+      ctx.translate(tx, ty);
+      ctx.scale(-1, 1);
+      ctx.strokeText(text, 0, 0);
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    };
+    drawMirroredText(label, points.leftKnee.x + 18, points.leftKnee.y - 10);
+    drawMirroredText(label, points.rightKnee.x + 18, points.rightKnee.y - 10);
   }, [syncCanvasSize]);
 
   const paintSimulationFrame = useCallback((showWarning: boolean) => {
@@ -395,8 +402,13 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         ctx.fillStyle = violation ? '#ef4444' : '#22c55e';
         ctx.strokeStyle = 'rgba(0,0,0,0.7)';
         ctx.lineWidth = 3;
-        ctx.strokeText(text, x, y);
-        ctx.fillText(text, x, y);
+        // Un-flip text so it's readable on the mirrored canvas
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(-1, 1);
+        ctx.strokeText(text, 0, 0);
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
       };
 
       drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle, leftFlexionViolation || leftValgoViolation);
