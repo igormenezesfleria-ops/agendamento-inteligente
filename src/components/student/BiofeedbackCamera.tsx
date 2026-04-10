@@ -313,13 +313,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       if (MOCK_VALGO_ALERT) {
         const tolerance = 0.02;
-        if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
-          leftValgoViolation =
-            landmarks[LANDMARKS.LEFT_KNEE].x - landmarks[LANDMARKS.LEFT_ANKLE].x > tolerance;
-        }
+        // Visual left leg = MediaPipe RIGHT landmarks (mirrored canvas)
+        // Valgus = knee moves INWARD (right on screen) → RIGHT_KNEE.x > RIGHT_ANKLE.x
         if (isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
+          leftValgoViolation =
+            landmarks[LANDMARKS.RIGHT_KNEE].x > landmarks[LANDMARKS.RIGHT_ANKLE].x + tolerance;
+        }
+        // Visual right leg = MediaPipe LEFT landmarks (mirrored canvas)
+        // Valgus = knee moves INWARD (left on screen) → LEFT_KNEE.x < LEFT_ANKLE.x
+        if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
           rightValgoViolation =
-            landmarks[LANDMARKS.RIGHT_ANKLE].x - landmarks[LANDMARKS.RIGHT_KNEE].x > tolerance;
+            landmarks[LANDMARKS.LEFT_KNEE].x < landmarks[LANDMARKS.LEFT_ANKLE].x - tolerance;
         }
       }
 
