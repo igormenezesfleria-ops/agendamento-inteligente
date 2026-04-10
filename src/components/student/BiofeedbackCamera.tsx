@@ -292,40 +292,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let rightFlexionViolation = false;
       let leftValgoViolation = false;
       let rightValgoViolation = false;
-
-      if (isVisible(LANDMARKS.LEFT_HIP) && isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
-        leftAngle = calculateAngle(
-          landmarks[LANDMARKS.LEFT_HIP],
-          landmarks[LANDMARKS.LEFT_KNEE],
-          landmarks[LANDMARKS.LEFT_ANKLE],
-        );
-        leftFlexionViolation = leftAngle < MOCK_MAX_KNEE_FLEXION;
-      }
-
-      if (isVisible(LANDMARKS.RIGHT_HIP) && isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
-        rightAngle = calculateAngle(
-          landmarks[LANDMARKS.RIGHT_HIP],
-          landmarks[LANDMARKS.RIGHT_KNEE],
-          landmarks[LANDMARKS.RIGHT_ANKLE],
-        );
-        rightFlexionViolation = rightAngle < MOCK_MAX_KNEE_FLEXION;
-      }
-
-      if (MOCK_VALGO_ALERT) {
-        const tolerance = 0.02;
-        // Visual left leg = MediaPipe RIGHT landmarks (mirrored canvas)
-        // Valgus = knee moves INWARD (right on screen) → RIGHT_KNEE.x > RIGHT_ANKLE.x
-        if (isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
-          leftValgoViolation =
-            landmarks[LANDMARKS.RIGHT_KNEE].x > landmarks[LANDMARKS.RIGHT_ANKLE].x + tolerance;
-        }
-        // Visual right leg = MediaPipe LEFT landmarks (mirrored canvas)
-        // Valgus = knee moves INWARD (left on screen) → LEFT_KNEE.x < LEFT_ANKLE.x
-        if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
-          rightValgoViolation =
-            landmarks[LANDMARKS.LEFT_KNEE].x < landmarks[LANDMARKS.LEFT_ANKLE].x - tolerance;
-        }
-      }
+      let leftVaroViolation = false;
+      let rightVaroViolation = false;
 
       // Map affectedSegments from warnings to landmark indices
       const SEGMENT_TO_LANDMARKS: Record<string, number[]> = {
