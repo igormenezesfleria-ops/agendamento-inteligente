@@ -295,6 +295,31 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let leftVaroViolation = false;
       let rightVaroViolation = false;
 
+      // Valgus & Varus detection (independent, both can fire simultaneously)
+      if (MOCK_VALGO_ALERT) {
+        const tolerance = 0.02;
+
+        // Visual LEFT leg = MediaPipe RIGHT landmarks (mirrored canvas)
+        if (isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
+          const kneeX = landmarks[LANDMARKS.RIGHT_KNEE].x;
+          const ankleX = landmarks[LANDMARKS.RIGHT_ANKLE].x;
+          // Valgus = knee moves INWARD (right on screen for visual left leg)
+          leftValgoViolation = kneeX > ankleX + tolerance;
+          // Varus = knee moves OUTWARD (left on screen for visual left leg)
+          leftVaroViolation = kneeX < ankleX - tolerance;
+        }
+
+        // Visual RIGHT leg = MediaPipe LEFT landmarks (mirrored canvas)
+        if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
+          const kneeX = landmarks[LANDMARKS.LEFT_KNEE].x;
+          const ankleX = landmarks[LANDMARKS.LEFT_ANKLE].x;
+          // Valgus = knee moves INWARD (left on screen for visual right leg)
+          rightValgoViolation = kneeX < ankleX - tolerance;
+          // Varus = knee moves OUTWARD (right on screen for visual right leg)
+          rightVaroViolation = kneeX > ankleX + tolerance;
+        }
+      }
+
       // Map affectedSegments from warnings to landmark indices
       const SEGMENT_TO_LANDMARKS: Record<string, number[]> = {
         left_leg: [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX],
@@ -319,20 +344,13 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         }
       }
 
-      // Also add from local flexion/valgus checks as fallback
-      // leftValgoViolation uses RIGHT landmarks (visual left = mirrored)
-      if (leftValgoViolation) {
+      // Visual left leg errors → paint MediaPipe RIGHT landmarks red (mirrored)
+      if (leftFlexionViolation || leftValgoViolation || leftVaroViolation) {
         [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
       }
-      if (leftFlexionViolation) {
+      // Visual right leg errors → paint MediaPipe LEFT landmarks red (mirrored)
+      if (rightFlexionViolation || rightValgoViolation || rightVaroViolation) {
         [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
-      }
-      // rightValgoViolation uses LEFT landmarks (visual right = mirrored)
-      if (rightValgoViolation) {
-        [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
-      }
-      if (rightFlexionViolation) {
-        [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
       }
 
       SKELETON_CONNECTIONS.forEach(([start, end]) => {
