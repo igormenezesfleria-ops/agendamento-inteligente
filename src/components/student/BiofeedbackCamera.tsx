@@ -295,17 +295,75 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let leftVaroViolation = false;
       let rightVaroViolation = false;
 
+      // ── Plank 2D analysis (strict side isolation) ──
+      const isPlankTemplate = activeTemplate?.errors.some(e => e.id === 'plank_alignment') ||
+        activeTemplate?.errors.some(e => e.id === 'hip_sag') ||
+        activeTemplate?.errors.some(e => e.id === 'hip_pike');
+      let plankViolation = false;
+      let plankSeverity: 'none' | 'warning' | 'critical' = 'none';
+      let plankHipAngle: number | null = null;
+      let plankActiveSide: 'left' | 'right' | null = null;
+      const plankBadLandmarks = new Set<number>();
+
+      if (isPlankTemplate) {
+        // Determine active side by visibility score
+        const leftVis =
+          (landmarks[LANDMARKS.LEFT_SHOULDER]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.LEFT_HIP]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.LEFT_ANKLE]?.visibility ?? 0);
+        const rightVis =
+          (landmarks[LANDMARKS.RIGHT_SHOULDER]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.RIGHT_HIP]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.RIGHT_ANKLE]?.visibility ?? 0);
+
+        const useLeft = leftVis >= rightVis;
+        const shoulderIdx = useLeft ? LANDMARKS.LEFT_SHOULDER : LANDMARKS.RIGHT_SHOULDER;
+        const hipIdx = useLeft ? LANDMARKS.LEFT_HIP : LANDMARKS.RIGHT_HIP;
+        const ankleIdx = useLeft ? LANDMARKS.LEFT_ANKLE : LANDMARKS.RIGHT_ANKLE;
+
+        if (isVisible(shoulderIdx) && isVisible(hipIdx) && isVisible(ankleIdx)) {
+          const shoulder = landmarks[shoulderIdx];
+          const hip = landmarks[hipIdx];
+          const ankle = landmarks[ankleIdx];
+
+          // Strict 2D angle (ignore Z), hip as vertex
+          const angle1 = Math.atan2(shoulder.y - hip.y, shoulder.x - hip.x);
+          const angle2 = Math.atan2(ankle.y - hip.y, ankle.x - hip.x);
+          let hipAngle = Math.abs((angle1 - angle2) * (180 / Math.PI));
+          if (hipAngle > 180) hipAngle = 360 - hipAngle;
+
+          plankHipAngle = hipAngle;
+          plankActiveSide = useLeft ? 'left' : 'right';
+
+          if (hipAngle < 155) {
+            plankSeverity = 'critical';
+            plankViolation = true;
+          } else if (hipAngle < 165) {
+            plankSeverity = 'warning';
+            plankViolation = true;
+          }
+
+          if (plankViolation) {
+            // Only mark the active side's landmarks
+            if (useLeft) {
+              [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
+            } else {
+              [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
+            }
+          }
+        }
+      }
+
       // Valgus & Varus detection (independent, both can fire simultaneously)
-      if (MOCK_VALGO_ALERT) {
+      // Skip valgus/varus for plank templates
+      if (MOCK_VALGO_ALERT && !isPlankTemplate) {
         const tolerance = 0.02;
 
         // Visual LEFT leg = MediaPipe RIGHT landmarks (mirrored canvas)
         if (isVisible(LANDMARKS.RIGHT_KNEE) && isVisible(LANDMARKS.RIGHT_ANKLE)) {
           const kneeX = landmarks[LANDMARKS.RIGHT_KNEE].x;
           const ankleX = landmarks[LANDMARKS.RIGHT_ANKLE].x;
-          // Valgus = knee moves INWARD (right on screen for visual left leg)
           leftValgoViolation = kneeX > ankleX + tolerance;
-          // Varus = knee moves OUTWARD (left on screen for visual left leg)
           leftVaroViolation = kneeX < ankleX - tolerance;
         }
 
@@ -313,9 +371,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         if (isVisible(LANDMARKS.LEFT_KNEE) && isVisible(LANDMARKS.LEFT_ANKLE)) {
           const kneeX = landmarks[LANDMARKS.LEFT_KNEE].x;
           const ankleX = landmarks[LANDMARKS.LEFT_ANKLE].x;
-          // Valgus = knee moves INWARD (left on screen for visual right leg)
           rightValgoViolation = kneeX < ankleX - tolerance;
-          // Varus = knee moves OUTWARD (right on screen for visual right leg)
           rightVaroViolation = kneeX > ankleX + tolerance;
         }
       }
@@ -328,6 +384,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         left_lower_leg: [LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX],
         right_upper_leg: [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE],
         right_lower_leg: [LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX],
+        left_trunk: [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP],
+        right_trunk: [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_HIP],
         spine: [LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP],
         hip: [LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP],
         left_arm: [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW, LANDMARKS.LEFT_WRIST],
@@ -336,29 +394,42 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       const badLandmarks = new Set<number>();
 
-      // Populate from frameWarnings' affectedSegments
-      for (const w of frameWarnings) {
-        for (const seg of w.affectedSegments) {
-          const indices = SEGMENT_TO_LANDMARKS[seg];
-          if (indices) indices.forEach(i => badLandmarks.add(i));
+      // For plank, use ONLY the plank-specific bad landmarks (no frameWarnings overlap)
+      if (isPlankTemplate) {
+        plankBadLandmarks.forEach(i => badLandmarks.add(i));
+      } else {
+        // Populate from frameWarnings' affectedSegments (non-plank templates)
+        for (const w of frameWarnings) {
+          for (const seg of w.affectedSegments) {
+            const indices = SEGMENT_TO_LANDMARKS[seg];
+            if (indices) indices.forEach(i => badLandmarks.add(i));
+          }
+        }
+
+        // Visual left leg errors → paint MediaPipe RIGHT landmarks red (mirrored)
+        if (leftFlexionViolation || leftValgoViolation || leftVaroViolation) {
+          [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
+        }
+        // Visual right leg errors → paint MediaPipe LEFT landmarks red (mirrored)
+        if (rightFlexionViolation || rightValgoViolation || rightVaroViolation) {
+          [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
         }
       }
 
-      // Visual left leg errors → paint MediaPipe RIGHT landmarks red (mirrored)
-      if (leftFlexionViolation || leftValgoViolation || leftVaroViolation) {
-        [LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
-      }
-      // Visual right leg errors → paint MediaPipe LEFT landmarks red (mirrored)
-      if (rightFlexionViolation || rightValgoViolation || rightVaroViolation) {
-        [LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => badLandmarks.add(i));
-      }
+      // Determine line color (orange for warning, red for critical in plank)
+      const getLineColor = (start: number, end: number) => {
+        const isBad = badLandmarks.has(start) && badLandmarks.has(end);
+        if (!isBad) return '#22c55e';
+        if (isPlankTemplate && plankSeverity === 'warning') return '#f59e0b';
+        return '#ef4444';
+      };
 
       SKELETON_CONNECTIONS.forEach(([start, end]) => {
         const from = landmarks[start];
         const to = landmarks[end];
         if (!from || !to || from.visibility < 0.5 || to.visibility < 0.5) return;
 
-        const color = badLandmarks.has(start) && badLandmarks.has(end) ? '#ef4444' : '#22c55e';
+        const color = getLineColor(start, end);
         ctx.beginPath();
         ctx.moveTo(from.x * width, from.y * height);
         ctx.lineTo(to.x * width, to.y * height);
@@ -392,7 +463,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         const point = landmarks[index];
         if (!point || point.visibility < 0.5) return;
 
-        const color = badLandmarks.has(index) ? '#ef4444' : '#22c55e';
+        const isBad = badLandmarks.has(index);
+        const color = isBad
+          ? (isPlankTemplate && plankSeverity === 'warning' ? '#f59e0b' : '#ef4444')
+          : '#22c55e';
         ctx.beginPath();
         ctx.arc(point.x * width, point.y * height, 6, 0, Math.PI * 2);
         ctx.fillStyle = color;
@@ -407,7 +481,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         ctx.fill();
       });
 
-      const drawAngleLabel = (index: number, angle: number | null, violation: boolean) => {
+      const drawAngleLabel = (index: number, angle: number | null, violation: boolean, warningLevel: boolean = false) => {
         if (angle === null) return;
         const point = landmarks[index];
         if (!point || point.visibility < 0.5) return;
@@ -417,10 +491,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         const y = point.y * height - 8;
 
         ctx.font = 'bold 14px monospace';
-        ctx.fillStyle = violation ? '#ef4444' : '#22c55e';
+        ctx.fillStyle = violation ? (warningLevel ? '#f59e0b' : '#ef4444') : '#22c55e';
         ctx.strokeStyle = 'rgba(0,0,0,0.7)';
         ctx.lineWidth = 3;
-        // Un-flip text so it's readable on the mirrored canvas
         ctx.save();
         ctx.translate(x, y);
         ctx.scale(-1, 1);
@@ -429,15 +502,24 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         ctx.restore();
       };
 
-      drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle, leftFlexionViolation || leftValgoViolation || leftVaroViolation);
-      drawAngleLabel(LANDMARKS.RIGHT_KNEE, rightAngle, rightFlexionViolation || rightValgoViolation || rightVaroViolation);
+      // Plank hip angle label on the active side
+      if (isPlankTemplate && plankHipAngle !== null && plankActiveSide) {
+        const hipIdx = plankActiveSide === 'left' ? LANDMARKS.LEFT_HIP : LANDMARKS.RIGHT_HIP;
+        drawAngleLabel(hipIdx, plankHipAngle, plankViolation, plankSeverity === 'warning');
+      }
 
-      setLeftKneeAngle(leftAngle);
-      setRightKneeAngle(rightAngle);
+      // Knee angle labels (non-plank)
+      if (!isPlankTemplate) {
+        drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle, leftFlexionViolation || leftValgoViolation || leftVaroViolation);
+        drawAngleLabel(LANDMARKS.RIGHT_KNEE, rightAngle, rightFlexionViolation || rightValgoViolation || rightVaroViolation);
+      }
 
-      return leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation || leftVaroViolation || rightVaroViolation;
+      setLeftKneeAngle(isPlankTemplate ? plankHipAngle : leftAngle);
+      setRightKneeAngle(isPlankTemplate ? null : rightAngle);
+
+      return plankViolation || leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation || leftVaroViolation || rightVaroViolation;
     },
-    [],
+    [activeTemplate],
   );
 
   const stopCamera = useCallback(() => {
