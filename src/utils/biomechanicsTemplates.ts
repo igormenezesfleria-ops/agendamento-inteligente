@@ -243,4 +243,19 @@ export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
       },
     ],
   },
+
+  PLANK_ISOMETRIC: {
+    name: 'Prancha Isométrica',
+    errors: [
+      {
+        id: 'plank_alignment',
+        name: 'Desalinhamento de Prancha',
+        type: 'ANGLE_3D',
+        joints: ['SHOULDER', 'HIP', 'ANKLE'],
+        minSafeAngle: 165,
+        coachMessage: '🚨 Desalinhamento! Mantenha ombro, quadril e calcanhar em linha reta.',
+        affectedSegments: ['spine', 'hip'],
+      },
+    ],
+  },
 };
