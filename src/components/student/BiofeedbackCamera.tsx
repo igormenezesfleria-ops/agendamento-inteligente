@@ -94,6 +94,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const aiReadyRef = useRef(false);
   const simulationModeRef = useRef(false);
   const fallbackBlinkRef = useRef(false);
+  const plankCoachMessageRef = useRef<string | null>(null);
 
   // Resolve the active biomechanics template, filtering to only trainer-selected errors
   const activeTemplate = useMemo(() => {
@@ -303,6 +304,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let plankSeverity: 'none' | 'warning' | 'critical' = 'none';
       let plankHipAngle: number | null = null;
       let plankActiveSide: 'left' | 'right' | null = null;
+      let plankCoachMessage: string | null = null;
       const plankBadLandmarks = new Set<number>();
 
       if (isPlankTemplate) {
@@ -343,7 +345,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             plankViolation = true;
           }
 
+          // Determine directional message based on hip position
           if (plankViolation) {
+            const midY = (shoulder.y + ankle.y) / 2;
+            if (hip.y < midY) {
+              // HIP PIKING (Too High) - lower y value means higher on screen
+              plankCoachMessage = '🚨 Quadril muito alto! Alinhe mais o quadril com o corpo.';
+            } else {
+              // HIP SAGGING (Too Low)
+              plankCoachMessage = '🚨 Quadril caindo! Contraia o glúteo e o abdômen.';
+            }
+
             // Only mark the active side's landmarks
             if (useLeft) {
               [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
@@ -353,6 +365,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           }
         }
       }
+
+      // Store plank message in ref for access in onResults callback
+      plankCoachMessageRef.current = plankCoachMessage;
 
       // Valgus & Varus detection (independent, both can fire simultaneously)
       // Skip valgus/varus for plank templates
@@ -672,10 +687,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             setStatusText(`⚠️ ${firstWarning.coachMessage}`);
           } else if (hasViolation) {
             setStatus('warning');
-            setStatusText('⚠️ Atenção: Correção necessária!');
+            // Use directional plank message if available, otherwise generic
+            if (plankCoachMessageRef.current) {
+              setStatusText(`⚠️ ${plankCoachMessageRef.current}`);
+            } else {
+              setStatusText('⚠️ Atenção: Correção necessária!');
+            }
           } else {
             setStatus('good');
             setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente (AI Validated)');
+            // Reset plank message when no violation
+            plankCoachMessageRef.current = null;
           }
         } else {
           clearCanvas();
