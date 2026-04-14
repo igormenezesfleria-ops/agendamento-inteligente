@@ -94,6 +94,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const aiReadyRef = useRef(false);
   const simulationModeRef = useRef(false);
   const fallbackBlinkRef = useRef(false);
+  const plankCoachMessageRef = useRef<string | null>(null);
 
   // Resolve the active biomechanics template, filtering to only trainer-selected errors
   const activeTemplate = useMemo(() => {
