@@ -687,7 +687,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             setStatusText(`⚠️ ${firstWarning.coachMessage}`);
           } else if (hasViolation) {
             setStatus('warning');
-            setStatusText('⚠️ Atenção: Correção necessária!');
+            // Use directional plank message if available, otherwise generic
+            if (plankCoachMessageRef.current) {
+              setStatusText(`⚠️ ${plankCoachMessageRef.current}`);
+            } else {
+              setStatusText('⚠️ Atenção: Correção necessária!');
+            }
           } else {
             setStatus('good');
             setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente (AI Validated)');
