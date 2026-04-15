@@ -306,15 +306,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let curlElbowDeviation: number | null = null;
 
       if (isCurlTemplate) {
-        // Determine active side by visibility
+        // Determine active side by visibility (shoulder + elbow + wrist)
         const leftVis =
           (landmarks[LANDMARKS.LEFT_SHOULDER]?.visibility ?? 0) +
-          (landmarks[LANDMARKS.LEFT_HIP]?.visibility ?? 0) +
-          (landmarks[LANDMARKS.LEFT_ELBOW]?.visibility ?? 0);
+          (landmarks[LANDMARKS.LEFT_ELBOW]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.LEFT_WRIST]?.visibility ?? 0);
         const rightVis =
           (landmarks[LANDMARKS.RIGHT_SHOULDER]?.visibility ?? 0) +
-          (landmarks[LANDMARKS.RIGHT_HIP]?.visibility ?? 0) +
-          (landmarks[LANDMARKS.RIGHT_ELBOW]?.visibility ?? 0);
+          (landmarks[LANDMARKS.RIGHT_ELBOW]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.RIGHT_WRIST]?.visibility ?? 0);
 
         const useLeft = leftVis >= rightVis;
         const shoulderIdx = useLeft ? LANDMARKS.LEFT_SHOULDER : LANDMARKS.RIGHT_SHOULDER;
@@ -337,11 +337,14 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             curlViolation = true;
             curlCoachMessage = '🚨 Alinhe mais o cotovelo no tronco!';
 
-            // Mark only the active side's upper arm
+            // Mark ONLY the active side's upper arm (shoulder→elbow)
+            // NEVER include wrist — forearm must always stay green
             if (useLeft) {
-              [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW].forEach(i => curlBadLandmarks.add(i));
+              curlBadLandmarks.add(LANDMARKS.LEFT_SHOULDER);
+              curlBadLandmarks.add(LANDMARKS.LEFT_ELBOW);
             } else {
-              [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW].forEach(i => curlBadLandmarks.add(i));
+              curlBadLandmarks.add(LANDMARKS.RIGHT_SHOULDER);
+              curlBadLandmarks.add(LANDMARKS.RIGHT_ELBOW);
             }
           }
         }
@@ -490,6 +493,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       // Determine line color (orange for warning, red for critical in plank)
       const getLineColor = (start: number, end: number) => {
+        // For curl: explicitly keep forearm (elbow→wrist) green always
+        if (isCurlTemplate) {
+          const isWrist = (idx: number) => idx === LANDMARKS.LEFT_WRIST || idx === LANDMARKS.RIGHT_WRIST;
+          if (isWrist(start) || isWrist(end)) return '#22c55e';
+        }
         const isBad = badLandmarks.has(start) && badLandmarks.has(end);
         if (!isBad) return '#22c55e';
         if (isPlankTemplate && plankSeverity === 'warning') return '#f59e0b';
