@@ -493,6 +493,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       // Determine line color (orange for warning, red for critical in plank)
       const getLineColor = (start: number, end: number) => {
+        // For curl: explicitly keep forearm (elbow→wrist) green always
+        if (isCurlTemplate) {
+          const wrists = [LANDMARKS.LEFT_WRIST, LANDMARKS.RIGHT_WRIST];
+          if (wrists.includes(start) || wrists.includes(end)) return '#22c55e';
+        }
         const isBad = badLandmarks.has(start) && badLandmarks.has(end);
         if (!isBad) return '#22c55e';
         if (isPlankTemplate && plankSeverity === 'warning') return '#f59e0b';
