@@ -95,6 +95,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const simulationModeRef = useRef(false);
   const fallbackBlinkRef = useRef(false);
   const plankCoachMessageRef = useRef<string | null>(null);
+  const curlCoachMessageRef = useRef<string | null>(null);
 
   // Resolve the active biomechanics template, filtering to only trainer-selected errors
   const activeTemplate = useMemo(() => {
@@ -418,6 +419,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       // Store plank message in ref for access in onResults callback
       plankCoachMessageRef.current = plankCoachMessage;
+      curlCoachMessageRef.current = curlCoachMessage;
 
       // Valgus & Varus detection (independent, both can fire simultaneously)
       // Skip valgus/varus for plank templates
@@ -770,6 +772,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             // Use directional plank message if available, otherwise generic
             if (plankCoachMessageRef.current) {
               setStatusText(`⚠️ ${plankCoachMessageRef.current}`);
+            } else if (curlCoachMessageRef.current) {
+              setStatusText(`⚠️ ${curlCoachMessageRef.current}`);
             } else {
               setStatusText('⚠️ Atenção: Correção necessária!');
             }
