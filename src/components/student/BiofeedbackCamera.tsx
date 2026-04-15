@@ -296,6 +296,56 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let leftVaroViolation = false;
       let rightVaroViolation = false;
 
+      // ── Bicep Curl 2D analysis (strict side isolation) ──
+      const isCurlTemplate = activeTemplate?.errors.some(e => e.id === 'elbow_alignment');
+      let curlViolation = false;
+      let curlActiveSide: 'left' | 'right' | null = null;
+      const curlBadLandmarks = new Set<number>();
+      let curlCoachMessage: string | null = null;
+      let curlElbowDeviation: number | null = null;
+
+      if (isCurlTemplate) {
+        // Determine active side by visibility
+        const leftVis =
+          (landmarks[LANDMARKS.LEFT_SHOULDER]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.LEFT_HIP]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.LEFT_ELBOW]?.visibility ?? 0);
+        const rightVis =
+          (landmarks[LANDMARKS.RIGHT_SHOULDER]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.RIGHT_HIP]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.RIGHT_ELBOW]?.visibility ?? 0);
+
+        const useLeft = leftVis >= rightVis;
+        const shoulderIdx = useLeft ? LANDMARKS.LEFT_SHOULDER : LANDMARKS.RIGHT_SHOULDER;
+        const hipIdx = useLeft ? LANDMARKS.LEFT_HIP : LANDMARKS.RIGHT_HIP;
+        const elbowIdx = useLeft ? LANDMARKS.LEFT_ELBOW : LANDMARKS.RIGHT_ELBOW;
+
+        if (isVisible(shoulderIdx) && isVisible(hipIdx) && isVisible(elbowIdx)) {
+          const shoulder = landmarks[shoulderIdx];
+          const hip = landmarks[hipIdx];
+          const elbow = landmarks[elbowIdx];
+
+          // Dynamic tolerance: 15% of torso length
+          const torsoLength = Math.abs(shoulder.y - hip.y);
+          const tolerance = torsoLength * 0.15;
+          const elbowDeviationX = Math.abs(elbow.x - shoulder.x);
+          curlElbowDeviation = elbowDeviationX;
+          curlActiveSide = useLeft ? 'left' : 'right';
+
+          if (elbowDeviationX > tolerance) {
+            curlViolation = true;
+            curlCoachMessage = '🚨 Alinhe mais o cotovelo no tronco!';
+
+            // Mark only the active side's upper arm
+            if (useLeft) {
+              [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW].forEach(i => curlBadLandmarks.add(i));
+            } else {
+              [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW].forEach(i => curlBadLandmarks.add(i));
+            }
+          }
+        }
+      }
+
       // ── Plank 2D analysis (strict side isolation) ──
       const isPlankTemplate = activeTemplate?.errors.some(e => e.id === 'plank_alignment') ||
         activeTemplate?.errors.some(e => e.id === 'hip_sag') ||
@@ -405,6 +455,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         hip: [LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP],
         left_arm: [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW, LANDMARKS.LEFT_WRIST],
         right_arm: [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW, LANDMARKS.RIGHT_WRIST],
+        left_upper_arm: [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW],
+        right_upper_arm: [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW],
       };
 
       const badLandmarks = new Set<number>();
