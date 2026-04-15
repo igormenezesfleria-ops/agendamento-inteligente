@@ -780,8 +780,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           } else {
             setStatus('good');
             setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente (AI Validated)');
-            // Reset plank message when no violation
             plankCoachMessageRef.current = null;
+            curlCoachMessageRef.current = null;
           }
         } else {
           clearCanvas();
