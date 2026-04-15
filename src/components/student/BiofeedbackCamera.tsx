@@ -421,7 +421,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       // Valgus & Varus detection (independent, both can fire simultaneously)
       // Skip valgus/varus for plank templates
-      if (MOCK_VALGO_ALERT && !isPlankTemplate) {
+      if (MOCK_VALGO_ALERT && !isPlankTemplate && !isCurlTemplate) {
         const tolerance = 0.02;
 
         // Visual LEFT leg = MediaPipe RIGHT landmarks (mirrored canvas)
@@ -461,11 +461,14 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       const badLandmarks = new Set<number>();
 
-      // For plank, use ONLY the plank-specific bad landmarks (no frameWarnings overlap)
+      // For plank, use ONLY the plank-specific bad landmarks
       if (isPlankTemplate) {
         plankBadLandmarks.forEach(i => badLandmarks.add(i));
+      } else if (isCurlTemplate) {
+        // For curl, use ONLY the curl-specific bad landmarks
+        curlBadLandmarks.forEach(i => badLandmarks.add(i));
       } else {
-        // Populate from frameWarnings' affectedSegments (non-plank templates)
+        // Populate from frameWarnings' affectedSegments (non-plank/curl templates)
         for (const w of frameWarnings) {
           for (const seg of w.affectedSegments) {
             const indices = SEGMENT_TO_LANDMARKS[seg];
@@ -575,16 +578,41 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         drawAngleLabel(hipIdx, plankHipAngle, plankViolation, plankSeverity === 'warning');
       }
 
-      // Knee angle labels (non-plank)
-      if (!isPlankTemplate) {
+      // Curl elbow deviation label on the active side
+      if (isCurlTemplate && curlActiveSide) {
+        const elbowIdx = curlActiveSide === 'left' ? LANDMARKS.LEFT_ELBOW : LANDMARKS.RIGHT_ELBOW;
+        // Show deviation as a percentage-like value for readability
+        if (curlElbowDeviation !== null) {
+          const deviationDisplay = Math.round(curlElbowDeviation * 100);
+          const point = landmarks[elbowIdx];
+          if (point && point.visibility > 0.5) {
+            const text = `${deviationDisplay}%`;
+            const x = point.x * width + 16;
+            const y = point.y * height - 8;
+            ctx.font = 'bold 14px monospace';
+            ctx.fillStyle = curlViolation ? '#ef4444' : '#22c55e';
+            ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+            ctx.lineWidth = 3;
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(-1, 1);
+            ctx.strokeText(text, 0, 0);
+            ctx.fillText(text, 0, 0);
+            ctx.restore();
+          }
+        }
+      }
+
+      // Knee angle labels (non-plank, non-curl)
+      if (!isPlankTemplate && !isCurlTemplate) {
         drawAngleLabel(LANDMARKS.LEFT_KNEE, leftAngle, leftFlexionViolation || leftValgoViolation || leftVaroViolation);
         drawAngleLabel(LANDMARKS.RIGHT_KNEE, rightAngle, rightFlexionViolation || rightValgoViolation || rightVaroViolation);
       }
 
-      setLeftKneeAngle(isPlankTemplate ? plankHipAngle : leftAngle);
-      setRightKneeAngle(isPlankTemplate ? null : rightAngle);
+      setLeftKneeAngle(isPlankTemplate ? plankHipAngle : (isCurlTemplate ? null : leftAngle));
+      setRightKneeAngle(isPlankTemplate || isCurlTemplate ? null : rightAngle);
 
-      return plankViolation || leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation || leftVaroViolation || rightVaroViolation;
+      return curlViolation || plankViolation || leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation || leftVaroViolation || rightVaroViolation;
     },
     [activeTemplate],
   );
