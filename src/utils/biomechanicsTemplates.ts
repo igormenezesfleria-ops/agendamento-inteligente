@@ -258,4 +258,18 @@ export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
       },
     ],
   },
+
+  ROSCA_DIRETA: {
+    name: 'Rosca Direta (Bicep Curl)',
+    errors: [
+      {
+        id: 'elbow_alignment',
+        name: 'Cotovelo Desalinhado do Tronco',
+        type: 'X_AXIS_COMPARE',
+        joints: ['ELBOW', 'SHOULDER'],
+        coachMessage: '🚨 Alinhe mais o cotovelo no tronco!',
+        affectedSegments: ['left_arm', 'right_arm'],
+      },
+    ],
+  },
 };
