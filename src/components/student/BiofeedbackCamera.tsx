@@ -495,8 +495,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       const getLineColor = (start: number, end: number) => {
         // For curl: explicitly keep forearm (elbow→wrist) green always
         if (isCurlTemplate) {
-          const wrists = [LANDMARKS.LEFT_WRIST, LANDMARKS.RIGHT_WRIST];
-          if (wrists.includes(start) || wrists.includes(end)) return '#22c55e';
+          const isWrist = (idx: number) => idx === LANDMARKS.LEFT_WRIST || idx === LANDMARKS.RIGHT_WRIST;
+          if (isWrist(start) || isWrist(end)) return '#22c55e';
         }
         const isBad = badLandmarks.has(start) && badLandmarks.has(end);
         if (!isBad) return '#22c55e';
