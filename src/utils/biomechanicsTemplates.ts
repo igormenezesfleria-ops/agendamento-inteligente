@@ -267,7 +267,7 @@ export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
         name: 'Cotovelo Desalinhado do Tronco',
         type: 'X_AXIS_COMPARE',
         joints: ['ELBOW', 'SHOULDER'],
-        coachMessage: '🚨 Alinhe mais o cotovelo no tronco!',
+        coachMessage: '🚨 Trave o cotovelo no corpo! Não balance.',
         affectedSegments: ['left_arm', 'right_arm'],
       },
     ],
