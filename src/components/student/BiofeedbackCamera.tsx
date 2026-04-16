@@ -341,13 +341,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             curlViolation = true;
             curlCoachMessage = '🚨 Trave o cotovelo no corpo! Não balance.';
 
-            // Mark ONLY upper arm (shoulder→elbow) of active side
+            // Mark ONLY the upper arm CONNECTION of active side
             if (useLeft) {
-              curlBadLandmarks.add(LANDMARKS.LEFT_SHOULDER);
-              curlBadLandmarks.add(LANDMARKS.LEFT_ELBOW);
+              curlBadConnection = [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW];
             } else {
-              curlBadLandmarks.add(LANDMARKS.RIGHT_SHOULDER);
-              curlBadLandmarks.add(LANDMARKS.RIGHT_ELBOW);
+              curlBadConnection = [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW];
             }
           }
         }
