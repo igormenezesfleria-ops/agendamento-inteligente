@@ -546,7 +546,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         const point = landmarks[index];
         if (!point || point.visibility < 0.5) return;
 
-        const isBad = badLandmarks.has(index);
+        let isBad = badLandmarks.has(index);
+        // For curl: wrist joints must always stay green (forearm is the moving lever)
+        if (isCurlTemplate && (index === LANDMARKS.LEFT_WRIST || index === LANDMARKS.RIGHT_WRIST)) {
+          isBad = false;
+        }
         const color = isBad
           ? (isPlankTemplate && plankSeverity === 'warning' ? '#f59e0b' : '#ef4444')
           : '#22c55e';
