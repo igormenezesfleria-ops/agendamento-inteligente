@@ -297,48 +297,51 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let leftVaroViolation = false;
       let rightVaroViolation = false;
 
-      // ── Bicep Curl 2D analysis (strict side isolation) ──
+      // ── Bicep Curl 2D angular pendulum analysis ──
       const isCurlTemplate = activeTemplate?.errors.some(e => e.id === 'elbow_alignment');
       let curlViolation = false;
       let curlActiveSide: 'left' | 'right' | null = null;
       const curlBadLandmarks = new Set<number>();
       let curlCoachMessage: string | null = null;
-      let curlElbowDeviation: number | null = null;
+      let curlArmAngle: number | null = null;
 
       if (isCurlTemplate) {
-        // Determine active side by visibility (shoulder + elbow + wrist)
+        // Step 1: Determine active side by visibility (shoulder + hip + elbow + wrist)
         const leftVis =
           (landmarks[LANDMARKS.LEFT_SHOULDER]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.LEFT_HIP]?.visibility ?? 0) +
           (landmarks[LANDMARKS.LEFT_ELBOW]?.visibility ?? 0) +
           (landmarks[LANDMARKS.LEFT_WRIST]?.visibility ?? 0);
         const rightVis =
           (landmarks[LANDMARKS.RIGHT_SHOULDER]?.visibility ?? 0) +
+          (landmarks[LANDMARKS.RIGHT_HIP]?.visibility ?? 0) +
           (landmarks[LANDMARKS.RIGHT_ELBOW]?.visibility ?? 0) +
           (landmarks[LANDMARKS.RIGHT_WRIST]?.visibility ?? 0);
 
         const useLeft = leftVis >= rightVis;
         const shoulderIdx = useLeft ? LANDMARKS.LEFT_SHOULDER : LANDMARKS.RIGHT_SHOULDER;
-        const hipIdx = useLeft ? LANDMARKS.LEFT_HIP : LANDMARKS.RIGHT_HIP;
         const elbowIdx = useLeft ? LANDMARKS.LEFT_ELBOW : LANDMARKS.RIGHT_ELBOW;
+        curlActiveSide = useLeft ? 'left' : 'right';
 
-        if (isVisible(shoulderIdx) && isVisible(hipIdx) && isVisible(elbowIdx)) {
-          const shoulder = landmarks[shoulderIdx];
-          const hip = landmarks[hipIdx];
-          const elbow = landmarks[elbowIdx];
+        // Step 2: Extract ONLY 2D (x,y) for active side — ignore z entirely
+        if (isVisible(shoulderIdx) && isVisible(elbowIdx)) {
+          const sx = landmarks[shoulderIdx].x;
+          const sy = landmarks[shoulderIdx].y;
+          const ex = landmarks[elbowIdx].x;
+          const ey = landmarks[elbowIdx].y;
 
-          // Dynamic tolerance: 15% of torso length
-          const torsoLength = Math.abs(shoulder.y - hip.y);
-          const tolerance = torsoLength * 0.15;
-          const elbowDeviationX = Math.abs(elbow.x - shoulder.x);
-          curlElbowDeviation = elbowDeviationX;
-          curlActiveSide = useLeft ? 'left' : 'right';
+          // Step 3: Angular pendulum — angle of upper arm relative to vertical drop
+          const dx = ex - sx;
+          const dy = ey - sy;
+          const armAngle = Math.abs(Math.atan2(dx, dy) * (180 / Math.PI));
+          curlArmAngle = armAngle;
 
-          if (elbowDeviationX > tolerance) {
+          // Step 4: Trigger if elbow swings > 15° from plumb line
+          if (armAngle > 15) {
             curlViolation = true;
-            curlCoachMessage = '🚨 Alinhe mais o cotovelo no tronco!';
+            curlCoachMessage = '🚨 Trave o cotovelo no corpo! Não balance.';
 
-            // Mark ONLY the active side's upper arm (shoulder→elbow)
-            // NEVER include wrist — forearm must always stay green
+            // Mark ONLY upper arm (shoulder→elbow) of active side
             if (useLeft) {
               curlBadLandmarks.add(LANDMARKS.LEFT_SHOULDER);
               curlBadLandmarks.add(LANDMARKS.LEFT_ELBOW);
