@@ -591,28 +591,24 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         drawAngleLabel(hipIdx, plankHipAngle, plankViolation, plankSeverity === 'warning');
       }
 
-      // Curl elbow deviation label on the active side
-      if (isCurlTemplate && curlActiveSide) {
+      // Curl arm angle label on the active side
+      if (isCurlTemplate && curlActiveSide && curlArmAngle !== null) {
         const elbowIdx = curlActiveSide === 'left' ? LANDMARKS.LEFT_ELBOW : LANDMARKS.RIGHT_ELBOW;
-        // Show deviation as a percentage-like value for readability
-        if (curlElbowDeviation !== null) {
-          const deviationDisplay = Math.round(curlElbowDeviation * 100);
-          const point = landmarks[elbowIdx];
-          if (point && point.visibility > 0.5) {
-            const text = `${deviationDisplay}%`;
-            const x = point.x * width + 16;
-            const y = point.y * height - 8;
-            ctx.font = 'bold 14px monospace';
-            ctx.fillStyle = curlViolation ? '#ef4444' : '#22c55e';
-            ctx.strokeStyle = 'rgba(0,0,0,0.7)';
-            ctx.lineWidth = 3;
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.scale(-1, 1);
-            ctx.strokeText(text, 0, 0);
-            ctx.fillText(text, 0, 0);
-            ctx.restore();
-          }
+        const point = landmarks[elbowIdx];
+        if (point && point.visibility > 0.5) {
+          const text = `${Math.round(curlArmAngle)}°`;
+          const x = point.x * width + 16;
+          const y = point.y * height - 8;
+          ctx.font = 'bold 14px monospace';
+          ctx.fillStyle = curlViolation ? '#ef4444' : '#22c55e';
+          ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+          ctx.lineWidth = 3;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.scale(-1, 1);
+          ctx.strokeText(text, 0, 0);
+          ctx.fillText(text, 0, 0);
+          ctx.restore();
         }
       }
 
