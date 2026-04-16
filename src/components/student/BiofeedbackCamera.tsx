@@ -301,7 +301,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       const isCurlTemplate = activeTemplate?.errors.some(e => e.id === 'elbow_alignment');
       let curlViolation = false;
       let curlActiveSide: 'left' | 'right' | null = null;
-      const curlBadLandmarks = new Set<number>();
+      let curlBadConnection: [number, number] | null = null;
       let curlCoachMessage: string | null = null;
       let curlArmAngle: number | null = null;
 
