@@ -471,8 +471,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       if (isPlankTemplate) {
         plankBadLandmarks.forEach(i => badLandmarks.add(i));
       } else if (isCurlTemplate) {
-        // For curl, use ONLY the curl-specific bad landmarks
-        curlBadLandmarks.forEach(i => badLandmarks.add(i));
+        // Curl uses connection-based coloring, not landmark-based — skip badLandmarks
       } else {
         // Populate from frameWarnings' affectedSegments (non-plank/curl templates)
         for (const w of frameWarnings) {
@@ -492,12 +491,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         }
       }
 
-      // Determine line color (orange for warning, red for critical in plank)
+      // Determine line color
       const getLineColor = (start: number, end: number) => {
-        // For curl: explicitly keep forearm (elbow→wrist) green always
+        // For curl: ONLY the exact upper arm connection of the active side turns red
         if (isCurlTemplate) {
-          const isWrist = (idx: number) => idx === LANDMARKS.LEFT_WRIST || idx === LANDMARKS.RIGHT_WRIST;
-          if (isWrist(start) || isWrist(end)) return '#22c55e';
+          if (curlBadConnection) {
+            const isExactMatch =
+              (start === curlBadConnection[0] && end === curlBadConnection[1]) ||
+              (start === curlBadConnection[1] && end === curlBadConnection[0]);
+            if (isExactMatch) return '#ef4444';
+          }
+          return '#22c55e'; // Everything else stays green for curl
         }
         const isBad = badLandmarks.has(start) && badLandmarks.has(end);
         if (!isBad) return '#22c55e';
