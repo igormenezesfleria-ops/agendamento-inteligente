@@ -5,9 +5,13 @@ export function Hero() {
   return (
     <section className="relative min-h-screen bg-[#101318] overflow-hidden pb-40">
       <div className="container relative z-10 flex flex-col items-center px-4 py-20 text-center">
-        {/* Logo — free, no pill */}
-        <div className="mt-12 mb-8 animate-fade-in">
-          <img src="/logo-synton.png" alt="Synton" className="h-20 w-auto object-contain mx-auto" />
+        {/* Master Logo — transparent, imposing, centered */}
+        <div className="mt-12 mb-8 animate-fade-in bg-transparent flex justify-center">
+          <img
+            src="/logo-synton-master.png"
+            alt="Synton"
+            className="w-48 h-auto object-contain bg-transparent"
+          />
         </div>
 
         {/* Main headline */}
