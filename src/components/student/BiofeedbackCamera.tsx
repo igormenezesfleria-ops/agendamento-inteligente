@@ -904,46 +904,61 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
   return (
     <div className="fixed inset-0 z-[110] flex flex-col bg-black">
-      <div className="absolute left-0 right-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent px-4 py-3">
+      {/* Minimal top controls */}
+      <div className="absolute left-0 right-0 top-0 z-30 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent px-3 py-3">
         <button
           onClick={() => {
             stopCamera();
             navigate(-1);
           }}
-          className="p-2 text-white"
+          className="rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-colors hover:bg-black/60"
+          aria-label="Voltar"
         >
-          <ArrowLeft className="h-6 w-6" />
+          <ArrowLeft className="h-5 w-5" />
         </button>
-        <span className="text-sm font-bold tracking-wide text-white">BIOFEEDBACK AI</span>
-        <button onClick={toggleFacing} className="p-2 text-white">
+        <button
+          onClick={toggleFacing}
+          className="rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition-colors hover:bg-black/60"
+          aria-label="Inverter câmera"
+        >
           <RotateCcw className="h-5 w-5" />
         </button>
       </div>
 
       {cameraActive && (
         <>
+          {/* Premium exercise title pill — primary identity */}
           {exerciseName && (
-            <div className="absolute left-4 right-4 top-[52px] z-20 flex items-center justify-center">
-              <span className="rounded-full border border-accent/30 bg-accent/10 px-3 py-1 text-[11px] font-bold text-accent backdrop-blur-md">
-                Analisando: {exerciseName}
-                {activeTemplate ? ` (${activeTemplate.name})` : ''}
+            <div className="absolute left-0 right-0 top-3 z-20 flex flex-col items-center gap-1.5 px-16">
+              <span className="max-w-full truncate rounded-full bg-black/55 px-4 py-1.5 text-sm font-semibold text-white shadow-lg backdrop-blur-md">
+                {exerciseName}
               </span>
+              {/* Discrete status dots */}
+              <div className="flex items-center gap-2 rounded-full bg-black/40 px-2.5 py-1 backdrop-blur-md">
+                <span className="flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider text-white/85">
+                  <Zap className="h-2.5 w-2.5 text-primary" /> Lite
+                </span>
+                <span className="h-2.5 w-px bg-white/25" />
+                <span className={`flex items-center gap-1 text-[9px] font-semibold uppercase tracking-wider ${
+                  aiState === 'ready' ? 'text-success' :
+                  aiState === 'fallback' ? 'text-warning' :
+                  aiState === 'error' ? 'text-destructive' : 'text-white/85'
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${
+                    aiState === 'ready' ? 'bg-success animate-pulse' :
+                    aiState === 'fallback' ? 'bg-warning' :
+                    aiState === 'error' ? 'bg-destructive' : 'bg-white/60'
+                  }`} />
+                  {aiBadgeText}
+                </span>
+              </div>
             </div>
           )}
 
-          <div className={`absolute left-4 z-20 flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'}`}>
-            <Zap className="h-3 w-3 text-primary" />
-            <span className="text-[10px] font-bold tracking-wide text-primary">⚡ Motor Lite Ativado (Alto Desempenho)</span>
-          </div>
-
-          <div className={`absolute right-4 z-20 rounded-full border px-3 py-1 text-[11px] font-semibold backdrop-blur-md ${exerciseName ? 'top-[80px]' : 'top-16'} ${aiBadgeClasses}`}>
-            {aiBadgeText}
-          </div>
-
           {activeWarnings.length > 0 && (
-            <div className={`absolute left-4 right-4 z-20 flex flex-wrap gap-1.5 ${exerciseName ? 'top-[106px]' : 'top-[90px]'}`}>
+            <div className={`absolute left-4 right-4 z-20 flex flex-wrap justify-center gap-1.5 ${exerciseName ? 'top-[88px]' : 'top-16'}`}>
               {activeWarnings.map((w) => (
-                <span key={w.errorId} className="rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
+                <span key={w.errorId} className="rounded-full border border-destructive/40 bg-destructive/15 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
                   {w.coachMessage}
                 </span>
               ))}
@@ -951,9 +966,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           )}
 
           {sideProfileWarning && (
-            <div className={`absolute left-4 right-4 z-20 ${exerciseName ? 'top-[130px]' : 'top-[114px]'}`}>
+            <div className={`absolute left-4 right-4 z-20 flex justify-center ${exerciseName ? 'top-[112px]' : 'top-[90px]'}`}>
               <span className="inline-flex items-center gap-1 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5 text-[11px] font-semibold text-warning backdrop-blur-md">
-                ⚠️ Aviso: O Valgo Dinâmico é melhor analisado de frente.
+                ⚠️ Valgo Dinâmico é melhor analisado de frente.
               </span>
             </div>
           )}
@@ -962,7 +977,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       <div
         className={`absolute left-4 right-4 z-20 rounded-xl px-4 py-3 backdrop-blur-md transition-all ${
-          cameraActive ? 'top-28' : 'top-16'
+          cameraActive ? (exerciseName ? 'top-[140px]' : 'top-24') : 'top-16'
         } ${
           status === 'good'
             ? 'border-success/30 bg-success/10'
