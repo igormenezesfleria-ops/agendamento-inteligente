@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, ClipboardList, User } from 'lucide-react';
+import { Home, ClipboardList, User, Calendar, MessageCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
@@ -143,8 +143,8 @@ export function BottomTabBar() {
 
   const tabs = [
     { label: 'Início', icon: Home, href: homeRoute },
-    { label: 'Agenda', icon: ClipboardList, href: agendaRoute },
-    { label: 'Chat', icon: User, href: '/dashboard/chat', badge: true },
+    { label: 'Agenda', icon: Calendar, href: agendaRoute },
+    { label: 'Chat', icon: MessageCircle, href: '/dashboard/chat', badge: true },
     { label: 'Perfil', icon: User, href: '/dashboard/perfil' },
   ];
 
