@@ -170,88 +170,16 @@ export function StudentDashboard() {
         </p>
       </div>
 
-      {/* b) Quick Action CTA */}
-      <Button asChild variant="accent" size="lg" className="w-full">
-        <Link to="/dashboard/agendar">
-          <Dumbbell className="w-5 h-5 mr-2" />
-          Agendar Novo Treino
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Link>
-      </Button>
-
-      {/* c) Next Class + Check-in */}
-      {!isLoading && (
-        nextAppointment ? (
-          <Card className="border-accent/30 bg-accent/5">
-            <CardContent className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-3">
-                Próximo Treino
-              </p>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl accent-gradient flex items-center justify-center shrink-0">
-                  <Calendar className="w-6 h-6 text-accent-foreground" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-display text-lg text-foreground truncate">
-                    {nextAppointment.className}
-                  </p>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {formatDate(nextAppointment.date)} · {nextAppointment.time_slot}
-                  </p>
-                </div>
-              </div>
-              {/* Check-in CTA — show when class is today and within 30min window */}
-              {(() => {
-                const now = new Date();
-                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-                if (nextAppointment.date !== todayStr) return null;
-                const [h, m] = nextAppointment.time_slot.split(':').map(Number);
-                const classTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m);
-                const diffMin = (classTime.getTime() - now.getTime()) / 60000;
-                // Show check-in from 30min before to 15min after class start
-                if (diffMin > 30 || diffMin < -15) return null;
-                const alreadyCheckedIn = !!(nextAppointment as any).checkin_at;
-                if (alreadyCheckedIn) {
-                  return (
-                    <div className="mt-4 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 py-3 rounded-xl font-bold text-center text-sm border border-emerald-200 dark:border-emerald-800/40">
-                      ✅ Check-in realizado! Aguarde validação.
-                    </div>
-                  );
-                }
-                return (
-                  <button
-                    onClick={handleCheckin}
-                    disabled={checkingIn}
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-4 rounded-xl font-bold text-lg shadow-[0_0_15px_hsl(var(--accent)/0.4)] animate-pulse flex justify-center items-center gap-2 mt-4 transition-all"
-                  >
-                    <MapPin className="w-5 h-5" />
-                    Fazer Check-in no Estúdio
-                  </button>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-dashed">
-            <CardContent className="p-5 text-center">
-              <Clock className="w-8 h-8 mx-auto text-muted-foreground/50 mb-2" />
-              <p className="text-sm text-muted-foreground">
-                Você não tem treinos agendados. Bora treinar? 💪
-              </p>
-            </CardContent>
-          </Card>
-        )
-      )}
-
-      {/* d) Active Workout */}
-      <ActiveWorkoutCard />
-
-
-      {/* e) Gamification & Engagement */}
+      {/* b) Gamification & Engagement — compact horizontal strip */}
       <StreakBadge />
 
-      {/* f) Announcements */}
+      {/* c) Announcements */}
       <AnnouncementsFeed />
+
+      {/* Active Workout drawer (hidden trigger — opened via BottomNav 'Treino' event) */}
+      <div className="hidden">
+        <ActiveWorkoutCard />
+      </div>
 
       {/* Triage Onboarding Modal */}
       <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
