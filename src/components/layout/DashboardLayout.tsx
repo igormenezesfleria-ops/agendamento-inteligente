@@ -65,9 +65,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Sidebar header — close button on mobile, logo on desktop */}
-          <div className="flex items-center justify-between px-6 min-h-[80px] border-b border-sidebar-border bg-transparent">
+          <div className="flex items-center justify-between px-6 min-h-[96px] py-4 border-b border-sidebar-border bg-transparent">
             <Link to="/dashboard" className="flex items-center bg-transparent">
-              <img src="/logo-synton-sidebar.png" alt="Synton" className="h-10 w-auto object-contain bg-transparent shrink-0" />
+              <img src="/logo-synton-sidebar.png" alt="Synton" className="h-14 w-auto object-contain bg-transparent" />
             </Link>
             <div className="flex items-center gap-1">
               <span className="hidden lg:block"><NotificationBell /></span>
