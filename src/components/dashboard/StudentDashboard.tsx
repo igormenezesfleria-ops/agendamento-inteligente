@@ -6,10 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, ArrowRight, Dumbbell, AlertTriangle, MapPin } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Dumbbell, ClipboardList, MapPin } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
-import { StudentWorkoutHistory } from '@/components/dashboard/StudentWorkoutHistory';
 
 import { ActiveWorkoutCard } from '@/components/student/ActiveWorkoutCard';
 import { StreakBadge } from '@/components/student/StreakBadge';
@@ -130,25 +129,33 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Pending Questionnaire Alert */}
+      {/* Pending Tasks from Personal Trainer */}
       {pendingQuestionnaires && pendingQuestionnaires.length > 0 && (
-        <Card className="border-destructive/40 bg-destructive/5">
-          <CardContent className="p-4 space-y-3">
-            {pendingQuestionnaires.map((q) => (
-              <div key={q.id} className="flex items-center gap-3">
-                <AlertTriangle className="w-5 h-5 text-destructive shrink-0" />
-                <p className="text-sm font-medium flex-1">
-                  Aviso: Seu Personal enviou uma avaliação <strong>{q.type === 'PAR-Q' ? 'PAR-Q+' : q.type === 'HOOPER' ? 'Índice de Hooper' : q.type}</strong> para você.
-                </p>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => setSelectedQuestionnaire({ id: q.id, type: q.type })}
-                >
-                  Responder Agora
-                </Button>
-              </div>
-            ))}
+        <Card className="border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <ClipboardList className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                Avisos do Personal
+              </p>
+            </div>
+            <div className="divide-y divide-amber-200/60 dark:divide-amber-900/30">
+              {pendingQuestionnaires.map((q) => (
+                <div key={q.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                  <p className="text-sm text-foreground flex-1">
+                    Avaliação <strong className="font-semibold">{q.type === 'PAR-Q' ? 'PAR-Q+' : q.type === 'HOOPER' ? 'Índice de Hooper' : q.type}</strong> pendente
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 border-amber-400/60 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                    onClick={() => setSelectedQuestionnaire({ id: q.id, type: q.type })}
+                  >
+                    Responder
+                  </Button>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
@@ -245,11 +252,6 @@ export function StudentDashboard() {
 
       {/* f) Announcements */}
       <AnnouncementsFeed />
-
-      {/* g) Workout History */}
-      <StudentWorkoutHistory />
-
-      {/* Triage Onboarding Modal */}
 
       {/* Triage Onboarding Modal */}
       <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
