@@ -955,79 +955,58 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             </div>
           )}
 
-          {activeWarnings.length > 0 && (
-            <div className={`absolute left-4 right-4 z-20 flex flex-wrap justify-center gap-1.5 ${exerciseName ? 'top-[88px]' : 'top-16'}`}>
-              {activeWarnings.map((w) => (
-                <span key={w.errorId} className="rounded-full border border-destructive/40 bg-destructive/15 px-2.5 py-0.5 text-[10px] font-bold text-destructive backdrop-blur-md">
-                  {w.coachMessage}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* Unified priority feedback pill — single banner, no stacking */}
+          {(() => {
+            // Priority: 1) active error warning  2) side profile warning  3) status (good/warning/idle)
+            const topWarning = activeWarnings[0];
+            const hasError = !!topWarning;
+            const hasSideWarn = !hasError && sideProfileWarning;
+            const message = hasError
+              ? topWarning.coachMessage
+              : hasSideWarn
+                ? '⚠️ Valgo é melhor analisado de frente'
+                : statusText;
 
-          {sideProfileWarning && (
-            <div className={`absolute left-4 right-4 z-20 flex justify-center ${exerciseName ? 'top-[112px]' : 'top-[90px]'}`}>
-              <span className="inline-flex items-center gap-1 rounded-lg border border-warning/30 bg-warning/10 px-3 py-1.5 text-[11px] font-semibold text-warning backdrop-blur-md">
-                ⚠️ Valgo Dinâmico é melhor analisado de frente.
-              </span>
-            </div>
-          )}
+            const tone = hasError || status === 'warning'
+              ? 'bg-red-500/85 text-white'
+              : hasSideWarn
+                ? 'bg-amber-500/85 text-white'
+                : status === 'good'
+                  ? 'bg-emerald-500/85 text-white'
+                  : 'bg-black/55 text-white/90';
+
+            return (
+              <div className={`absolute left-1/2 z-20 -translate-x-1/2 ${exerciseName ? 'top-[88px]' : 'top-16'} max-w-[88%]`}>
+                <div className={`flex items-center gap-2 rounded-full px-4 py-2 shadow-lg backdrop-blur-md transition-all ${tone}`}>
+                  <p className="truncate text-sm font-semibold">{message}</p>
+                  {confidence > 0 && !hasError && !hasSideWarn && (
+                    <span className="ml-1 font-mono text-[10px] tabular-nums opacity-75">
+                      {confidence}%
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </>
       )}
 
-      <div
-        className={`absolute left-4 right-4 z-20 rounded-xl px-4 py-3 backdrop-blur-md transition-all ${
-          cameraActive ? (exerciseName ? 'top-[140px]' : 'top-24') : 'top-16'
-        } ${
-          status === 'good'
-            ? 'border-success/30 bg-success/10'
-            : status === 'warning'
-              ? 'border-destructive/30 bg-destructive/10'
-              : 'border-border bg-background/10'
-        }`}
-      >
-        <p
-          className={`text-center text-sm font-bold ${
-            status === 'good'
-              ? 'text-success'
-              : status === 'warning'
-                ? 'text-destructive'
-                : 'text-white/75'
-          }`}
-        >
-          {statusText}
-        </p>
-
-        {confidence > 0 && (
-          <div className="mt-2 flex items-center gap-2">
-            <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  status === 'warning' ? 'bg-destructive' : 'bg-success'
-                }`}
-                style={{ width: `${confidence}%` }}
-              />
-            </div>
-            <span className="font-mono text-[11px] tabular-nums text-white/65">{confidence}% Precisão</span>
-          </div>
-        )}
-
-        {(leftKneeAngle !== null || rightKneeAngle !== null) && (
-          <div className="mt-2 flex items-center justify-center gap-4 text-[11px] font-mono">
-            {leftKneeAngle !== null && (
-              <span className={leftKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-destructive' : 'text-success'}>
-                Joelho E: {Math.round(leftKneeAngle)}°
-              </span>
-            )}
-            {rightKneeAngle !== null && (
-              <span className={rightKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-destructive' : 'text-success'}>
-                Joelho D: {Math.round(rightKneeAngle)}°
-              </span>
-            )}
-            <span className="text-white/45">Limite: {MOCK_MAX_KNEE_FLEXION}°</span>
-          </div>
-        )}
-      </div>
+      {/* Tiny knee angle telemetry — bottom corner, only when active */}
+      {cameraActive && (leftKneeAngle !== null || rightKneeAngle !== null) && (
+        <div className="absolute bottom-28 left-1/2 z-20 -translate-x-1/2 flex items-center gap-3 rounded-full bg-black/40 px-3 py-1 text-[10px] font-mono backdrop-blur-md">
+          {leftKneeAngle !== null && (
+            <span className={leftKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-red-400' : 'text-emerald-400'}>
+              E: {Math.round(leftKneeAngle)}°
+            </span>
+          )}
+          {rightKneeAngle !== null && (
+            <span className={rightKneeAngle < MOCK_MAX_KNEE_FLEXION ? 'text-red-400' : 'text-emerald-400'}>
+              D: {Math.round(rightKneeAngle)}°
+            </span>
+          )}
+          <span className="text-white/45">/{MOCK_MAX_KNEE_FLEXION}°</span>
+        </div>
+      )}
 
       <div className="relative flex-1 overflow-hidden">
         <video
