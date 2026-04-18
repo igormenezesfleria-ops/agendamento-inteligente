@@ -37,18 +37,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-background w-full overflow-x-hidden">
       {/* Mobile header */}
-      <header className="lg:hidden sticky top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-md border-b border-border shadow-sm print:hidden">
-        <div className="flex items-center justify-between px-4 py-2">
+      <header className="lg:hidden sticky top-0 left-0 right-0 z-50 bg-sidebar/95 backdrop-blur-md border-b border-sidebar-border shadow-sm print:hidden">
+        <div className="flex items-center justify-between px-4 py-2 bg-transparent">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(true)}
-            className="text-foreground"
+            className="text-sidebar-foreground"
           >
             <Menu className="w-7 h-7" />
           </Button>
-          <Link to="/dashboard">
-            <img src="/logo-synton-horizontal.png" alt="Synton" className="h-14 w-auto object-contain" />
+          <Link to="/dashboard" className="bg-transparent">
+            <img src="/logo-synton-horizontal.png" alt="Synton" className="h-14 w-auto object-contain bg-transparent" />
           </Link>
           <NotificationBell />
         </div>
@@ -63,9 +63,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Sidebar header — close button on mobile, logo on desktop */}
-          <div className="flex items-center justify-between px-6 h-16 border-b border-sidebar-border">
-            <Link to="/dashboard" className="flex items-center">
-              <img src="/logo-synton-horizontal.png" alt="Synton" className="h-9 w-auto object-contain" />
+          <div className="flex items-center justify-between px-6 h-16 border-b border-sidebar-border bg-transparent">
+            <Link to="/dashboard" className="flex items-center bg-transparent">
+              <img src="/logo-synton-horizontal.png" alt="Synton" className="h-9 w-auto object-contain bg-transparent" />
             </Link>
             <div className="flex items-center gap-1">
               <span className="hidden lg:block"><NotificationBell /></span>
