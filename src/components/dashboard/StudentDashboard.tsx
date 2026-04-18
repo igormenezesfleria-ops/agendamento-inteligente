@@ -253,11 +253,6 @@ export function StudentDashboard() {
       {/* f) Announcements */}
       <AnnouncementsFeed />
 
-      {/* g) Workout History */}
-      <StudentWorkoutHistory />
-
-      {/* Triage Onboarding Modal */}
-
       {/* Triage Onboarding Modal */}
       <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
 
