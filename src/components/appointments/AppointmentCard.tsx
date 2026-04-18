@@ -69,9 +69,9 @@ export function AppointmentCard({
 
           {canCancel && (status === 'pending' || status === 'confirmed') && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+              className="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 border border-border"
               onClick={() => onCancel(id)}
               disabled={isCancelling}
             >
@@ -79,7 +79,7 @@ export function AppointmentCard({
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  <X className="w-4 h-4 mr-1" />
+                  <X className="w-3.5 h-3.5 mr-1.5" />
                   Cancelar
                 </>
               )}
