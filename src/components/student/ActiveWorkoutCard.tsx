@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,6 +61,15 @@ export function ActiveWorkoutCard() {
     },
     enabled: !!user?.id,
   });
+
+  // Allow the bottom tab "Treino" button to open the workout drawer
+  useEffect(() => {
+    const handler = () => {
+      if (workout) setDrawerOpen(true);
+    };
+    window.addEventListener('open-active-workout', handler);
+    return () => window.removeEventListener('open-active-workout', handler);
+  }, [workout]);
 
   if (isLoading) {
     return (
