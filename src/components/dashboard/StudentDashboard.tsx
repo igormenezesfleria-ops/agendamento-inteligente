@@ -128,7 +128,7 @@ export function StudentDashboard() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pb-24">
       {/* Pending Tasks from Personal Trainer */}
       {pendingQuestionnaires && pendingQuestionnaires.length > 0 && (
         <Card className="border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20">
