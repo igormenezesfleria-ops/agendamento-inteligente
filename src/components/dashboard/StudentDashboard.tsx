@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, Clock, ArrowRight, Dumbbell, ClipboardList, MapPin } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import { AnnouncementsFeed } from '@/components/dashboard/AnnouncementsFeed';
 import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 
@@ -16,8 +14,6 @@ import { TriageModal } from '@/components/student/TriageModal';
 import { QuestionnaireModal } from '@/components/student/QuestionnaireModal';
 import { LiabilityWaiverOverlay } from '@/components/student/LiabilityWaiverOverlay';
 import { PSEFeedbackModal } from '@/components/student/PSEFeedbackModal';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
