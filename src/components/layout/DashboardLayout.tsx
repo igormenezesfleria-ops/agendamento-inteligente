@@ -36,21 +36,21 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-background w-full overflow-x-hidden">
-      {/* Mobile header — light theme */}
+      {/* Mobile header — light theme, expanded for premium logo presence */}
       <header className="lg:hidden sticky top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm print:hidden">
-        <div className="flex items-center justify-between px-4 py-2 bg-transparent">
+        <div className="flex items-center justify-between px-4 py-4 min-h-[80px] bg-transparent">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setIsSidebarOpen(true)}
-            className="text-slate-800 hover:text-slate-900 hover:bg-slate-100"
+            className="text-slate-800 hover:text-slate-900 hover:bg-slate-100 shrink-0"
           >
             <Menu className="w-7 h-7" />
           </Button>
-          <Link to="/dashboard" className="bg-transparent">
-            <img src="/logo-synton-horizontal-dark.png" alt="Synton" className="h-10 w-auto object-contain bg-transparent" />
+          <Link to="/dashboard" className="bg-transparent flex items-center justify-center flex-1">
+            <img src="/logo-synton-horizontal-dark.png" alt="Synton" className="h-12 w-auto object-contain bg-transparent" />
           </Link>
-          <span className="text-slate-800">
+          <span className="text-slate-800 shrink-0">
             <NotificationBell />
           </span>
         </div>
