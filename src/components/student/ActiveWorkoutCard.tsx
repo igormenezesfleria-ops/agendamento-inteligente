@@ -12,6 +12,8 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer';
 import { VideoModal } from './VideoModal';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface Exercise {
   id: string;
@@ -101,8 +103,11 @@ export function ActiveWorkoutCard() {
               </DrawerClose>
             </div>
 
-            <div className="bg-accent/10 border-l-4 border-accent text-accent-foreground/80 text-sm p-3 rounded-r-lg mb-6">
-              <strong>Nota do Personal:</strong> Capricha na carga hoje! Foca na postura.
+            <div className="bg-zinc-50 dark:bg-zinc-900/40 border border-border/60 text-sm text-foreground/80 p-3.5 rounded-xl mb-6">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                Nota do Personal
+              </p>
+              <p>Capricha na carga hoje! Foca na postura.</p>
             </div>
 
             {workout.exercises.length === 0 ? (
@@ -143,7 +148,7 @@ export function ActiveWorkoutCard() {
                                   },
                                 });
                               }}
-                              className="flex items-center gap-1 bg-muted text-muted-foreground hover:bg-muted/80 px-2 py-1 rounded-lg text-xs font-bold transition-all"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-full text-xs font-semibold border border-orange-200/70 transition-all dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900/50 dark:hover:bg-orange-950/50"
                             >
                               <Camera className="w-3.5 h-3.5" /> Auto-Gravar AI
                             </button>
@@ -164,8 +169,11 @@ export function ActiveWorkoutCard() {
               </div>
             )}
 
-            <p className="text-xs text-muted-foreground mt-6 text-center">
-              {workout.start_date} → {workout.end_date}
+            <p className="text-xs text-gray-500 dark:text-muted-foreground mt-6 text-center">
+              Válido até {(() => {
+                const [y, m, d] = workout.end_date.split('-').map(Number);
+                return format(new Date(y, m - 1, d), "dd 'de' MMMM", { locale: ptBR });
+              })()}
             </p>
           </div>
         </DrawerContent>
