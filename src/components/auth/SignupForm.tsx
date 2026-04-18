@@ -74,7 +74,7 @@ export function SignupForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {/* Role Selection */}
       <div className="space-y-3">
-        <Label className="text-sm font-semibold text-slate-700">Qual é o seu perfil?</Label>
+        <Label className="text-sm font-semibold text-gray-300">Qual é o seu perfil?</Label>
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
@@ -82,22 +82,22 @@ export function SignupForm() {
             className={cn(
               'flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200',
               selectedRole === 'admin'
-                ? 'bg-orange-50 border-2 border-orange-500 shadow-sm'
-                : 'bg-white border border-slate-200 hover:border-slate-300'
+                ? 'bg-orange-500/10 border-2 border-orange-500 shadow-sm'
+                : 'bg-zinc-900 border border-zinc-700 hover:border-zinc-600'
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
-              selectedRole === 'admin' ? 'bg-orange-100' : 'bg-slate-100'
+              selectedRole === 'admin' ? 'bg-orange-500/20' : 'bg-zinc-800'
             )}>
               <Dumbbell className={cn(
                 'w-6 h-6',
-                selectedRole === 'admin' ? 'text-orange-500' : 'text-slate-400'
+                selectedRole === 'admin' ? 'text-orange-500' : 'text-gray-500'
               )} />
             </div>
             <span className={cn(
               'font-semibold text-sm',
-              selectedRole === 'admin' ? 'text-orange-600' : 'text-slate-600'
+              selectedRole === 'admin' ? 'text-orange-500' : 'text-gray-400'
             )}>
               Sou Personal / Studio
             </span>
@@ -109,22 +109,22 @@ export function SignupForm() {
             className={cn(
               'flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200',
               selectedRole === 'student'
-                ? 'bg-orange-50 border-2 border-orange-500 shadow-sm'
-                : 'bg-white border border-slate-200 hover:border-slate-300'
+                ? 'bg-orange-500/10 border-2 border-orange-500 shadow-sm'
+                : 'bg-zinc-900 border border-zinc-700 hover:border-zinc-600'
             )}
           >
             <div className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
-              selectedRole === 'student' ? 'bg-orange-100' : 'bg-slate-100'
+              selectedRole === 'student' ? 'bg-orange-500/20' : 'bg-zinc-800'
             )}>
               <GraduationCap className={cn(
                 'w-6 h-6',
-                selectedRole === 'student' ? 'text-orange-500' : 'text-slate-400'
+                selectedRole === 'student' ? 'text-orange-500' : 'text-gray-500'
               )} />
             </div>
             <span className={cn(
               'font-semibold text-sm',
-              selectedRole === 'student' ? 'text-orange-600' : 'text-slate-600'
+              selectedRole === 'student' ? 'text-orange-500' : 'text-gray-400'
             )}>
               Sou Aluno
             </span>
@@ -134,73 +134,73 @@ export function SignupForm() {
 
       {/* Name */}
       <div className="space-y-1.5">
-        <Label htmlFor="name" className="text-sm font-semibold text-slate-700">Nome Completo</Label>
+        <Label htmlFor="name" className="text-sm font-semibold text-gray-300">Nome Completo</Label>
         <div className="relative">
-          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             id="name"
             type="text"
             placeholder="Seu nome"
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
+            className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all outline-none placeholder:text-gray-500"
             {...register('name')}
           />
         </div>
         {errors.name && (
-          <p className="text-sm text-red-500">{errors.name.message}</p>
+          <p className="text-sm text-red-400">{errors.name.message}</p>
         )}
       </div>
 
       {/* Email */}
       <div className="space-y-1.5">
-        <Label htmlFor="email" className="text-sm font-semibold text-slate-700">Email</Label>
+        <Label htmlFor="email" className="text-sm font-semibold text-gray-300">Email</Label>
         <div className="relative">
-          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             id="email"
             type="email"
             placeholder="seu@email.com"
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
+            className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all outline-none placeholder:text-gray-500"
             {...register('email')}
           />
         </div>
         {errors.email && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
+          <p className="text-sm text-red-400">{errors.email.message}</p>
         )}
       </div>
 
       {/* Password */}
       <div className="space-y-1.5">
-        <Label htmlFor="password" className="text-sm font-semibold text-slate-700">Senha</Label>
+        <Label htmlFor="password" className="text-sm font-semibold text-gray-300">Senha</Label>
         <div className="relative">
-          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             id="password"
             type="password"
             placeholder="••••••••"
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
+            className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all outline-none placeholder:text-gray-500"
             {...register('password')}
           />
         </div>
         {errors.password && (
-          <p className="text-sm text-red-500">{errors.password.message}</p>
+          <p className="text-sm text-red-400">{errors.password.message}</p>
         )}
       </div>
 
       {/* Confirm Password */}
       <div className="space-y-1.5">
-        <Label htmlFor="confirmPassword" className="text-sm font-semibold text-slate-700">Confirmar Senha</Label>
+        <Label htmlFor="confirmPassword" className="text-sm font-semibold text-gray-300">Confirmar Senha</Label>
         <div className="relative">
-          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             id="confirmPassword"
             type="password"
             placeholder="••••••••"
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
+            className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all outline-none placeholder:text-gray-500"
             {...register('confirmPassword')}
           />
         </div>
         {errors.confirmPassword && (
-          <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
+          <p className="text-sm text-red-400">{errors.confirmPassword.message}</p>
         )}
       </div>
 
@@ -221,9 +221,9 @@ export function SignupForm() {
       </button>
 
       {/* Footer */}
-      <p className="w-full text-center mt-4 text-slate-500 font-medium text-sm">
+      <p className="w-full text-center mt-4 text-gray-400 font-medium text-sm">
         Já tem uma conta?{' '}
-        <Link to="/login" className="text-orange-500 font-bold hover:text-orange-600 transition-colors">
+        <Link to="/login" className="text-orange-500 font-bold hover:text-orange-400 transition-colors">
           Entrar
         </Link>
       </p>

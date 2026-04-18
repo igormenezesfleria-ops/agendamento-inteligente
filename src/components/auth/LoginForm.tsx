@@ -80,41 +80,41 @@ export function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {/* Email */}
       <div className="space-y-1.5">
-        <Label htmlFor="email" className="text-sm font-semibold text-slate-700">Email</Label>
+        <Label htmlFor="email" className="text-sm font-semibold text-gray-300">Email</Label>
         <div className="relative">
-          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             id="email"
             type="email"
             placeholder="seu@email.com"
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
+            className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all outline-none placeholder:text-gray-500"
             {...register('email')}
           />
         </div>
         {errors.email && (
-          <p className="text-sm text-red-500">{errors.email.message}</p>
+          <p className="text-sm text-red-400">{errors.email.message}</p>
         )}
       </div>
 
       {/* Password */}
       <div className="space-y-1.5">
-        <Label htmlFor="password" className="text-sm font-semibold text-slate-700">Senha</Label>
+        <Label htmlFor="password" className="text-sm font-semibold text-gray-300">Senha</Label>
         <div className="relative">
-          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
           <input
             id="password"
             type="password"
             placeholder="••••••••"
-            className="w-full bg-slate-50 border border-slate-200 text-slate-900 rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500 focus:border-orange-500 focus:bg-white transition-all outline-none placeholder:text-slate-400"
+            className="w-full bg-zinc-900 border border-zinc-700 text-white rounded-xl pl-11 pr-4 py-3 text-base focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 transition-all outline-none placeholder:text-gray-500"
             {...register('password')}
           />
         </div>
         {errors.password && (
-          <p className="text-sm text-red-500">{errors.password.message}</p>
+          <p className="text-sm text-red-400">{errors.password.message}</p>
         )}
         <Link
           to="/esqueci-senha"
-          className="text-sm text-orange-500 font-semibold hover:text-orange-600 w-full text-right block mt-2 cursor-pointer transition-colors"
+          className="text-sm text-orange-500 font-semibold hover:text-orange-400 w-full text-right block mt-2 cursor-pointer transition-colors"
         >
           Esqueceu a senha?
         </Link>
@@ -137,9 +137,9 @@ export function LoginForm() {
       </button>
 
       {/* Footer */}
-      <p className="w-full text-center mt-4 text-slate-500 font-medium text-sm">
+      <p className="w-full text-center mt-4 text-gray-400 font-medium text-sm">
         Não tem uma conta?{' '}
-        <Link to="/cadastro" className="text-orange-500 font-bold hover:text-orange-600 transition-colors">
+        <Link to="/cadastro" className="text-orange-500 font-bold hover:text-orange-400 transition-colors">
           Cadastre-se
         </Link>
       </p>
