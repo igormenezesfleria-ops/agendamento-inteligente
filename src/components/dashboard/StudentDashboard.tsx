@@ -17,17 +17,13 @@ import { PSEFeedbackModal } from '@/components/student/PSEFeedbackModal';
 
 export function StudentDashboard() {
   const { profile, user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [triageOpen, setTriageOpen] = useState(false);
   const [liabilityOpen, setLiabilityOpen] = useState(false);
   const [pseOpen, setPseOpen] = useState(false);
-  const [checkingIn, setCheckingIn] = useState(false);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
   useEffect(() => {
     if (profile && profile.business_owner_id) {
-      // Show liability waiver first if not accepted
       if (!(profile as any).liability_accepted) {
         setLiabilityOpen(true);
       } else if (profile.profile_completed === false) {
@@ -35,52 +31,6 @@ export function StudentDashboard() {
       }
     }
   }, [profile]);
-
-  const { data: nextAppointment, isLoading } = useQuery({
-    queryKey: ['next-appointment', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const today = new Date();
-      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      const nowTime = `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`;
-
-      // Fetch upcoming confirmed/pending appointments
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('id, date, time_slot, status, class_schedule_id, checkin_at')
-        .eq('student_id', user.id)
-        .in('status', ['confirmed', 'pending'])
-        .gte('date', todayStr)
-        .order('date', { ascending: true })
-        .order('time_slot', { ascending: true })
-        .limit(5);
-
-      if (error || !data || data.length === 0) return null;
-
-      // Filter out past slots for today
-      const upcoming = data.filter((a) => {
-        if (a.date > todayStr) return true;
-        return a.time_slot >= nowTime;
-      });
-
-      if (upcoming.length === 0) return null;
-
-      const appt = upcoming[0];
-
-      // Fetch class name
-      if (appt.class_schedule_id) {
-        const { data: schedule } = await supabase
-          .from('class_schedules')
-          .select('class_name')
-          .eq('id', appt.class_schedule_id)
-          .single();
-        return { ...appt, className: schedule?.class_name || 'Treino' };
-      }
-
-      return { ...appt, className: 'Treino' };
-    },
-    enabled: !!user?.id && !!profile?.business_owner_id,
-  });
 
   const { data: pendingQuestionnaires } = useQuery({
     queryKey: ['pending-questionnaires', user?.id],
@@ -100,28 +50,6 @@ export function StudentDashboard() {
   if (profile && !profile.business_owner_id) {
     return <StudioLinkCard />;
   }
-
-  const formatDate = (dateStr: string) => {
-    const [y, m, d] = dateStr.split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    return format(date, "EEEE, dd 'de' MMMM", { locale: ptBR });
-  };
-
-  const handleCheckin = async () => {
-    if (!nextAppointment || !user) return;
-    setCheckingIn(true);
-    const { error } = await supabase
-      .from('appointments')
-      .update({ checkin_at: new Date().toISOString() })
-      .eq('id', nextAppointment.id);
-    setCheckingIn(false);
-    if (error) {
-      toast({ title: 'Erro', description: 'Não foi possível fazer check-in.', variant: 'destructive' });
-      return;
-    }
-    toast({ title: '📍 Check-in realizado!', description: 'Aguarde a validação do seu professor.' });
-    queryClient.invalidateQueries({ queryKey: ['next-appointment'] });
-  };
 
   return (
     <div className="space-y-6 animate-fade-in pb-24">
