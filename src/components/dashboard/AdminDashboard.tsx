@@ -143,31 +143,6 @@ export function AdminDashboard() {
     refetchInterval: 60_000,
   });
 
-  // Financial Health strip — current month expenses + pending count
-  const { data: financialHealth } = useQuery({
-    queryKey: ['admin-financial-health', user?.id],
-    queryFn: async () => {
-      const start = format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd');
-      const end = format(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0), 'yyyy-MM-dd');
-      const { data, error } = await supabase
-        .from('expenses')
-        .select('amount, is_paid')
-        .eq('admin_id', user!.id)
-        .gte('due_date', start)
-        .lte('due_date', end);
-      if (error) throw error;
-      const rows = data || [];
-      const total = rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
-      const pending = rows.filter(r => !r.is_paid).length;
-      return { total, pending };
-    },
-    enabled: !!user?.id,
-    refetchInterval: 120_000,
-  });
-
-  const formatBRL = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
-
   const todayFormatted = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
   return (
