@@ -74,11 +74,9 @@ export function PayrollSection({ collaborators, appointments, isLoading, formatC
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-accent" />
-        </CardContent>
-      </Card>
+      <div className="rounded-2xl border border-border bg-card flex justify-center py-10">
+        <Loader2 className="w-5 h-5 animate-spin text-accent" />
+      </div>
     );
   }
 
