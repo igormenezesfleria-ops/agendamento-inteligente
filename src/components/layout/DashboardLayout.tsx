@@ -184,7 +184,6 @@ function getNavItems(role: string) {
   const adminItems: Array<{ href: string; label: string; icon: React.ElementType } | { section: string }> = [
     { href: '/dashboard/admin', label: 'Início', icon: Home },
     { section: 'Operação' },
-    { href: '/dashboard/chat', label: 'Mensagens', icon: MessageSquare },
     { href: '/dashboard/solicitacoes', label: 'Solicitações', icon: Bell },
     { href: '/dashboard/minha-agenda', label: 'Minhas Tarefas', icon: ClipboardList },
     { href: '/dashboard/agenda', label: 'Agenda Completa', icon: Calendar },
