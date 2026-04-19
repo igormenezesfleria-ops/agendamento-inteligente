@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, CheckCircle2, MessageCircle, Share2, Wallet } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, CheckCircle2, MessageCircle, Share2 } from 'lucide-react';
 import { format, isToday, isTomorrow, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
@@ -283,36 +283,6 @@ export function AdminDashboard() {
           <Share2 className="w-4 h-4" />
         </span>
       </button>
-
-      {/* Saúde Financeira — minimalist strip */}
-      <Link
-        to="/dashboard/admin/financeiro"
-        className="w-full flex items-center justify-between p-4 rounded-xl bg-green-50/60 dark:bg-green-950/20 border border-green-100 dark:border-green-900/40 hover:bg-green-100/60 dark:hover:bg-green-950/40 transition-colors active:scale-[0.99]"
-      >
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/40 flex items-center justify-center shrink-0">
-            <Wallet className="w-5 h-5 text-green-700 dark:text-green-400" />
-          </div>
-          <div className="text-left min-w-0 flex-1">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Saúde Financeira</p>
-            <p className="text-base font-bold text-foreground truncate">
-              {formatBRL(financialHealth?.total ?? 0)}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {financialHealth && financialHealth.pending > 0 ? (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50">
-              {financialHealth.pending} pendente{financialHealth.pending > 1 ? 's' : ''}
-            </span>
-          ) : (
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border border-green-200 dark:border-green-800/50">
-              Em dia
-            </span>
-          )}
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </div>
-      </Link>
 
       {showImpact && <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />}
     </div>
