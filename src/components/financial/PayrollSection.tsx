@@ -84,50 +84,54 @@ export function PayrollSection({ collaborators, appointments, isLoading, formatC
 
   return (
     <>
-      <Card className="print-section">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Users className="w-5 h-5 text-accent" />
-            Folha de Pagamento (Equipe)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <section className="space-y-3 print-section">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider flex items-center gap-2">
+            <Users className="w-4 h-4 text-accent" />
+            Folha de Pagamento
+          </h2>
+          <span className="text-xs text-muted-foreground">{breakdowns.length} {breakdowns.length === 1 ? 'membro' : 'membros'}</span>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card overflow-hidden">
           {breakdowns.length === 0 ? (
-            <p className="text-center text-muted-foreground py-6">Nenhum colaborador encontrado.</p>
+            <p className="text-center text-sm text-muted-foreground py-10">Nenhum colaborador encontrado.</p>
           ) : (
-            <div className="space-y-3">
+            <ul className="divide-y divide-border">
               {breakdowns.map((b) => (
-                <div
+                <li
                   key={b.id}
-                  className="flex items-center gap-4 p-4 rounded-xl border border-border bg-background"
+                  className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 transition-colors"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-foreground truncate">{b.name || 'Sem nome'}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="secondary" className="text-[10px]">
-                        {PAY_TYPE_LABELS[b.pay_type || 'per_class'] || b.pay_type}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">{b.detail}</span>
-                    </div>
+                  <div className="w-9 h-9 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0 text-sm font-semibold">
+                    {(b.name || '?').charAt(0).toUpperCase()}
                   </div>
-                  <p className="font-bold text-sm sm:text-base text-foreground whitespace-nowrap">
-                    {formatCurrency(b.total)}
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="shrink-0 no-print"
-                    onClick={() => setReceiptCollab(b)}
-                  >
-                    <FileText className="w-4 h-4 mr-1" />
-                    Ver Recibo
-                  </Button>
-                </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{b.name || 'Sem nome'}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {PAY_TYPE_LABELS[b.pay_type || 'per_class'] || b.pay_type} · {b.detail}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <p className="text-sm font-semibold text-foreground tabular-nums">
+                      {formatCurrency(b.total)}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-accent no-print"
+                      onClick={() => setReceiptCollab(b)}
+                      aria-label="Ver recibo"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
       {receiptCollab && (
         <CollaboratorReceiptDialog
