@@ -4,16 +4,7 @@ import {
   DialogContent,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Printer, DollarSign, BookOpen, UserCheck, UserX } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import { MONTHS } from '@/lib/constants';
 
 interface CollabPayroll {
@@ -53,7 +44,6 @@ const PAY_TYPE_LABELS: Record<string, string> = {
 interface SessionRow {
   date: string;
   time: string;
-  className: string;
   students: number;
   subtotal: number;
 }
@@ -67,9 +57,9 @@ export function CollaboratorReceiptDialog({
   year,
   formatCurrency,
 }: Props) {
-  const { total, classCount, presentCount, absentCount, rows } = useMemo(() => {
+  const { total, classCount, presentCount, absentCount, rows, baseRate, noShowRate, grossTotal, deductions } = useMemo(() => {
     const rate = Number(collaborator.base_rate) || 0;
-    const noShowRate = Number(collaborator.no_show_rate) || 0;
+    const noShow = Number(collaborator.no_show_rate) || 0;
     const fixedMonthly = Number(collaborator.fixed_monthly_rate) || 0;
     const collabAppts = appointments.filter((a) => a.instructor_id === collaborator.id);
 
@@ -80,10 +70,13 @@ export function CollaboratorReceiptDialog({
         presentCount: 0,
         absentCount: 0,
         rows: [] as SessionRow[],
+        baseRate: rate,
+        noShowRate: noShow,
+        grossTotal: fixedMonthly,
+        deductions: 0,
       };
     }
 
-    // Group by session (date + time_slot)
     const sessionMap = new Map<string, Appointment[]>();
     for (const a of collabAppts) {
       const key = `${a.date}_${a.time_slot}`;
@@ -109,10 +102,9 @@ export function CollaboratorReceiptDialog({
       if (collaborator.pay_type === 'per_class') {
         subtotal = rate;
       } else {
-        // per_student
         const pres = appts.filter((a) => a.attendance === 'present').length;
         const abs = appts.filter((a) => a.attendance === 'absent').length;
-        subtotal = (rate * pres) + (noShowRate * abs);
+        subtotal = (rate * pres) + (noShow * abs);
       }
 
       calculatedTotal += subtotal;
@@ -120,7 +112,6 @@ export function CollaboratorReceiptDialog({
       sessionRows.push({
         date: displayDate,
         time: first.time_slot,
-        className: 'Aula',
         students: studentCount,
         subtotal,
       });
@@ -132,6 +123,10 @@ export function CollaboratorReceiptDialog({
       presentCount: present,
       absentCount: absent,
       rows: sessionRows,
+      baseRate: rate,
+      noShowRate: noShow,
+      grossTotal: calculatedTotal,
+      deductions: 0,
     };
   }, [collaborator, appointments]);
 
@@ -145,113 +140,145 @@ export function CollaboratorReceiptDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto receipt-print-area p-0">
-        <div className="p-6 space-y-5">
-          {/* HEADER */}
-          <div className="text-center space-y-1">
-            <h2 className="font-display text-xl font-bold text-foreground">Personal Studio</h2>
-            <p className="text-sm text-muted-foreground">Extrato de Pagamento</p>
-          </div>
-
-          <Separator />
-
-          {/* SUBHEADER */}
-          <div className="text-sm text-muted-foreground text-center space-y-0.5">
-            <p>
-              <span className="font-medium text-foreground">Colaborador:</span>{' '}
-              {collaborator.name || 'Sem nome'}
-              {' | '}
-              <span className="font-medium text-foreground">Período:</span>{' '}
-              {MONTHS[month]} / {year}
-            </p>
-            <p>
-              <span className="font-medium text-foreground">Tipo:</span>{' '}
-              {PAY_TYPE_LABELS[collaborator.pay_type || 'per_class'] || collaborator.pay_type}
-            </p>
-          </div>
-
-          <Separator />
-
-          {/* 2x2 SUMMARY GRID */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border-2 border-accent/30 bg-accent/5 p-4 text-center">
-              <DollarSign className="w-5 h-5 mx-auto text-accent mb-1" />
-              <p className="text-lg font-bold text-accent">{formatCurrency(total)}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">TOTAL A PAGAR</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <BookOpen className="w-5 h-5 mx-auto text-foreground mb-1" />
-              <p className="text-lg font-bold text-foreground">{classCount}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">AULAS</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <UserCheck className="w-5 h-5 mx-auto text-success mb-1" />
-              <p className="text-lg font-bold text-foreground">{presentCount}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">PRESENÇAS</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4 text-center">
-              <UserX className="w-5 h-5 mx-auto text-destructive mb-1" />
-              <p className="text-lg font-bold text-foreground">{absentCount}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">FALTAS</p>
-            </div>
-          </div>
-
-          {/* DETAILED TABLE */}
-          {rows.length > 0 && (
-            <>
-              <Separator />
-              <div className="rounded-xl border border-border overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="text-xs font-semibold">Data</TableHead>
-                      <TableHead className="text-xs font-semibold">Horário</TableHead>
-                      <TableHead className="text-xs font-semibold">Aula</TableHead>
-                      <TableHead className="text-xs font-semibold text-center">Alunos</TableHead>
-                      <TableHead className="text-xs font-semibold text-right">Subtotal</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rows.map((row, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="text-sm">{row.date}</TableCell>
-                        <TableCell className="text-sm">{row.time}</TableCell>
-                        <TableCell className="text-sm">{row.className}</TableCell>
-                        <TableCell className="text-sm text-center">{row.students}</TableCell>
-                        <TableCell className="text-sm text-right font-medium">
-                          {formatCurrency(row.subtotal)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {/* Total row */}
-                    <TableRow className="bg-muted/30 font-semibold">
-                      <TableCell colSpan={4} className="text-sm text-right">
-                        Total
-                      </TableCell>
-                      <TableCell className="text-sm text-right text-accent font-bold">
-                        {formatCurrency(total)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto receipt-print-area p-0 bg-muted/30">
+        <div className="p-5">
+          {/* INVOICE CARD */}
+          <div className="bg-card rounded-xl shadow-sm border border-border p-6 space-y-6">
+            {/* HEADER */}
+            <div className="flex items-start justify-between pb-4 border-b border-border">
+              <div>
+                <h2 className="text-base font-bold text-foreground">
+                  Recibo de Pagamento
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {MONTHS[month]} / {year}
+                </p>
               </div>
-            </>
-          )}
-
-          {collaborator.pay_type === 'fixed_monthly' && (
-            <div className="text-center text-sm text-muted-foreground py-4">
-              Salário fixo mensal — sem detalhamento por aula.
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Colaborador</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {collaborator.name || 'Sem nome'}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {PAY_TYPE_LABELS[collaborator.pay_type || 'per_class'] || collaborator.pay_type}
+                </p>
+              </div>
             </div>
-          )}
+
+            {/* SUMMARY ROW */}
+            {collaborator.pay_type !== 'fixed_monthly' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                    Aulas Dadas
+                  </p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{classCount}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {presentCount} presença(s)
+                  </p>
+                </div>
+                <div className="bg-muted/40 rounded-lg p-3 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                    Faltas
+                  </p>
+                  <p className="text-2xl font-bold text-foreground mt-1">{absentCount}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    {noShowRate > 0 ? `${formatCurrency(noShowRate)} cada` : 'sem cobrança'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* BREAKDOWN LIST */}
+            <div className="space-y-2.5">
+              {collaborator.pay_type === 'fixed_monthly' ? (
+                <div className="flex items-center justify-between text-sm py-1">
+                  <span className="text-muted-foreground">Salário Fixo Mensal</span>
+                  <span className="font-medium text-foreground tabular-nums">
+                    {formatCurrency(grossTotal)}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between text-sm py-1">
+                    <span className="text-muted-foreground">
+                      Valor por {collaborator.pay_type === 'per_class' ? 'Aula' : 'Aluno'}
+                    </span>
+                    <span className="font-medium text-foreground tabular-nums">
+                      {formatCurrency(baseRate)}
+                    </span>
+                  </div>
+                  {collaborator.pay_type === 'per_student' && noShowRate > 0 && (
+                    <div className="flex items-center justify-between text-sm py-1">
+                      <span className="text-muted-foreground">Valor por Falta</span>
+                      <span className="font-medium text-foreground tabular-nums">
+                        {formatCurrency(noShowRate)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-sm py-1">
+                    <span className="text-muted-foreground">Total Bruto</span>
+                    <span className="font-medium text-foreground tabular-nums">
+                      {formatCurrency(grossTotal)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm py-1">
+                    <span className="text-muted-foreground">Descontos</span>
+                    <span className="font-medium text-foreground tabular-nums">
+                      {formatCurrency(deductions)}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* TOTAL ROW */}
+            <div className="flex items-center justify-between pt-4 border-t-2 border-border">
+              <span className="text-sm font-semibold text-foreground uppercase tracking-wider">
+                Total a Receber
+              </span>
+              <span className="text-2xl font-bold text-accent tabular-nums">
+                {formatCurrency(total)}
+              </span>
+            </div>
+
+            {/* DETAIL TABLE - sessions */}
+            {rows.length > 0 && (
+              <div className="pt-4 border-t border-border">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-3">
+                  Detalhamento das Sessões
+                </p>
+                <div className="space-y-1.5 max-h-60 overflow-y-auto">
+                  {rows.map((row, i) => (
+                    <div
+                      key={i}
+                      className="flex items-center justify-between text-xs py-1.5 border-b border-border/50 last:border-0"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-muted-foreground tabular-nums">{row.date}</span>
+                        <span className="text-muted-foreground tabular-nums">{row.time}</span>
+                        <span className="text-muted-foreground">
+                          {row.students} aluno{row.students !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <span className="font-medium text-foreground tabular-nums">
+                        {formatCurrency(row.subtotal)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* ACTIONS */}
-          <div className="flex justify-end gap-3 no-print pt-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <div className="flex justify-end gap-2 no-print pt-4">
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
               Fechar
             </Button>
-            <Button variant="accent" onClick={handlePrint}>
+            <Button variant="accent" size="sm" onClick={handlePrint}>
               <Printer className="w-4 h-4 mr-2" />
-              Imprimir Recibo (PDF)
+              Imprimir PDF
             </Button>
           </div>
         </div>
