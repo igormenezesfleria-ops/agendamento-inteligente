@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, Wallet, Users, CheckCircle2, MessageCircle } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, CheckCircle2, MessageCircle } from 'lucide-react';
 import { format, isToday, isTomorrow, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
@@ -240,39 +240,6 @@ export function AdminDashboard() {
           Tudo em dia! Sem pendências.
         </div>
       )}
-
-      {/* Visão de Gestão */}
-      <div className="space-y-3 mt-2">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-1">Visão de Gestão</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Link to="/dashboard/admin/financeiro">
-            <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] h-full">
-              <CardContent className="p-4 space-y-2">
-                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                  <Wallet className="w-4.5 h-4.5 text-emerald-600" />
-                </div>
-                <p className="text-xs text-muted-foreground font-medium">Faturamento</p>
-                {profile?.payments_enabled ? (
-                  <p className="text-xl font-bold text-foreground">R$ 4.500</p>
-                ) : (
-                  <span className="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-md text-xs font-semibold inline-block mt-1">Configurar recebimentos</span>
-                )}
-              </CardContent>
-            </Card>
-          </Link>
-          <Link to="/dashboard/equipe">
-            <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] h-full">
-              <CardContent className="p-4 space-y-2">
-                <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                  <Users className="w-4.5 h-4.5 text-blue-600" />
-                </div>
-                <p className="text-xs text-muted-foreground font-medium">Colaboradores</p>
-                <p className="text-xl font-bold text-foreground">{collaboratorCount}</p>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-      </div>
 
       {/* Relatório de Impacto (Secondary — bottom) */}
       <Card className="bg-slate-900 border-orange-500/30 overflow-hidden">

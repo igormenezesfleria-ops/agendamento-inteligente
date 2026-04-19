@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, ClipboardList, User, Calendar, MessageCircle } from 'lucide-react';
+import { Home, ClipboardList, User, Users } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
+import { WhatsAppStudentModal } from '@/components/layout/WhatsAppStudentModal';
 
 // Placeholder until we wire the real Personal phone number from the linked trainer
 const PERSONAL_WHATSAPP_NUMBER = '5511999999999';
@@ -137,44 +139,73 @@ export function BottomTabBar() {
     );
   }
 
-  // Admin/Collaborator: keep prior behavior (Início | Agenda | Chat | Perfil)
-  const agendaRoute =
-    role === 'admin' ? '/dashboard/agenda' : '/dashboard/meus-treinos';
+  // Admin/Personal & Collaborator: Início | Colaboradores | WhatsApp | Perfil
+  return <AdminCollabBottomNav role={role} homeRoute={homeRoute} />;
+}
 
-  const tabs = [
-    { label: 'Início', icon: Home, href: homeRoute },
-    { label: 'Agenda', icon: Calendar, href: agendaRoute },
-    { label: 'Chat', icon: MessageCircle, href: '/dashboard/chat', badge: true },
-    { label: 'Perfil', icon: User, href: '/dashboard/perfil' },
+function AdminCollabBottomNav({
+  role,
+  homeRoute,
+}: {
+  role: string;
+  homeRoute: string;
+}) {
+  const location = useLocation();
+  const [whatsOpen, setWhatsOpen] = useState(false);
+
+  const collaboratorsRoute =
+    role === 'admin' ? '/dashboard/equipe' : '/dashboard/meus-alunos';
+
+  type Tab =
+    | { kind: 'link'; label: string; icon: React.ElementType; href: string }
+    | { kind: 'action'; label: string; icon: React.ElementType; onClick: () => void };
+
+  const tabs: Tab[] = [
+    { kind: 'link', label: 'Início', icon: Home, href: homeRoute },
+    { kind: 'link', label: role === 'admin' ? 'Colaboradores' : 'Alunos', icon: Users, href: collaboratorsRoute },
+    { kind: 'action', label: 'WhatsApp', icon: WhatsAppIcon, onClick: () => setWhatsOpen(true) },
+    { kind: 'link', label: 'Perfil', icon: User, href: '/dashboard/perfil' },
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border lg:hidden print:hidden">
-      <div className="flex items-center justify-around py-2 pb-safe max-w-lg mx-auto">
-        {tabs.map((tab) => {
-          const isActive =
-            location.pathname === tab.href ||
-            location.pathname.startsWith(tab.href + '/');
-          return (
-            <Link
-              key={tab.href}
-              to={tab.href}
-              className={cn(
-                'flex flex-col items-center gap-1 px-3 py-1 relative transition-colors',
-                isActive
-                  ? 'text-accent'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <tab.icon className="w-6 h-6" />
-              <span className="text-[10px] font-medium">{tab.label}</span>
-              {tab.badge && (
-                <span className="absolute top-0 right-1 w-2 h-2 bg-accent rounded-full" />
-              )}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border lg:hidden print:hidden">
+        <div className="flex items-center justify-around py-2 pb-safe max-w-lg mx-auto">
+          {tabs.map((tab) => {
+            const isActive =
+              tab.kind === 'link' &&
+              (location.pathname === tab.href ||
+                location.pathname.startsWith(tab.href + '/'));
+            const className = cn(
+              'flex flex-col items-center gap-1 px-3 py-1 relative transition-colors',
+              isActive
+                ? 'text-accent'
+                : 'text-muted-foreground hover:text-foreground'
+            );
+            const Icon = tab.icon;
+            if (tab.kind === 'link') {
+              return (
+                <Link key={tab.label} to={tab.href} className={className}>
+                  <Icon className="w-6 h-6" />
+                  <span className="text-[10px] font-medium">{tab.label}</span>
+                </Link>
+              );
+            }
+            return (
+              <button
+                key={tab.label}
+                type="button"
+                onClick={tab.onClick}
+                className={className}
+              >
+                <Icon className="w-6 h-6" />
+                <span className="text-[10px] font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+      <WhatsAppStudentModal open={whatsOpen} onOpenChange={setWhatsOpen} />
+    </>
   );
 }
