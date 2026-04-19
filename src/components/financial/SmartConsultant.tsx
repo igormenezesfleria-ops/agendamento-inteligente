@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Lightbulb, PiggyBank, Wrench, TrendingUp, Wallet } from 'lucide-react';
 
@@ -43,59 +42,53 @@ export function SmartConsultant({ netIncome, formatCurrency }: SmartConsultantPr
   const safeIncome = Math.max(netIncome, 0);
 
   return (
-    <Card className="border-2 border-accent/20 print-section">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Lightbulb className="w-5 h-5 text-accent" />
-          Consultor Financeiro Inteligente
-        </CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Distribuição sugerida do seu saldo líquido baseada na regra 10/10/20/60.
-        </p>
-      </CardHeader>
-      <CardContent>
-        {netIncome <= 0 ? (
-          <p className="text-center text-muted-foreground py-6">
-            O saldo líquido precisa ser positivo para gerar sugestões.
+    <section className="rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 p-5 sm:p-6 print-section">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center shrink-0">
+          <Lightbulb className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+        </div>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-foreground">Insight Financeiro</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Distribuição sugerida do saldo líquido pela regra 10/10/20/60.
           </p>
-        ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {ALLOCATIONS.map((a) => {
-              const value = safeIncome * (a.percent / 100);
-              const Icon = a.icon;
-              return (
-                <div
-                  key={a.label}
-                  className={`rounded-xl border p-4 space-y-3 ${
-                    a.highlight
-                      ? 'border-accent/40 bg-accent/5'
-                      : 'border-border bg-background'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4" style={{ color: a.color }} />
-                      <span className="text-sm font-semibold text-foreground">{a.label}</span>
-                    </div>
-                    <span className="text-xs font-medium text-muted-foreground">{a.percent}%</span>
+        </div>
+      </div>
+
+      {netIncome <= 0 ? (
+        <p className="text-center text-sm text-muted-foreground py-6">
+          O saldo líquido precisa ser positivo para gerar sugestões.
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {ALLOCATIONS.map((a) => {
+            const value = safeIncome * (a.percent / 100);
+            const Icon = a.icon;
+            return (
+              <div
+                key={a.label}
+                className="rounded-xl bg-background/70 dark:bg-background/40 backdrop-blur p-3.5 space-y-2.5 border border-indigo-100/60 dark:border-indigo-900/30"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Icon className="w-3.5 h-3.5 shrink-0" style={{ color: a.color }} />
+                    <span className="text-xs font-semibold text-foreground truncate">{a.label}</span>
                   </div>
-                  <Progress
-                    value={a.percent}
-                    className="h-2"
-                    style={{ '--progress-color': a.color } as React.CSSProperties}
-                  />
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground">{a.hint}</p>
-                    <p className="text-sm font-bold text-foreground whitespace-nowrap ml-2">
-                      {formatCurrency(value)}
-                    </p>
-                  </div>
+                  <span className="text-[10px] font-medium text-muted-foreground tabular-nums shrink-0">{a.percent}%</span>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                <Progress
+                  value={a.percent}
+                  className="h-1.5"
+                  style={{ '--progress-color': a.color } as React.CSSProperties}
+                />
+                <p className="text-sm font-bold text-foreground tabular-nums">
+                  {formatCurrency(value)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
