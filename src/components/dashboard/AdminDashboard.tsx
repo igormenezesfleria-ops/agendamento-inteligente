@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, CheckCircle2, MessageCircle } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, CheckCircle2, MessageCircle, Share2 } from 'lucide-react';
 import { format, isToday, isTomorrow, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
@@ -241,25 +241,23 @@ export function AdminDashboard() {
         </div>
       )}
 
-      {/* Relatório de Impacto (Secondary — bottom) */}
-      <Card className="bg-slate-900 border-orange-500/30 overflow-hidden">
-        <CardContent className="p-4 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-orange-500 flex items-center justify-center shrink-0">
-            <BarChart3 className="w-6 h-6 text-white" />
+      {/* Resumo da Semana — minimalist strip */}
+      <button
+        type="button"
+        onClick={() => setShowImpact(true)}
+        className="w-full flex items-center justify-between p-4 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/40 hover:bg-orange-100/70 dark:hover:bg-orange-950/40 transition-colors active:scale-[0.99]"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <BarChart3 className="w-5 h-5 text-orange-500 shrink-0" />
+          <div className="text-left min-w-0">
+            <p className="text-sm font-semibold text-foreground truncate">Resumo da Semana</p>
+            <p className="text-xs text-muted-foreground truncate">Compartilhe no Instagram</p>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white">Relatório de Impacto</p>
-            <p className="text-xs text-slate-400">Compartilhe seus resultados nos Stories</p>
-          </div>
-          <Button
-            onClick={() => setShowImpact(true)}
-            size="sm"
-            className="bg-orange-500 hover:bg-orange-600 text-white font-bold shrink-0"
-          >
-            📊 Gerar
-          </Button>
-        </CardContent>
-      </Card>
+        </div>
+        <span className="w-8 h-8 rounded-full border border-orange-200 dark:border-orange-900/60 text-orange-500 flex items-center justify-center shrink-0">
+          <Share2 className="w-4 h-4" />
+        </span>
+      </button>
 
       {showImpact && <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />}
     </div>
