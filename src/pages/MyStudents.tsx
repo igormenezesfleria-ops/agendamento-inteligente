@@ -76,7 +76,29 @@ export default function MyStudents() {
       const { data, error } = await supabase.functions.invoke('invite-student', {
         body: payload,
       });
-      if (error) throw error;
+      if (error) {
+        // FunctionsHttpError exposes the raw Response in `context`.
+        // Parse it to surface the real edge-function error message.
+        let serverMessage: string | undefined;
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            serverMessage = body?.error || body?.message;
+          } else if (ctx && typeof ctx.text === 'function') {
+            const txt = await ctx.text();
+            try {
+              const parsed = JSON.parse(txt);
+              serverMessage = parsed?.error || parsed?.message;
+            } catch {
+              serverMessage = txt;
+            }
+          }
+        } catch {
+          // ignore parse errors and fall back to error.message
+        }
+        throw new Error(serverMessage || error.message || 'Erro ao cadastrar aluno');
+      }
       if (data?.error) throw new Error(data.error);
       return data;
     },
