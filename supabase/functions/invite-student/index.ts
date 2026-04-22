@@ -14,6 +14,11 @@ interface InviteStudentRequest {
   birth_date?: string;
 }
 
+function generateTempPassword(): string {
+  const digits = Math.floor(1000 + Math.random() * 9000);
+  return `Synton${digits}`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -55,9 +60,6 @@ serve(async (req) => {
     if (!email || !name) throw new Error("Nome e e-mail são obrigatórios");
 
     const adminId = userData.user.id;
-    const redirectUrl = new URL(req.url).origin.includes("supabase")
-      ? undefined
-      : new URL(req.url).origin;
 
     // Check if user already exists
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
@@ -78,16 +80,24 @@ serve(async (req) => {
       throw new Error("Este e-mail já está em uso por outro usuário");
     }
 
-    // Send invitation email — Supabase creates the user and emails a magic link
-    const { data: invited, error: inviteError } =
-      await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-        data: { name, role: "student" },
+    // Concierge flow: generate a temp password and create the user immediately
+    // (no invitation email is sent — trainer hands the credentials to the student)
+    const tempPassword = generateTempPassword();
+
+    const { data: created, error: createError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: { name, role: "student" },
       });
 
-    if (inviteError || !invited.user) {
-      console.error("Invite error:", inviteError);
-      throw new Error(inviteError?.message || "Falha ao enviar convite");
+    if (createError || !created.user) {
+      console.error("Create user error:", createError);
+      throw new Error(createError?.message || "Falha ao criar conta do aluno");
     }
+
+    const invited = created;
 
     // Update profile with details and link to admin
     const { error: profileError } = await supabaseAdmin
@@ -113,7 +123,12 @@ serve(async (req) => {
       .eq("user_id", invited.user.id);
 
     return new Response(
-      JSON.stringify({ success: true, userId: invited.user.id }),
+      JSON.stringify({
+        success: true,
+        userId: invited.user.id,
+        email,
+        tempPassword,
+      }),
       { headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
