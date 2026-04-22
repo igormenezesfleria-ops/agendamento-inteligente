@@ -9,12 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame, UserPlus, Mail } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
@@ -64,6 +66,44 @@ export default function MyStudents() {
   const [triageOpen, setTriageOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [recurringStudent, setRecurringStudent] = useState<Student | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ name: '', email: '', phone: '', birth_date: '' });
+
+  const inviteMutation = useMutation({
+    mutationFn: async (payload: typeof inviteForm) => {
+      const { data, error } = await supabase.functions.invoke('invite-student', {
+        body: payload,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Convite enviado!',
+        description: 'O aluno receberá um e-mail para definir a senha e acessar a plataforma.',
+      });
+      setInviteOpen(false);
+      setInviteForm({ name: '', email: '', phone: '', birth_date: '' });
+      queryClient.invalidateQueries({ queryKey: ['my-students'] });
+    },
+    onError: (err: any) => {
+      toast({
+        title: 'Erro ao cadastrar aluno',
+        description: err?.message || 'Tente novamente em instantes.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleInviteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteForm.name.trim() || !inviteForm.email.trim()) {
+      toast({ title: 'Preencha nome e e-mail', variant: 'destructive' });
+      return;
+    }
+    inviteMutation.mutate(inviteForm);
+  };
 
   const { data: students, isLoading } = useQuery({
     queryKey: ['my-students', user?.id],
@@ -129,9 +169,15 @@ export default function MyStudents() {
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in">
-        <div className="space-y-1">
-          <h1 className="font-display text-3xl text-foreground">Meus Alunos</h1>
-          <p className="text-muted-foreground">Gerencie os alunos vinculados ao seu studio.</p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="font-display text-3xl text-foreground">Meus Alunos</h1>
+            <p className="text-muted-foreground">Gerencie os alunos vinculados ao seu studio.</p>
+          </div>
+          <Button onClick={() => setInviteOpen(true)} className="shrink-0">
+            <UserPlus className="w-4 h-4" />
+            Novo Aluno
+          </Button>
         </div>
 
         <Card>
@@ -433,6 +479,72 @@ export default function MyStudents() {
             student={recurringStudent}
           />
         )}
+
+        {/* Invite New Student Dialog */}
+        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-accent" />
+                Cadastrar Novo Aluno
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleInviteSubmit} className="space-y-4 mt-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-name">Nome Completo</Label>
+                <Input
+                  id="invite-name"
+                  placeholder="Nome do aluno"
+                  value={inviteForm.name}
+                  onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-email">E-mail</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  placeholder="aluno@email.com"
+                  value={inviteForm.email}
+                  onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-phone">Telefone (WhatsApp)</Label>
+                <Input
+                  id="invite-phone"
+                  placeholder="(11) 99999-9999"
+                  value={inviteForm.phone}
+                  onChange={(e) => setInviteForm({ ...inviteForm, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-birth">Data de Nascimento</Label>
+                <Input
+                  id="invite-birth"
+                  placeholder="DD/MM/AAAA"
+                  value={inviteForm.birth_date}
+                  onChange={(e) => setInviteForm({ ...inviteForm, birth_date: e.target.value })}
+                />
+              </div>
+              <div className="rounded-lg bg-muted/60 border border-border p-3 flex items-start gap-2">
+                <Mail className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  O aluno receberá um e-mail com um link para definir a senha e acessar a plataforma.
+                </p>
+              </div>
+              <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
+                {inviteMutation.isPending ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Enviando convite...</>
+                ) : (
+                  'Cadastrar e Enviar Convite'
+                )}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );

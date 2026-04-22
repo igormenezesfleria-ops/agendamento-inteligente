@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, User, Dumbbell, GraduationCap } from 'lucide-react';
+import { Loader2, Mail, Lock, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const signupSchema = z.object({
@@ -21,11 +21,9 @@ const signupSchema = z.object({
 });
 
 type SignupFormData = z.infer<typeof signupSchema>;
-type SelectedRole = 'admin' | 'student';
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<SelectedRole | null>('admin');
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -34,14 +32,9 @@ export function SignupForm() {
   });
 
   const onSubmit = async (data: SignupFormData) => {
-    if (!selectedRole) {
-      toast.error('Selecione seu perfil antes de continuar.');
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const { error } = await signUp(data.email, data.password, data.name, selectedRole);
+      const { error } = await signUp(data.email, data.password, data.name, 'admin');
       
       if (error) {
         if (
@@ -72,64 +65,12 @@ export function SignupForm() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-      {/* Role Selection */}
-      <div className="space-y-3">
-        <Label className="text-sm font-semibold text-gray-300">Qual é o seu perfil?</Label>
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => setSelectedRole('admin')}
-            className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200',
-              selectedRole === 'admin'
-                ? 'bg-orange-500/10 border-2 border-orange-500 shadow-sm'
-                : 'bg-zinc-900 border border-zinc-700 hover:border-zinc-600'
-            )}
-          >
-            <div className={cn(
-              'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
-              selectedRole === 'admin' ? 'bg-orange-500/20' : 'bg-zinc-800'
-            )}>
-              <Dumbbell className={cn(
-                'w-6 h-6',
-                selectedRole === 'admin' ? 'text-orange-500' : 'text-gray-500'
-              )} />
-            </div>
-            <span className={cn(
-              'font-semibold text-sm',
-              selectedRole === 'admin' ? 'text-orange-500' : 'text-gray-400'
-            )}>
-              Sou Personal / Studio
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedRole('student')}
-            className={cn(
-              'flex flex-col items-center gap-2 p-4 rounded-xl transition-all duration-200',
-              selectedRole === 'student'
-                ? 'bg-orange-500/10 border-2 border-orange-500 shadow-sm'
-                : 'bg-zinc-900 border border-zinc-700 hover:border-zinc-600'
-            )}
-          >
-            <div className={cn(
-              'w-12 h-12 rounded-xl flex items-center justify-center transition-colors',
-              selectedRole === 'student' ? 'bg-orange-500/20' : 'bg-zinc-800'
-            )}>
-              <GraduationCap className={cn(
-                'w-6 h-6',
-                selectedRole === 'student' ? 'text-orange-500' : 'text-gray-500'
-              )} />
-            </div>
-            <span className={cn(
-              'font-semibold text-sm',
-              selectedRole === 'student' ? 'text-orange-500' : 'text-gray-400'
-            )}>
-              Sou Aluno
-            </span>
-          </button>
-        </div>
+      {/* Info banner */}
+      <div className="rounded-xl bg-orange-500/10 border border-orange-500/30 p-4">
+        <p className="text-xs text-gray-300 leading-relaxed">
+          <span className="font-semibold text-orange-500">Cadastro exclusivo para Personal / Studio.</span>{' '}
+          Alunos recebem o convite por e-mail enviado pelo seu personal.
+        </p>
       </div>
 
       {/* Name */}
@@ -207,7 +148,7 @@ export function SignupForm() {
       {/* CTA */}
       <button
         type="submit"
-        disabled={isLoading || !selectedRole}
+        disabled={isLoading}
         className="bg-orange-500 hover:bg-orange-600 text-white w-full py-4 rounded-xl font-bold text-lg shadow-md mt-6 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
