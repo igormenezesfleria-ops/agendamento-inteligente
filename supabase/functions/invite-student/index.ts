@@ -5,6 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 interface InviteStudentRequest {
@@ -19,14 +20,23 @@ function generateTempPassword(): string {
   return `Synton${digits}`;
 }
 
+function jsonResponse(status: number, body: Record<string, unknown>) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("Não autorizado");
+    if (!authHeader) {
+      return jsonResponse(401, { error: "Não autorizado" });
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -44,7 +54,9 @@ serve(async (req) => {
     );
 
     const { data: userData, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !userData.user) throw new Error("Não autorizado");
+    if (userError || !userData.user) {
+      return jsonResponse(401, { error: "Não autorizado" });
+    }
 
     const { data: profile } = await supabaseAdmin
       .from("profiles")
@@ -53,11 +65,15 @@ serve(async (req) => {
       .single();
 
     if (profile?.role !== "admin") {
-      throw new Error("Apenas personal/gestores podem cadastrar alunos");
+      return jsonResponse(403, {
+        error: "Apenas personal/gestores podem cadastrar alunos",
+      });
     }
 
     const { email, name, phone, birth_date }: InviteStudentRequest = await req.json();
-    if (!email || !name) throw new Error("Nome e e-mail são obrigatórios");
+    if (!email || !name) {
+      return jsonResponse(400, { error: "Nome e e-mail são obrigatórios" });
+    }
 
     const adminId = userData.user.id;
 
@@ -75,9 +91,13 @@ serve(async (req) => {
         .single();
 
       if (existingProfile?.business_owner_id === adminId) {
-        throw new Error("Este aluno já está vinculado ao seu studio");
+        return jsonResponse(409, {
+          error: "Este aluno já está vinculado ao seu studio",
+        });
       }
-      throw new Error("Este e-mail já está em uso por outro usuário");
+      return jsonResponse(409, {
+        error: "Este e-mail já está em uso por outro usuário",
+      });
     }
 
     // Concierge flow: generate a temp password and create the user immediately
@@ -94,7 +114,9 @@ serve(async (req) => {
 
     if (createError || !created.user) {
       console.error("Create user error:", createError);
-      throw new Error(createError?.message || "Falha ao criar conta do aluno");
+      return jsonResponse(500, {
+        error: createError?.message || "Falha ao criar conta do aluno",
+      });
     }
 
     const invited = created;
@@ -114,7 +136,7 @@ serve(async (req) => {
 
     if (profileError) {
       console.error("Profile update error:", profileError);
-      throw new Error("Erro ao configurar perfil do aluno");
+      return jsonResponse(500, { error: "Erro ao configurar perfil do aluno" });
     }
 
     await supabaseAdmin
@@ -122,20 +144,16 @@ serve(async (req) => {
       .update({ role: "student" })
       .eq("user_id", invited.user.id);
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        userId: invited.user.id,
-        email,
-        tempPassword,
-      }),
-      { headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    return jsonResponse(200, {
+      success: true,
+      userId: invited.user.id,
+      email,
+      tempPassword,
+    });
   } catch (error: any) {
     console.error("Error in invite-student:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    return jsonResponse(500, {
+      error: error?.message || "Erro inesperado ao cadastrar aluno",
+    });
   }
 });
