@@ -16,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame, UserPlus, Mail } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame, UserPlus, Mail, KeyRound, Copy, CheckCircle2 } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
@@ -68,6 +68,8 @@ export default function MyStudents() {
   const [recurringStudent, setRecurringStudent] = useState<Student | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: '', email: '', phone: '', birth_date: '' });
+  const [createdCredentials, setCreatedCredentials] = useState<{ name: string; email: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const inviteMutation = useMutation({
     mutationFn: async (payload: typeof inviteForm) => {
@@ -78,13 +80,12 @@ export default function MyStudents() {
       if (data?.error) throw new Error(data.error);
       return data;
     },
-    onSuccess: () => {
-      toast({
-        title: 'Convite enviado!',
-        description: 'O aluno receberá um e-mail para definir a senha e acessar a plataforma.',
+    onSuccess: (data: any) => {
+      setCreatedCredentials({
+        name: inviteForm.name,
+        email: data?.email || inviteForm.email,
+        password: data?.tempPassword || '',
       });
-      setInviteOpen(false);
-      setInviteForm({ name: '', email: '', phone: '', birth_date: '' });
       queryClient.invalidateQueries({ queryKey: ['my-students'] });
     },
     onError: (err: any) => {
