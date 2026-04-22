@@ -482,14 +482,87 @@ export default function MyStudents() {
         )}
 
         {/* Invite New Student Dialog */}
-        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+        <Dialog
+          open={inviteOpen}
+          onOpenChange={(open) => {
+            setInviteOpen(open);
+            if (!open) {
+              setInviteForm({ name: '', email: '', phone: '', birth_date: '' });
+              setCreatedCredentials(null);
+              setCopied(false);
+            }
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-accent" />
-                Cadastrar Novo Aluno
+                {createdCredentials ? (
+                  <>
+                    <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    Conta criada com sucesso
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-5 h-5 text-accent" />
+                    Cadastrar Novo Aluno
+                  </>
+                )}
               </DialogTitle>
             </DialogHeader>
+            {createdCredentials ? (
+              <div className="space-y-4 mt-2">
+                <p className="text-sm text-muted-foreground">
+                  Envie estes dados de acesso para <strong className="text-foreground">{createdCredentials.name}</strong> via WhatsApp. O aluno poderá alterar a senha após o primeiro login.
+                </p>
+                <div className="rounded-xl border border-border bg-muted/40 p-4 space-y-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">E-mail</p>
+                    <p className="text-sm font-mono font-semibold text-foreground break-all">{createdCredentials.email}</p>
+                  </div>
+                  <div className="border-t border-border pt-3">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1 flex items-center gap-1">
+                      <KeyRound className="w-3 h-3" /> Senha temporária
+                    </p>
+                    <p className="text-lg font-mono font-bold text-accent tracking-wider">{createdCredentials.password}</p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    const text = `Olá ${createdCredentials.name}! Seu acesso ao app:\n\nE-mail: ${createdCredentials.email}\nSenha: ${createdCredentials.password}\n\nFaça login e altere sua senha no perfil.`;
+                    try {
+                      await navigator.clipboard.writeText(text);
+                      setCopied(true);
+                      toast({ title: 'Dados copiados!', description: 'Cole no WhatsApp do aluno.' });
+                      setTimeout(() => setCopied(false), 2500);
+                    } catch {
+                      toast({ title: 'Não foi possível copiar', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  {copied ? (
+                    <><CheckCircle2 className="w-4 h-4" /> Copiado!</>
+                  ) : (
+                    <><Copy className="w-4 h-4" /> Copiar Dados</>
+                  )}
+                </Button>
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={() => {
+                    setInviteOpen(false);
+                    setInviteForm({ name: '', email: '', phone: '', birth_date: '' });
+                    setCreatedCredentials(null);
+                    setCopied(false);
+                    queryClient.invalidateQueries({ queryKey: ['my-students'] });
+                  }}
+                >
+                  Concluir
+                </Button>
+              </div>
+            ) : (
             <form onSubmit={handleInviteSubmit} className="space-y-4 mt-2">
               <div className="space-y-1.5">
                 <Label htmlFor="invite-name">Nome Completo</Label>
@@ -531,19 +604,20 @@ export default function MyStudents() {
                 />
               </div>
               <div className="rounded-lg bg-muted/60 border border-border p-3 flex items-start gap-2">
-                <Mail className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                <KeyRound className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
-                  O aluno receberá um e-mail com um link para definir a senha e acessar a plataforma.
+                  Uma senha temporária será gerada e exibida na próxima tela para você enviar ao aluno via WhatsApp.
                 </p>
               </div>
               <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
                 {inviteMutation.isPending ? (
-                  <><Loader2 className="w-4 h-4 animate-spin" /> Enviando convite...</>
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Criando conta...</>
                 ) : (
-                  'Cadastrar e Enviar Convite'
+                  'Criar Conta e Gerar Senha'
                 )}
               </Button>
             </form>
+            )}
           </DialogContent>
         </Dialog>
       </div>
