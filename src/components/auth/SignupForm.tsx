@@ -148,7 +148,7 @@ export function SignupForm() {
       {/* CTA */}
       <button
         type="submit"
-        disabled={isLoading || !selectedRole}
+        disabled={isLoading}
         className="bg-orange-500 hover:bg-orange-600 text-white w-full py-4 rounded-xl font-bold text-lg shadow-md mt-6 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isLoading ? (
