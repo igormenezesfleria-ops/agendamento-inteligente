@@ -7,7 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, User, Dumbbell, GraduationCap } from 'lucide-react';
+import { Loader2, Mail, Lock, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const signupSchema = z.object({
@@ -21,11 +21,9 @@ const signupSchema = z.object({
 });
 
 type SignupFormData = z.infer<typeof signupSchema>;
-type SelectedRole = 'admin' | 'student';
 
 export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<SelectedRole | null>('admin');
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -34,14 +32,9 @@ export function SignupForm() {
   });
 
   const onSubmit = async (data: SignupFormData) => {
-    if (!selectedRole) {
-      toast.error('Selecione seu perfil antes de continuar.');
-      return;
-    }
-
     setIsLoading(true);
     try {
-      const { error } = await signUp(data.email, data.password, data.name, selectedRole);
+      const { error } = await signUp(data.email, data.password, data.name, 'admin');
       
       if (error) {
         if (
