@@ -169,9 +169,15 @@ export default function MyStudents() {
   return (
     <DashboardLayout>
       <div className="space-y-8 animate-fade-in">
-        <div className="space-y-1">
-          <h1 className="font-display text-3xl text-foreground">Meus Alunos</h1>
-          <p className="text-muted-foreground">Gerencie os alunos vinculados ao seu studio.</p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="font-display text-3xl text-foreground">Meus Alunos</h1>
+            <p className="text-muted-foreground">Gerencie os alunos vinculados ao seu studio.</p>
+          </div>
+          <Button onClick={() => setInviteOpen(true)} className="shrink-0">
+            <UserPlus className="w-4 h-4" />
+            Novo Aluno
+          </Button>
         </div>
 
         <Card>
