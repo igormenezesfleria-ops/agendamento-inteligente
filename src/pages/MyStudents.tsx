@@ -479,6 +479,72 @@ export default function MyStudents() {
             student={recurringStudent}
           />
         )}
+
+        {/* Invite New Student Dialog */}
+        <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-accent" />
+                Cadastrar Novo Aluno
+              </DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleInviteSubmit} className="space-y-4 mt-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-name">Nome Completo</Label>
+                <Input
+                  id="invite-name"
+                  placeholder="Nome do aluno"
+                  value={inviteForm.name}
+                  onChange={(e) => setInviteForm({ ...inviteForm, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-email">E-mail</Label>
+                <Input
+                  id="invite-email"
+                  type="email"
+                  placeholder="aluno@email.com"
+                  value={inviteForm.email}
+                  onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-phone">Telefone (WhatsApp)</Label>
+                <Input
+                  id="invite-phone"
+                  placeholder="(11) 99999-9999"
+                  value={inviteForm.phone}
+                  onChange={(e) => setInviteForm({ ...inviteForm, phone: e.target.value })}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="invite-birth">Data de Nascimento</Label>
+                <Input
+                  id="invite-birth"
+                  placeholder="DD/MM/AAAA"
+                  value={inviteForm.birth_date}
+                  onChange={(e) => setInviteForm({ ...inviteForm, birth_date: e.target.value })}
+                />
+              </div>
+              <div className="rounded-lg bg-muted/60 border border-border p-3 flex items-start gap-2">
+                <Mail className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  O aluno receberá um e-mail com um link para definir a senha e acessar a plataforma.
+                </p>
+              </div>
+              <Button type="submit" className="w-full" disabled={inviteMutation.isPending}>
+                {inviteMutation.isPending ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Enviando convite...</>
+                ) : (
+                  'Cadastrar e Enviar Convite'
+                )}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
     </DashboardLayout>
   );
