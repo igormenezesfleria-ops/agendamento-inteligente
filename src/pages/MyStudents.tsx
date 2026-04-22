@@ -9,12 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame, UserPlus, Mail } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
@@ -64,6 +66,44 @@ export default function MyStudents() {
   const [triageOpen, setTriageOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [recurringStudent, setRecurringStudent] = useState<Student | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteForm, setInviteForm] = useState({ name: '', email: '', phone: '', birth_date: '' });
+
+  const inviteMutation = useMutation({
+    mutationFn: async (payload: typeof inviteForm) => {
+      const { data, error } = await supabase.functions.invoke('invite-student', {
+        body: payload,
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Convite enviado!',
+        description: 'O aluno receberá um e-mail para definir a senha e acessar a plataforma.',
+      });
+      setInviteOpen(false);
+      setInviteForm({ name: '', email: '', phone: '', birth_date: '' });
+      queryClient.invalidateQueries({ queryKey: ['my-students'] });
+    },
+    onError: (err: any) => {
+      toast({
+        title: 'Erro ao cadastrar aluno',
+        description: err?.message || 'Tente novamente em instantes.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleInviteSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteForm.name.trim() || !inviteForm.email.trim()) {
+      toast({ title: 'Preencha nome e e-mail', variant: 'destructive' });
+      return;
+    }
+    inviteMutation.mutate(inviteForm);
+  };
 
   const { data: students, isLoading } = useQuery({
     queryKey: ['my-students', user?.id],
