@@ -118,6 +118,23 @@ export default function MyStudents() {
       queryClient.invalidateQueries({ queryKey: ['my-students'] });
     },
     onError: (err: any) => {
+      const raw = (err?.message || '').toLowerCase();
+      const isDuplicate =
+        raw.includes('já está em uso') ||
+        raw.includes('ja esta em uso') ||
+        raw.includes('already') ||
+        raw.includes('exists') ||
+        raw.includes('registered') ||
+        raw.includes('vinculado');
+
+      if (isDuplicate) {
+        toast({
+          title: 'E-mail já cadastrado',
+          description: 'Este e-mail já está vinculado a outro aluno. Tente usar um e-mail diferente.',
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({
         title: 'Erro ao cadastrar aluno',
         description: err?.message || 'Tente novamente em instantes.',
