@@ -628,8 +628,10 @@ export default function MyStudents() {
                 <Input
                   id="invite-birth"
                   placeholder="DD/MM/AAAA"
+                  inputMode="numeric"
+                  maxLength={10}
                   value={inviteForm.birth_date}
-                  onChange={(e) => setInviteForm({ ...inviteForm, birth_date: e.target.value })}
+                  onChange={(e) => setInviteForm({ ...inviteForm, birth_date: maskBirthDate(e.target.value) })}
                 />
               </div>
               <div className="rounded-lg bg-muted/60 border border-border p-3 flex items-start gap-2">
