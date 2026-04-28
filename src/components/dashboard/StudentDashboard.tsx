@@ -12,10 +12,9 @@ import { StudioLinkCard } from '@/components/student/StudioLinkCard';
 
 import { ActiveWorkoutCard } from '@/components/student/ActiveWorkoutCard';
 import { StreakBadge } from '@/components/student/StreakBadge';
-import { TriageModal } from '@/components/student/TriageModal';
 import { QuestionnaireModal } from '@/components/student/QuestionnaireModal';
-import { LiabilityWaiverOverlay } from '@/components/student/LiabilityWaiverOverlay';
 import { PSEFeedbackModal } from '@/components/student/PSEFeedbackModal';
+import { StudentOnboardingFlow } from '@/components/student/StudentOnboardingFlow';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -23,21 +22,16 @@ export function StudentDashboard() {
   const { profile, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [triageOpen, setTriageOpen] = useState(false);
-  const [liabilityOpen, setLiabilityOpen] = useState(false);
   const [pseOpen, setPseOpen] = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
   const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<{ id: string; type: string } | null>(null);
 
-  useEffect(() => {
-    if (profile && profile.business_owner_id) {
-      if (!(profile as any).liability_accepted) {
-        setLiabilityOpen(true);
-      } else if (profile.profile_completed === false) {
-        setTriageOpen(true);
-      }
-    }
-  }, [profile]);
+  // Determine if onboarding is needed and which step to start at.
+  // Sequential: Triage first, then PAR-Q / Termo. Never both at once.
+  const needsTriage = !!profile?.business_owner_id && profile?.profile_completed === false;
+  const needsLiability = !!profile?.business_owner_id && !(profile as any)?.liability_accepted;
+  const showOnboarding = needsTriage || needsLiability;
+  const onboardingStartStep: 'triage' | 'parq' = needsTriage ? 'triage' : 'parq';
 
   const { data: nextAppointment, isLoading } = useQuery({
     queryKey: ['next-appointment', user?.id],
@@ -99,6 +93,18 @@ export function StudentDashboard() {
 
   if (profile && !profile.business_owner_id) {
     return <StudioLinkCard />;
+  }
+
+  // Full-screen onboarding takes over the dashboard so nothing renders behind it.
+  if (showOnboarding) {
+    return (
+      <StudentOnboardingFlow
+        startStep={onboardingStartStep}
+        onCompleted={() => {
+          // Profile refresh inside the flow toggles the flags off.
+        }}
+      />
+    );
   }
 
   const formatDate = (dateStr: string) => {
@@ -247,21 +253,6 @@ export function StudentDashboard() {
       <div className="hidden">
         <ActiveWorkoutCard />
       </div>
-
-      {/* Triage Onboarding Modal */}
-      <TriageModal open={triageOpen} onOpenChange={setTriageOpen} />
-
-      {/* Liability Waiver Overlay */}
-      <LiabilityWaiverOverlay
-        open={liabilityOpen}
-        onAccepted={() => {
-          setLiabilityOpen(false);
-          // After liability accepted, check if triage needed
-          if (profile && profile.profile_completed === false) {
-            setTriageOpen(true);
-          }
-        }}
-      />
 
       {/* PSE Post-Workout Feedback */}
       <PSEFeedbackModal
