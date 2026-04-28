@@ -58,6 +58,13 @@ function calculateAge(birthDateStr: string | null): number | null {
   return age >= 0 ? age : null;
 }
 
+function maskBirthDate(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
 export default function MyStudents() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -621,8 +628,10 @@ export default function MyStudents() {
                 <Input
                   id="invite-birth"
                   placeholder="DD/MM/AAAA"
+                  inputMode="numeric"
+                  maxLength={10}
                   value={inviteForm.birth_date}
-                  onChange={(e) => setInviteForm({ ...inviteForm, birth_date: e.target.value })}
+                  onChange={(e) => setInviteForm({ ...inviteForm, birth_date: maskBirthDate(e.target.value) })}
                 />
               </div>
               <div className="rounded-lg bg-muted/60 border border-border p-3 flex items-start gap-2">
