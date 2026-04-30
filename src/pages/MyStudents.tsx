@@ -80,66 +80,85 @@ export default function MyStudents() {
 
   const inviteMutation = useMutation({
     mutationFn: async (payload: typeof inviteForm) => {
-      const { data, error } = await supabase.functions.invoke('invite-student', {
-        body: payload,
-      });
-      if (error) {
-        // FunctionsHttpError exposes the raw Response in `context`.
-        // Parse it to surface the real edge-function error message.
+      // Wrap entire flow so no exception escapes to the React Error Boundary.
+      try {
+        const { data, error } = await supabase.functions.invoke('invite-student', {
+          body: payload,
+        });
+
         let serverMessage: string | undefined;
-        try {
-          const ctx: any = (error as any).context;
-          if (ctx && typeof ctx.json === 'function') {
-            const body = await ctx.json();
-            serverMessage = body?.error || body?.message;
-          } else if (ctx && typeof ctx.text === 'function') {
-            const txt = await ctx.text();
-            try {
-              const parsed = JSON.parse(txt);
-              serverMessage = parsed?.error || parsed?.message;
-            } catch {
-              serverMessage = txt;
+        if (error) {
+          // FunctionsHttpError exposes the raw Response in `context`.
+          try {
+            const ctx: any = (error as any).context;
+            if (ctx && typeof ctx.json === 'function') {
+              const body = await ctx.json();
+              serverMessage = body?.error || body?.message;
+            } else if (ctx && typeof ctx.text === 'function') {
+              const txt = await ctx.text();
+              try {
+                const parsed = JSON.parse(txt);
+                serverMessage = parsed?.error || parsed?.message;
+              } catch {
+                serverMessage = txt;
+              }
             }
+          } catch {
+            // ignore parse errors
           }
-        } catch {
-          // ignore parse errors and fall back to error.message
+          serverMessage = serverMessage || error.message || 'Erro ao cadastrar aluno';
+          return { ok: false as const, message: serverMessage };
         }
-        throw new Error(serverMessage || error.message || 'Erro ao cadastrar aluno');
+
+        if (data?.error) {
+          return { ok: false as const, message: data.error };
+        }
+
+        return { ok: true as const, data };
+      } catch (err: any) {
+        // Absolutely never let this bubble to the global error boundary.
+        console.error('[invite-student] unexpected error:', err);
+        return {
+          ok: false as const,
+          message: err?.message || 'Erro inesperado ao cadastrar aluno',
+        };
       }
-      if (data?.error) throw new Error(data.error);
-      return data;
     },
-    onSuccess: (data: any) => {
+    onSuccess: (result: any) => {
+      if (!result?.ok) {
+        const raw = (result?.message || '').toLowerCase();
+        const isDuplicate =
+          raw.includes('já está em uso') ||
+          raw.includes('ja esta em uso') ||
+          raw.includes('already') ||
+          raw.includes('exists') ||
+          raw.includes('registered') ||
+          raw.includes('vinculado');
+
+        if (isDuplicate) {
+          toast({
+            title: 'E-mail já cadastrado',
+            description:
+              'Este e-mail já está vinculado a outro aluno. Tente usar um e-mail diferente.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        toast({
+          title: 'Erro ao cadastrar aluno',
+          description: result?.message || 'Tente novamente em instantes.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const data = result.data;
       setCreatedCredentials({
         name: inviteForm.name,
         email: data?.email || inviteForm.email,
         password: data?.tempPassword || '',
       });
       queryClient.invalidateQueries({ queryKey: ['my-students'] });
-    },
-    onError: (err: any) => {
-      const raw = (err?.message || '').toLowerCase();
-      const isDuplicate =
-        raw.includes('já está em uso') ||
-        raw.includes('ja esta em uso') ||
-        raw.includes('already') ||
-        raw.includes('exists') ||
-        raw.includes('registered') ||
-        raw.includes('vinculado');
-
-      if (isDuplicate) {
-        toast({
-          title: 'E-mail já cadastrado',
-          description: 'Este e-mail já está vinculado a outro aluno. Tente usar um e-mail diferente.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      toast({
-        title: 'Erro ao cadastrar aluno',
-        description: err?.message || 'Tente novamente em instantes.',
-        variant: 'destructive',
-      });
     },
   });
 
