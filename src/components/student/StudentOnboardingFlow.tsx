@@ -123,35 +123,37 @@ export function StudentOnboardingFlow({ startStep = 'triage', onCompleted }: Stu
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-background overflow-y-auto">
+    <div className="fixed inset-0 z-[200] bg-zinc-50 dark:bg-background overflow-y-auto">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
-        <div className="max-w-xl mx-auto px-5 py-4 flex items-center gap-3">
+      <header className="sticky top-0 z-10 bg-zinc-50/90 dark:bg-background/90 backdrop-blur">
+        <div className="max-w-xl mx-auto px-5 pt-6 pb-4 flex items-center gap-3">
           <img
             src="/logo-synton-symbol.png"
             alt="Synton"
             className="h-9 w-auto object-contain"
           />
-          <div className="min-w-0">
-            <h1 className="font-display text-base text-foreground leading-tight truncate">
-              Bem-vindo(a) ao Synton
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Passo {step === 'triage' ? '1' : '2'} de 2 ·{' '}
-              {step === 'triage' ? 'Ficha de Triagem' : 'Termo de Saúde'}
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground font-semibold">
+              Passo {step === 'triage' ? '1' : '2'} de 2
             </p>
+            <h1 className="font-display text-base text-foreground leading-tight truncate">
+              {step === 'triage' ? 'Ficha de Triagem' : 'Termo de Saúde'}
+            </h1>
           </div>
         </div>
         {/* Progress */}
-        <div className="h-1 bg-muted">
-          <div
-            className="h-full bg-accent transition-all duration-500"
-            style={{ width: step === 'triage' ? '50%' : '100%' }}
-          />
+        <div className="max-w-xl mx-auto px-5 pb-4">
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-accent rounded-full transition-all duration-500"
+              style={{ width: step === 'triage' ? '50%' : '100%' }}
+            />
+          </div>
         </div>
       </header>
 
-      <main className="max-w-xl mx-auto px-5 py-6 pb-32">
+      <main className="max-w-xl mx-auto px-5 py-6 pb-40">
+        <div className="bg-white dark:bg-card shadow-sm rounded-2xl p-6 lg:p-10 border border-border/60">
         {step === 'triage' ? (
           <section className="space-y-6 animate-fade-in">
             <div className="space-y-2">
@@ -174,6 +176,7 @@ export function StudentOnboardingFlow({ startStep = 'triage', onCompleted }: Stu
                   value={birthDate}
                   onChange={(e) => setBirthDate(formatBirthDate(e.target.value))}
                   maxLength={10}
+                  className="h-12"
                 />
               </div>
 
@@ -185,6 +188,7 @@ export function StudentOnboardingFlow({ startStep = 'triage', onCompleted }: Stu
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
                   maxLength={10}
+                  className="h-12"
                 />
               </div>
 
@@ -197,6 +201,7 @@ export function StudentOnboardingFlow({ startStep = 'triage', onCompleted }: Stu
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   maxLength={20}
+                  className="h-12"
                 />
               </div>
 
@@ -208,13 +213,14 @@ export function StudentOnboardingFlow({ startStep = 'triage', onCompleted }: Stu
                   value={emergencyContact}
                   onChange={(e) => setEmergencyContact(e.target.value)}
                   maxLength={100}
+                  className="h-12"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label>Objetivo Principal</Label>
                 <Select value={objective} onValueChange={setObjective}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-12">
                     <SelectValue placeholder="Selecione seu objetivo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -330,27 +336,28 @@ export function StudentOnboardingFlow({ startStep = 'triage', onCompleted }: Stu
             </label>
           </section>
         )}
+        </div>
       </main>
 
       {/* Sticky footer CTA */}
-      <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-background/95 backdrop-blur">
+      <footer className="fixed bottom-0 left-0 right-0 z-20 border-t border-border bg-white/95 dark:bg-background/95 backdrop-blur">
         <div className="max-w-xl mx-auto px-5 py-4">
           {step === 'triage' ? (
             <Button
               variant="accent"
               size="lg"
-              className="w-full"
+              className="w-full h-14 text-base font-semibold rounded-xl shadow-md"
               onClick={handleSaveTriage}
               disabled={savingTriage}
             >
-              {savingTriage ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {savingTriage ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : null}
               Salvar Ficha e Continuar
             </Button>
           ) : (
             <Button
               variant="accent"
               size="lg"
-              className="w-full"
+              className="w-full h-14 text-base font-semibold rounded-xl shadow-md"
               onClick={handleSubmitParq}
               disabled={!canSubmitParq || savingParq}
             >
