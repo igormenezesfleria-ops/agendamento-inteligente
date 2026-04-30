@@ -16,7 +16,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame, UserPlus, Mail, KeyRound, Copy, CheckCircle2 } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame, UserPlus, Mail, KeyRound, Copy, CheckCircle2, TrendingUp } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
@@ -421,21 +421,22 @@ export default function MyStudents() {
                     </div>
                   )}
 
-                  {/* Streak badge */}
-                  <div className="flex gap-3">
-                    <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                      <Flame className="w-4 h-4 text-orange-500 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Ofensiva Atual</p>
-                        <p className="text-lg font-bold text-orange-500">{selectedStudent.current_streak} sem.</p>
-                      </div>
+                  {/* Stats grid: 3 compact metric cards */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/40 border border-border/60">
+                      <Flame className="w-4 h-4 text-orange-500 mb-1" />
+                      <p className="text-lg font-bold text-foreground leading-none">{selectedStudent.current_streak}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 text-center leading-tight">Semanas Seguidas</p>
                     </div>
-                    <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-                      <Flame className="w-4 h-4 text-orange-400 shrink-0" />
-                      <div>
-                        <p className="text-xs text-muted-foreground">Recorde</p>
-                        <p className="text-lg font-bold text-orange-400">{selectedStudent.longest_streak} sem.</p>
-                      </div>
+                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/40 border border-border/60">
+                      <Dumbbell className="w-4 h-4 text-accent mb-1" />
+                      <p className="text-lg font-bold text-foreground leading-none">—</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 text-center leading-tight">Treinos Concluídos</p>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/40 border border-border/60">
+                      <TrendingUp className="w-4 h-4 text-primary mb-1" />
+                      <p className="text-lg font-bold text-foreground leading-none">—</p>
+                      <p className="text-[10px] text-muted-foreground mt-1 text-center leading-tight">Evolução de Carga</p>
                     </div>
                   </div>
 
