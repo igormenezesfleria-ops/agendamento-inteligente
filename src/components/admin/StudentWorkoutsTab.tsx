@@ -92,6 +92,28 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
     enabled: !!expandedWorkout,
   });
 
+  // Latest recorded load per exercise for this student in the expanded workout
+  const { data: latestLoads } = useQuery({
+    queryKey: ['workout-latest-loads', expandedWorkout, studentId],
+    queryFn: async () => {
+      if (!exercises?.length) return {} as Record<string, { kg: number; date: string }>;
+      const ids = exercises.map((e) => e.id);
+      const { data, error } = await supabase
+        .from('workout_session_loads')
+        .select('exercise_id, load_kg, session_date')
+        .eq('student_id', studentId)
+        .in('exercise_id', ids)
+        .order('session_date', { ascending: false });
+      if (error) throw error;
+      const map: Record<string, { kg: number; date: string }> = {};
+      for (const row of (data || []) as any[]) {
+        if (!map[row.exercise_id]) map[row.exercise_id] = { kg: Number(row.load_kg), date: row.session_date };
+      }
+      return map;
+    },
+    enabled: !!expandedWorkout && !!exercises?.length,
+  });
+
   const createWorkout = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from('workouts').insert({
@@ -328,6 +350,11 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                           <p className="text-xs text-muted-foreground">
                             {ex.sets} séries × {ex.reps} reps · {ex.rest} descanso
                           </p>
+                          {latestLoads?.[ex.id] && (
+                            <p className="text-[11px] font-semibold text-accent mt-0.5 flex items-center gap-1">
+                              <Dumbbell className="w-3 h-3" /> Última carga: {latestLoads[ex.id].kg}kg
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           <Button

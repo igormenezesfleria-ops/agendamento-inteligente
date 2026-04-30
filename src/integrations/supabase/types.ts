@@ -785,6 +785,36 @@ export type Database = {
           },
         ]
       }
+      workout_session_loads: {
+        Row: {
+          created_at: string
+          exercise_id: string
+          id: string
+          load_kg: number
+          session_date: string
+          student_id: string
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_id: string
+          id?: string
+          load_kg?: number
+          session_date?: string
+          student_id: string
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          load_kg?: number
+          session_date?: string
+          student_id?: string
+          workout_id?: string
+        }
+        Relationships: []
+      }
       workouts: {
         Row: {
           admin_id: string

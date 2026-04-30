@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, PlayCircle, Camera, X } from 'lucide-react';
+import { Loader2, PlayCircle, Camera, X, Dumbbell, CheckCircle2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Drawer,
   DrawerContent,
@@ -30,8 +31,12 @@ interface Exercise {
 export function ActiveWorkoutCard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [loads, setLoads] = useState<Record<string, string>>({});
+
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
   const { data: workout, isLoading } = useQuery({
     queryKey: ['active-workout', user?.id],
@@ -60,6 +65,67 @@ export function ActiveWorkoutCard() {
       return { ...data, exercises: (exercises || []) as Exercise[] };
     },
     enabled: !!user?.id,
+  });
+
+  // Fetch the latest known load per exercise (so input pre-fills with previous weight)
+  const { data: latestLoads } = useQuery({
+    queryKey: ['latest-loads', user?.id, workout?.id],
+    queryFn: async () => {
+      if (!workout?.exercises?.length) return {} as Record<string, number>;
+      const ids = workout.exercises.map((e) => e.id);
+      const { data, error } = await supabase
+        .from('workout_session_loads')
+        .select('exercise_id, load_kg, session_date')
+        .eq('student_id', user!.id)
+        .in('exercise_id', ids)
+        .order('session_date', { ascending: false });
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const row of (data || []) as any[]) {
+        if (map[row.exercise_id] === undefined) map[row.exercise_id] = Number(row.load_kg);
+      }
+      return map;
+    },
+    enabled: !!user?.id && !!workout?.id,
+  });
+
+  // Pre-populate input state when latest loads or workout changes
+  useEffect(() => {
+    if (!workout?.exercises) return;
+    setLoads((prev) => {
+      const next = { ...prev };
+      for (const ex of workout.exercises) {
+        if (next[ex.id] === undefined) {
+          const last = latestLoads?.[ex.id];
+          next[ex.id] = last !== undefined ? String(last) : '';
+        }
+      }
+      return next;
+    });
+  }, [workout?.id, latestLoads]);
+
+  const completeMutation = useMutation({
+    mutationFn: async () => {
+      if (!workout || !user?.id) return;
+      const rows = workout.exercises
+        .map((ex) => ({
+          student_id: user.id,
+          workout_id: workout.id,
+          exercise_id: ex.id,
+          session_date: todayStr,
+          load_kg: parseFloat((loads[ex.id] || '').replace(',', '.')) || 0,
+        }))
+        .filter((r) => r.load_kg > 0);
+      if (rows.length === 0) return;
+      const { error } = await supabase.from('workout_session_loads').insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Treino salvo! Cargas registradas.');
+      qc.invalidateQueries({ queryKey: ['latest-loads'] });
+      setDrawerOpen(false);
+    },
+    onError: () => toast.error('Erro ao salvar cargas do treino.'),
   });
 
   // Allow the bottom tab "Treino" button to open the workout drawer
@@ -128,9 +194,10 @@ export function ActiveWorkoutCard() {
                 {workout.exercises.map((ex, i) => (
                   <div
                     key={ex.id}
-                    className="py-4 border-b border-border/30 last:border-0 flex justify-between items-start"
+                    className="py-4 border-b border-border/30 last:border-0"
                   >
-                    <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex justify-between items-start">
+                      <div className="flex items-start gap-3 min-w-0">
                       <span className="text-xs font-bold text-accent w-5 text-center shrink-0 mt-0.5">
                         {i + 1}
                       </span>
@@ -164,17 +231,49 @@ export function ActiveWorkoutCard() {
                           )}
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right shrink-0 ml-4">
+                      </div>
+                      <div className="text-right shrink-0 ml-4">
                       <p className="text-accent font-extrabold text-sm">
                         {ex.sets}×{ex.reps}
                       </p>
                       {ex.rest && (
                         <p className="text-muted-foreground text-xs">{ex.rest} desc.</p>
                       )}
+                      </div>
+                    </div>
+                    {/* Carga input */}
+                    <div className="mt-3 ml-8 flex items-center gap-2">
+                      <Dumbbell className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                      <label className="text-xs text-muted-foreground shrink-0">Carga (kg)</label>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.5"
+                        value={loads[ex.id] ?? ''}
+                        onChange={(e) => setLoads((prev) => ({ ...prev, [ex.id]: e.target.value }))}
+                        placeholder="0"
+                        className="w-20 h-9 px-2.5 rounded-lg bg-muted/50 border border-border/60 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
+                      />
+                      {latestLoads?.[ex.id] !== undefined && (
+                        <span className="text-[10px] text-muted-foreground">últ.: {latestLoads[ex.id]}kg</span>
+                      )}
                     </div>
                   </div>
                 ))}
+                {/* Concluir Treino CTA */}
+                <button
+                  type="button"
+                  onClick={() => completeMutation.mutate()}
+                  disabled={completeMutation.isPending}
+                  className="mt-6 w-full bg-accent hover:bg-accent/90 disabled:opacity-60 text-accent-foreground font-bold rounded-2xl py-4 flex items-center justify-center gap-2 transition-all"
+                >
+                  {completeMutation.isPending ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <><CheckCircle2 className="w-5 h-5" /> Concluir Treino</>
+                  )}
+                </button>
               </div>
             )}
 
