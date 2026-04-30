@@ -23,6 +23,7 @@ import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDia
 import { StudentAssessmentsTab } from '@/components/admin/StudentAssessmentsTab';
 import { StudentDevTools } from '@/components/admin/StudentDevTools';
 import { StudentWorkoutsTab } from '@/components/admin/StudentWorkoutsTab';
+import { LoadEvolutionCard } from '@/components/admin/LoadEvolutionCard';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
@@ -433,11 +434,7 @@ export default function MyStudents() {
                       <p className="text-lg font-bold text-foreground leading-none">—</p>
                       <p className="text-[10px] text-muted-foreground mt-1 text-center leading-tight">Treinos Concluídos</p>
                     </div>
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/40 border border-border/60">
-                      <TrendingUp className="w-4 h-4 text-primary mb-1" />
-                      <p className="text-lg font-bold text-foreground leading-none">—</p>
-                      <p className="text-[10px] text-muted-foreground mt-1 text-center leading-tight">Evolução de Carga</p>
-                    </div>
+                    <LoadEvolutionCard studentId={selectedStudent.id} />
                   </div>
 
                   <div className="grid gap-3">
