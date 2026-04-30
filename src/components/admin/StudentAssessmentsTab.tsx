@@ -4,7 +4,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, ShieldCheck, Send, Loader2, FileCheck, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -29,6 +28,7 @@ export function StudentAssessmentsTab({ studentId, studentName, age, hasInjury, 
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [sendingType, setSendingType] = useState<string | null>(null);
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const { data: sentQuestionnaires, isLoading } = useQuery({
     queryKey: ['sent-questionnaires', studentId],
@@ -67,35 +67,31 @@ export function StudentAssessmentsTab({ studentId, studentName, age, hasInjury, 
       {/* Smart Recommendations */}
       <div className="space-y-2">
         <h4 className="text-sm font-semibold text-foreground">🧠 Recomendações do Sistema</h4>
-
-        {age !== null && age >= 60 && (
-          <Alert className="border-amber-500/50 bg-amber-500/10">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <AlertTitle className="text-amber-600 dark:text-amber-400 text-sm font-semibold">Faixa etária ≥ 60 anos</AlertTitle>
-            <AlertDescription className="text-sm text-muted-foreground">
-              Recomendação: Enviar questionário <strong>SARC-F</strong> e <strong>Risco de Quedas (FES-I)</strong> devido à faixa etária.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {hasInjury && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="text-sm font-semibold">Relato de Dor / Lesão</AlertTitle>
-            <AlertDescription className="text-sm">
-              Recomendação: Enviar <strong>Anamnese Ortopédica</strong> detalhada devido ao relato de dor/lesão.
-              {injuryDetails && <span className="block mt-1 text-xs opacity-80">"{injuryDetails}"</span>}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        <Alert className="border-accent/30 bg-accent/5">
-          <ShieldCheck className="h-4 w-4 text-accent" />
-          <AlertTitle className="text-accent text-sm font-semibold">Recomendação Padrão</AlertTitle>
-          <AlertDescription className="text-sm text-muted-foreground">
-            Enviar <strong>PAR-Q+</strong> para liberação de atividade física.
-          </AlertDescription>
-        </Alert>
+        <ul className="rounded-xl border border-border bg-card divide-y divide-border/60 overflow-hidden">
+          {age !== null && age >= 60 && (
+            <li className="flex items-start gap-2.5 px-3 py-2.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground leading-snug">
+                <span className="text-foreground font-medium">≥ 60 anos:</span> enviar <strong>SARC-F</strong> e <strong>FES-I</strong>.
+              </p>
+            </li>
+          )}
+          {hasInjury && (
+            <li className="flex items-start gap-2.5 px-3 py-2.5">
+              <AlertTriangle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground leading-snug">
+                <span className="text-foreground font-medium">Relato de dor/lesão:</span> enviar <strong>Anamnese Ortopédica</strong>.
+                {injuryDetails && <span className="block opacity-70">"{injuryDetails}"</span>}
+              </p>
+            </li>
+          )}
+          <li className="flex items-start gap-2.5 px-3 py-2.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-accent mt-0.5 shrink-0" />
+            <p className="text-xs text-muted-foreground leading-snug">
+              <span className="text-foreground font-medium">Padrão:</span> enviar <strong>PAR-Q+</strong> para liberação.
+            </p>
+          </li>
+        </ul>
       </div>
 
       {/* Sent questionnaires history */}
@@ -107,7 +103,7 @@ export function StudentAssessmentsTab({ studentId, studentName, age, hasInjury, 
         <div className="space-y-2">
           <h4 className="text-sm font-semibold text-foreground">📋 Questionários Enviados</h4>
           <div className="space-y-2">
-            {sentQuestionnaires.map((q) => (
+            {(showAllHistory ? sentQuestionnaires : sentQuestionnaires.slice(0, 3)).map((q) => (
               <div key={q.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
                 <div className="flex items-center gap-2">
                   {q.status === 'completed' ? (
@@ -128,6 +124,15 @@ export function StudentAssessmentsTab({ studentId, studentName, age, hasInjury, 
               </div>
             ))}
           </div>
+          {sentQuestionnaires.length > 3 && (
+            <button
+              type="button"
+              onClick={() => setShowAllHistory((v) => !v)}
+              className="w-full text-xs text-accent hover:underline pt-1"
+            >
+              {showAllHistory ? 'Mostrar menos' : `Ver histórico completo (${sentQuestionnaires.length})`}
+            </button>
+          )}
         </div>
       ) : null}
 
