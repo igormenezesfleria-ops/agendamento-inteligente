@@ -282,85 +282,116 @@ export default function MyStudents() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {students.map((student) => (
-              <Card key={student.id} className="card-hover">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
+            {students.map((student) => {
+              const openWhats = () => {
+                const digits = (student.phone || '').replace(/\D/g, '');
+                if (!digits) {
+                  toast({ title: 'Sem telefone cadastrado', description: 'Adicione um telefone para abrir o WhatsApp.', variant: 'destructive' });
+                  return;
+                }
+                const target = digits.startsWith('55') ? digits : `55${digits}`;
+                window.open(`https://wa.me/${target}`, '_blank');
+              };
+              return (
+              <Card key={student.id} className="card-hover overflow-hidden">
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
                         <span className="text-lg font-bold text-secondary-foreground">
                           {student.name?.charAt(0).toUpperCase() || 'A'}
                         </span>
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className="font-medium text-foreground">{student.name || 'Sem nome'}</h3>
+                          <h3 className="font-semibold text-foreground truncate">{student.name || 'Sem nome'}</h3>
                           {student.has_injury && (
-                            <AlertTriangle className="w-4 h-4 text-destructive" />
+                            <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
                           )}
                         </div>
                         <Badge variant="student" className="mt-1">Aluno</Badge>
                       </div>
                     </div>
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 -mr-1 -mt-1 text-muted-foreground hover:text-foreground shrink-0">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => { setSelectedStudent(student); setHistoryOpen(true); }}>
+                          <History className="w-4 h-4 mr-2" />
+                          Histórico
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setRecurringStudent(student)}>
+                          <CalendarClock className="w-4 h-4 mr-2" />
+                          Aluno Fixo
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              onSelect={(e) => e.preventDefault()}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <UserMinus className="w-4 h-4 mr-2" />
+                              Desvincular
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Desvincular aluno?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                <strong>{student.name}</strong> perderá acesso à sua agenda imediatamente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                onClick={() => unlinkMutation.mutate(student.id)}
+                              >
+                                Desvincular
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
 
-                  <div className="flex gap-2 mt-4 flex-wrap">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 bg-muted hover:bg-muted/80 border-border"
+                  {/* Primary quick-actions row */}
+                  <div className="grid grid-cols-3 gap-2 mt-5">
+                    <button
+                      type="button"
                       onClick={() => { setSelectedStudent(student); setTriageOpen(true); }}
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors text-secondary-foreground"
                     >
-                      <ClipboardList className="w-4 h-4 mr-1" />
-                      Ficha
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 bg-muted hover:bg-muted/80 border-border"
-                      onClick={() => { setSelectedStudent(student); setHistoryOpen(true); }}
+                      <Dumbbell className="w-4 h-4 text-accent" />
+                      <span className="text-[11px] font-semibold">Treinos</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedStudent(student); setTriageOpen(true); }}
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors text-secondary-foreground"
                     >
-                      <History className="w-4 h-4 mr-1" />
-                      Histórico
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 bg-muted hover:bg-muted/80 border-border"
-                      onClick={() => setRecurringStudent(student)}
+                      <ClipboardList className="w-4 h-4 text-accent" />
+                      <span className="text-[11px] font-semibold">Ficha</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={openWhats}
+                      className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-green-500 hover:bg-green-600 transition-colors text-white shadow-sm"
                     >
-                      <CalendarClock className="w-4 h-4 mr-1" />
-                      Aluno Fixo
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                          <UserMinus className="w-4 h-4 mr-1" />
-                          Desvincular
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Desvincular aluno?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            <strong>{student.name}</strong> perderá acesso à sua agenda imediatamente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            onClick={() => unlinkMutation.mutate(student.id)}
-                          >
-                            Desvincular
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                      <MessageCircle className="w-4 h-4" />
+                      <span className="text-[11px] font-semibold">WhatsApp</span>
+                    </button>
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
 
