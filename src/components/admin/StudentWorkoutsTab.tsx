@@ -291,10 +291,29 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
+            <div>
+              <Label>Divisão do Treino</Label>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {['A','B','C','D','E','FullBody','Único'].map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setSplitLabel(opt)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      splitLabel === opt
+                        ? 'bg-accent text-accent-foreground border-accent'
+                        : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button
                 onClick={() => createWorkout.mutate()}
-                disabled={!title || !startDate || !endDate || createWorkout.isPending}
+                disabled={!title || !startDate || !endDate || !splitLabel || createWorkout.isPending}
                 className="flex-1"
               >
                 {createWorkout.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
