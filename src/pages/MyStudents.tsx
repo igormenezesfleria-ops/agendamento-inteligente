@@ -31,6 +31,7 @@ import { StudentAssessmentsTab } from '@/components/admin/StudentAssessmentsTab'
 import { StudentDevTools } from '@/components/admin/StudentDevTools';
 import { StudentWorkoutsTab } from '@/components/admin/StudentWorkoutsTab';
 import { LoadEvolutionCard } from '@/components/admin/LoadEvolutionCard';
+import { StudentFichaTab } from '@/components/admin/StudentFichaTab';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { STATUS_LABELS } from '@/lib/constants';
@@ -50,6 +51,8 @@ interface Student {
   birth_date: string | null;
   current_streak: number;
   longest_streak: number;
+  weight_kg?: number | null;
+  max_strength?: string | null;
 }
 
 function calculateAge(birthDateStr: string | null): number | null {
@@ -185,7 +188,7 @@ export default function MyStudents() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, created_at, phone, emergency_contact, main_objective, has_injury, injury_details, is_active, profile_completed, height, birth_date')
+        .select('id, name, created_at, phone, emergency_contact, main_objective, has_injury, injury_details, is_active, profile_completed, height, birth_date, weight_kg, max_strength, current_streak, longest_streak')
         .eq('business_owner_id', user!.id)
         .eq('role', 'student')
         .order('name');
