@@ -80,6 +80,7 @@ export default function MyStudents() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [triageOpen, setTriageOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [activeTab, setActiveTab] = useState<'ficha' | 'treinos' | 'avaliacoes'>('ficha');
   const [recurringStudent, setRecurringStudent] = useState<Student | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ name: '', email: '', phone: '', birth_date: '' });
@@ -365,7 +366,7 @@ export default function MyStudents() {
                   <div className="grid grid-cols-3 gap-2 mt-5">
                     <button
                       type="button"
-                      onClick={() => { setSelectedStudent(student); setTriageOpen(true); }}
+                      onClick={() => { setSelectedStudent(student); setActiveTab('treinos'); setTriageOpen(true); }}
                       className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors text-secondary-foreground"
                     >
                       <Dumbbell className="w-4 h-4 text-accent" />
@@ -373,7 +374,7 @@ export default function MyStudents() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setSelectedStudent(student); setTriageOpen(true); }}
+                      onClick={() => { setSelectedStudent(student); setActiveTab('ficha'); setTriageOpen(true); }}
                       className="flex flex-col items-center justify-center gap-1 py-2.5 rounded-xl bg-secondary hover:bg-secondary/80 transition-colors text-secondary-foreground"
                     >
                       <ClipboardList className="w-4 h-4 text-accent" />
@@ -408,7 +409,7 @@ export default function MyStudents() {
               </div>
             ) : selectedStudent ? (
               <>
-              <Tabs defaultValue="ficha" className="w-full">
+              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="ficha">
                     <ClipboardList className="w-3.5 h-3.5 mr-1.5" /> Ficha
