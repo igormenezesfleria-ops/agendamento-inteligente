@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2 } from 'lucide-react';
+import { Bell, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2 } from 'lucide-react';
 import { format, isToday, isTomorrow, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
