@@ -25,6 +25,7 @@ interface Workout {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  split_label?: string;
 }
 
 interface Exercise {
@@ -46,6 +47,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [splitLabel, setSplitLabel] = useState<string>('Único');
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
 
   // Exercise form state
@@ -122,6 +124,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
         title,
         start_date: startDate,
         end_date: endDate,
+        split_label: splitLabel,
       });
       if (error) throw error;
     },
@@ -132,6 +135,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
       setTitle('');
       setStartDate('');
       setEndDate('');
+      setSplitLabel('Único');
     },
     onError: () => toast({ title: 'Erro ao criar treino', variant: 'destructive' }),
   });
