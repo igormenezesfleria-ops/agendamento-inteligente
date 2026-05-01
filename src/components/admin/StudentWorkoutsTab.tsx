@@ -336,7 +336,16 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Dumbbell className="w-4 h-4 text-accent shrink-0" />
+                  {w.split_label ? (
+                    <span
+                      className="shrink-0 inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-accent text-accent-foreground text-[11px] font-bold shadow-sm"
+                      title={`Divisão ${w.split_label}`}
+                    >
+                      {w.split_label}
+                    </span>
+                  ) : (
+                    <Dumbbell className="w-4 h-4 text-accent shrink-0" />
+                  )}
                   <span className="font-medium text-sm truncate">{w.title}</span>
                   {statusBadge(w)}
                 </div>
