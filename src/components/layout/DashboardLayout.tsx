@@ -50,9 +50,22 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <Link to="/dashboard" className="bg-transparent flex items-center justify-center flex-1">
             <img src="/logo-synton-horizontal-dark.png" alt="Synton" className="h-10 w-auto object-contain shrink-0 bg-transparent" />
           </Link>
-          <span className="text-slate-800 shrink-0">
+          <div className="flex items-center gap-1 text-slate-800 shrink-0">
             <NotificationBell />
-          </span>
+            <Link
+              to="/dashboard/perfil"
+              aria-label="Perfil e Configurações"
+              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors"
+            >
+              {profile?.photo_url ? (
+                <img src={profile.photo_url} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200" />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-accent/15 flex items-center justify-center">
+                  <User className="w-4 h-4 text-accent" />
+                </div>
+              )}
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -163,7 +176,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main content */}
       <main className="lg:ml-64 lg:pt-0 min-h-screen w-full overflow-x-hidden print:ml-0 print:pt-0">
-        <div className="p-4 md:p-8 pb-28 lg:pb-8 print:p-4 print:pb-4 max-w-lg mx-auto lg:max-w-4xl">{children}</div>
+        <div className="p-4 md:p-8 pb-24 lg:pb-8 print:p-4 print:pb-4 max-w-lg mx-auto lg:max-w-4xl">{children}</div>
       </main>
     </div>
   );

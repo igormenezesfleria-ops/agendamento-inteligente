@@ -1,9 +1,7 @@
-import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, ClipboardList, User, Users } from 'lucide-react';
+import { Home, ClipboardList, User, Users, GraduationCap, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
-import { WhatsAppStudentModal } from '@/components/layout/WhatsAppStudentModal';
 
 // Placeholder until we wire the real Personal phone number from the linked trainer
 const PERSONAL_WHATSAPP_NUMBER = '5511999999999';
@@ -151,24 +149,27 @@ function AdminCollabBottomNav({
   homeRoute: string;
 }) {
   const location = useLocation();
-  const [whatsOpen, setWhatsOpen] = useState(false);
-
-  const collaboratorsRoute =
-    role === 'admin' ? '/dashboard/equipe' : '/dashboard/meus-alunos';
 
   type Tab =
     | { kind: 'link'; label: string; icon: React.ElementType; href: string }
     | { kind: 'action'; label: string; icon: React.ElementType; onClick: () => void };
 
-  const tabs: Tab[] = [
-    { kind: 'link', label: 'Início', icon: Home, href: homeRoute },
-    { kind: 'link', label: role === 'admin' ? 'Colaboradores' : 'Alunos', icon: Users, href: collaboratorsRoute },
-    { kind: 'action', label: 'WhatsApp', icon: WhatsAppIcon, onClick: () => setWhatsOpen(true) },
-    { kind: 'link', label: 'Perfil', icon: User, href: '/dashboard/perfil' },
-  ];
+  const tabs: Tab[] =
+    role === 'admin'
+      ? [
+          { kind: 'link', label: 'Início', icon: Home, href: homeRoute },
+          { kind: 'link', label: 'Colaboradores', icon: Users, href: '/dashboard/equipe' },
+          { kind: 'link', label: 'Alunos', icon: GraduationCap, href: '/dashboard/meus-alunos' },
+          { kind: 'link', label: 'Agenda', icon: Calendar, href: '/dashboard/agenda' },
+        ]
+      : [
+          { kind: 'link', label: 'Início', icon: Home, href: homeRoute },
+          { kind: 'link', label: 'Alunos', icon: GraduationCap, href: '/dashboard/meus-alunos' },
+          { kind: 'link', label: 'Agenda', icon: Calendar, href: '/dashboard/meus-treinos' },
+          { kind: 'link', label: 'Perfil', icon: User, href: '/dashboard/perfil' },
+        ];
 
   return (
-    <>
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-border lg:hidden print:hidden">
         <div className="flex items-center justify-around py-2 pb-safe max-w-lg mx-auto">
           {tabs.map((tab) => {
@@ -205,7 +206,5 @@ function AdminCollabBottomNav({
           })}
         </div>
       </nav>
-      <WhatsAppStudentModal open={whatsOpen} onOpenChange={setWhatsOpen} />
-    </>
   );
 }
