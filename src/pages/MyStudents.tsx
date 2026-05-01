@@ -16,9 +16,16 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame, UserPlus, Mail, KeyRound, Copy, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Users, UserMinus, Loader2, Clock, History, Inbox, CalendarClock, Phone, AlertTriangle, Target, Activity, ClipboardList, Ruler, Cake, FileText, Dumbbell, Flame, UserPlus, Mail, KeyRound, Copy, CheckCircle2, TrendingUp, MoreVertical, MessageCircle, User as UserIcon, HeartPulse } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { RecurringScheduleDialog } from '@/components/admin/RecurringScheduleDialog';
 import { StudentAssessmentsTab } from '@/components/admin/StudentAssessmentsTab';
 import { StudentDevTools } from '@/components/admin/StudentDevTools';
