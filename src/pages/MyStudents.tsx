@@ -426,113 +426,11 @@ export default function MyStudents() {
                 </TabsList>
 
                 <TabsContent value="ficha" className="space-y-4 mt-4">
-                  {/* Injury Alert */}
-                  {selectedStudent.has_injury && (
-                    <Alert variant="destructive">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>⚠️ Lesão / Limitação</AlertTitle>
-                      <AlertDescription className="font-medium">
-                        {selectedStudent.injury_details || 'Não especificada'}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {/* Age & Height highlight */}
-                  {(selectedStudent.birth_date || selectedStudent.height) && (
-                    <div className="flex gap-3">
-                      {selectedStudent.birth_date && (() => {
-                        const age = calculateAge(selectedStudent.birth_date);
-                        return age !== null ? (
-                          <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
-                            <Cake className="w-4 h-4 text-accent shrink-0" />
-                            <div>
-                              <p className="text-xs text-muted-foreground">Idade</p>
-                              <p className="text-lg font-bold text-accent">{age} anos</p>
-                            </div>
-                          </div>
-                        ) : null;
-                      })()}
-                      {selectedStudent.height && (
-                        <div className="flex-1 flex items-center gap-2 p-3 rounded-lg bg-accent/10 border border-accent/20">
-                          <Ruler className="w-4 h-4 text-accent shrink-0" />
-                          <div>
-                            <p className="text-xs text-muted-foreground">Altura</p>
-                            <p className="text-lg font-bold text-accent">{selectedStudent.height}m</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Stats grid: 3 compact metric cards */}
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/40 border border-border/60">
-                      <Flame className="w-4 h-4 text-orange-500 mb-1" />
-                      <p className="text-lg font-bold text-foreground leading-none">{selectedStudent.current_streak}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1 text-center leading-tight">Semanas Seguidas</p>
-                    </div>
-                    <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-muted/40 border border-border/60">
-                      <Dumbbell className="w-4 h-4 text-accent mb-1" />
-                      <p className="text-lg font-bold text-foreground leading-none">—</p>
-                      <p className="text-[10px] text-muted-foreground mt-1 text-center leading-tight">Treinos Concluídos</p>
-                    </div>
-                    <LoadEvolutionCard studentId={selectedStudent.id} />
-                  </div>
-
-                  {/* Structured info cards */}
-                  <div className="space-y-3">
-                    {/* Contato */}
-                    <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <UserIcon className="w-3.5 h-3.5 text-accent" />
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Contato</p>
-                      </div>
-                      <div className="grid grid-cols-1 gap-3">
-                        <div className="flex items-start gap-3">
-                          <Phone className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-[11px] text-muted-foreground">Telefone / WhatsApp</p>
-                            <p className="text-sm font-semibold text-foreground truncate">{selectedStudent.phone || '—'}</p>
-                          </div>
-                        </div>
-                        <div className="h-px bg-border/60" />
-                        <div className="flex items-start gap-3">
-                          <AlertTriangle className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-[11px] text-muted-foreground">Contato de Emergência</p>
-                            <p className="text-sm font-semibold text-foreground truncate">{selectedStudent.emergency_contact || '—'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Perfil Físico */}
-                    <div className="rounded-2xl border border-border/70 bg-muted/30 p-4">
-                      <div className="flex items-center gap-2 mb-3">
-                        <HeartPulse className="w-3.5 h-3.5 text-accent" />
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Perfil Físico</p>
-                      </div>
-                      <div className="grid grid-cols-1 gap-3">
-                        <div className="flex items-start gap-3">
-                          <Target className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-[11px] text-muted-foreground">Objetivo Principal</p>
-                            <p className="text-sm font-semibold text-foreground">
-                              {selectedStudent.main_objective ? objectiveLabels[selectedStudent.main_objective] || selectedStudent.main_objective : '—'}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="h-px bg-border/60" />
-                        <div className="flex items-start gap-3">
-                          <Activity className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-[11px] text-muted-foreground">Pratica atividade física?</p>
-                            <p className="text-sm font-semibold text-foreground">{selectedStudent.is_active ? 'Sim' : 'Não'}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <StudentFichaTab
+                    student={selectedStudent}
+                    age={calculateAge(selectedStudent.birth_date)}
+                    objectiveLabels={objectiveLabels}
+                  />
                 </TabsContent>
 
                 <TabsContent value="treinos" className="mt-4">
