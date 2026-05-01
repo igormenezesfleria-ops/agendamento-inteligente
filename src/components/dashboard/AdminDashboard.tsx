@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, Settings, Tag, User, CheckCircle2, MessageCircle, Share2 } from 'lucide-react';
+import { Bell, Calendar, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2 } from 'lucide-react';
 import { format, isToday, isTomorrow, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
@@ -146,7 +146,7 @@ export function AdminDashboard() {
   const todayFormatted = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-full overflow-hidden">
+    <div className="space-y-6 animate-fade-in max-w-full overflow-hidden pb-4">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold text-foreground">
           Olá, {(() => {
@@ -159,17 +159,6 @@ export function AdminDashboard() {
 
       {/* Check-in Validation Queue */}
       <CheckinQueue />
-
-      {/* Quick Actions */}
-      <div className="space-y-1.5">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Acesso Rápido</p>
-        <div className="flex flex-row justify-between items-start gap-2">
-          <QuickActionCard icon={GraduationCap} label="Meus Alunos" to="/dashboard/meus-alunos" color="accent" />
-          <QuickActionCard icon={Calendar} label="Agenda" to="/dashboard/agenda" color="primary" />
-          <QuickActionCard icon={Tag} label="Planos" to="/dashboard/admin/plans" color="warning" />
-          <QuickActionCard icon={Settings} label="Horários" to="/dashboard/configurar-horarios" color="secondary" />
-        </div>
-      </div>
 
       {/* Próximo Agendamento (Priority #1) */}
       <Card className="border-accent/30">
@@ -188,12 +177,6 @@ export function AdminDashboard() {
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                     <User className="w-3.5 h-3.5 shrink-0" />
                     Aluno: {nextAppointment.studentName}
-                    <Link
-                      to="/dashboard/chat"
-                      className="bg-secondary text-accent p-1.5 rounded-full hover:bg-accent/10 transition-colors ml-1"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                    </Link>
                   </p>
                   <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                     <GraduationCap className="w-3.5 h-3.5 shrink-0" />
@@ -264,13 +247,4 @@ export function AdminDashboard() {
   );
 }
 
-function QuickActionCard({ icon: Icon, label, to }: { icon: React.ElementType; label: string; to: string; color: string }) {
-  return (
-    <Link to={to} className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-      <div className="w-12 h-12 rounded-2xl shadow-sm flex items-center justify-center bg-accent/10 border border-accent/20">
-        <Icon className="w-5 h-5 text-accent" />
-      </div>
-      <span className="text-[10px] font-semibold text-foreground text-center leading-tight">{label}</span>
-    </Link>
-  );
-}
+
