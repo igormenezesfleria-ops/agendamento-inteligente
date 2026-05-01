@@ -25,6 +25,7 @@ interface Workout {
   start_date: string;
   end_date: string;
   is_active: boolean;
+  split_label?: string;
 }
 
 interface Exercise {
@@ -46,6 +47,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [splitLabel, setSplitLabel] = useState<string>('Único');
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(null);
 
   // Exercise form state
@@ -122,6 +124,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
         title,
         start_date: startDate,
         end_date: endDate,
+        split_label: splitLabel,
       });
       if (error) throw error;
     },
@@ -132,6 +135,7 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
       setTitle('');
       setStartDate('');
       setEndDate('');
+      setSplitLabel('Único');
     },
     onError: () => toast({ title: 'Erro ao criar treino', variant: 'destructive' }),
   });
@@ -287,10 +291,29 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
                 <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
               </div>
             </div>
+            <div>
+              <Label>Divisão do Treino</Label>
+              <div className="flex flex-wrap gap-2 mt-1.5">
+                {['A','B','C','D','E','FullBody','Único'].map((opt) => (
+                  <button
+                    key={opt}
+                    type="button"
+                    onClick={() => setSplitLabel(opt)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
+                      splitLabel === opt
+                        ? 'bg-accent text-accent-foreground border-accent'
+                        : 'bg-background text-muted-foreground border-border hover:bg-muted'
+                    }`}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button
                 onClick={() => createWorkout.mutate()}
-                disabled={!title || !startDate || !endDate || createWorkout.isPending}
+                disabled={!title || !startDate || !endDate || !splitLabel || createWorkout.isPending}
                 className="flex-1"
               >
                 {createWorkout.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar'}
@@ -313,7 +336,16 @@ export function StudentWorkoutsTab({ studentId, studentName }: Props) {
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 min-w-0">
-                  <Dumbbell className="w-4 h-4 text-accent shrink-0" />
+                  {w.split_label ? (
+                    <span
+                      className="shrink-0 inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-full bg-accent text-accent-foreground text-[11px] font-bold shadow-sm"
+                      title={`Divisão ${w.split_label}`}
+                    >
+                      {w.split_label}
+                    </span>
+                  ) : (
+                    <Dumbbell className="w-4 h-4 text-accent shrink-0" />
+                  )}
                   <span className="font-medium text-sm truncate">{w.title}</span>
                   {statusBadge(w)}
                 </div>
