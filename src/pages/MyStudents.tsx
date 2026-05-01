@@ -438,12 +438,29 @@ export default function MyStudents() {
                   </div>
 
                   <div className="grid gap-3">
-                    <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                      <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
-                      <div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                      <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+                      <div className="flex-1 min-w-0">
                         <p className="text-xs text-muted-foreground">Telefone / WhatsApp</p>
-                        <p className="text-sm font-medium text-foreground">{selectedStudent.phone || '—'}</p>
+                        <p className="text-sm font-medium text-foreground truncate">{selectedStudent.phone || '—'}</p>
                       </div>
+                      {selectedStudent.phone && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const digits = (selectedStudent.phone || '').replace(/\D/g, '');
+                            const target = digits.startsWith('55') ? digits : `55${digits}`;
+                            window.open(`https://wa.me/${target}`, '_blank');
+                          }}
+                          aria-label="Abrir WhatsApp"
+                          className="shrink-0 h-9 px-3 rounded-full bg-green-500 hover:bg-green-600 text-white text-xs font-semibold inline-flex items-center gap-1.5 shadow-sm transition-colors"
+                        >
+                          <svg viewBox="0 0 32 32" className="w-4 h-4" fill="currentColor" aria-hidden="true">
+                            <path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.143-.73-2.09-.832-2.335-.143-.372-.214-.487-.6-.487-.187 0-.36-.043-.53-.043-.302 0-.53.115-.746.315-.688.645-1.032 1.318-1.06 2.264v.114c-.015.99.328 1.79.789 2.65 1.135 2.064 2.588 3.778 4.722 4.81.74.36 2.123.967 2.943.967.36 0 .603-.066.803-.23.158-.13.31-.27.46-.42.224-.225.444-.45.444-.78 0-.4-.215-.674-.6-.815zM27.65 4.35A14.45 14.45 0 0 0 16.04.04C8 .04 1.46 6.58 1.46 14.62c0 2.572.673 5.082 1.953 7.297L1.4 28.83l7.025-1.84a14.51 14.51 0 0 0 7.61 2.157h.005c8.04 0 14.92-6.54 14.92-14.58 0-3.866-1.66-7.49-4.31-10.215zM16.04 26.69h-.004a12.07 12.07 0 0 1-6.156-1.687l-.44-.262-4.566 1.198 1.218-4.456-.286-.456a12.07 12.07 0 0 1-1.85-6.395c0-6.69 5.443-12.13 12.137-12.13 3.243 0 6.29 1.263 8.582 3.557a12.06 12.06 0 0 1 3.555 8.583c0 6.694-5.443 12.13-12.137 12.13z" />
+                          </svg>
+                          WhatsApp
+                        </button>
+                      )}
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
                       <Phone className="w-4 h-4 text-muted-foreground mt-0.5" />
