@@ -395,6 +395,7 @@ export type Database = {
           liability_accepted_at: string | null
           longest_streak: number
           main_objective: string | null
+          max_strength: string | null
           name: string | null
           no_show_rate: number | null
           pay_type: string | null
@@ -409,6 +410,7 @@ export type Database = {
           subscription_status: string
           updated_at: string
           vip_code_used: boolean
+          weight_kg: number | null
         }
         Insert: {
           asaas_api_key?: string | null
@@ -437,6 +439,7 @@ export type Database = {
           liability_accepted_at?: string | null
           longest_streak?: number
           main_objective?: string | null
+          max_strength?: string | null
           name?: string | null
           no_show_rate?: number | null
           pay_type?: string | null
@@ -451,6 +454,7 @@ export type Database = {
           subscription_status?: string
           updated_at?: string
           vip_code_used?: boolean
+          weight_kg?: number | null
         }
         Update: {
           asaas_api_key?: string | null
@@ -479,6 +483,7 @@ export type Database = {
           liability_accepted_at?: string | null
           longest_streak?: number
           main_objective?: string | null
+          max_strength?: string | null
           name?: string | null
           no_show_rate?: number | null
           pay_type?: string | null
@@ -493,6 +498,7 @@ export type Database = {
           subscription_status?: string
           updated_at?: string
           vip_code_used?: boolean
+          weight_kg?: number | null
         }
         Relationships: [
           {
