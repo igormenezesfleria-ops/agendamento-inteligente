@@ -822,6 +822,7 @@ export type Database = {
           end_date: string
           id: string
           is_active: boolean
+          split_label: string
           start_date: string
           student_id: string
           title: string
@@ -832,6 +833,7 @@ export type Database = {
           end_date: string
           id?: string
           is_active?: boolean
+          split_label?: string
           start_date: string
           student_id: string
           title: string
@@ -842,6 +844,7 @@ export type Database = {
           end_date?: string
           id?: string
           is_active?: boolean
+          split_label?: string
           start_date?: string
           student_id?: string
           title?: string

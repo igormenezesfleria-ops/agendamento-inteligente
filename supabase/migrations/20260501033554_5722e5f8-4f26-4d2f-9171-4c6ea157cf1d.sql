@@ -1,0 +1,1 @@
+ALTER TABLE public.workouts ADD COLUMN IF NOT EXISTS split_label text NOT NULL DEFAULT 'Único';
