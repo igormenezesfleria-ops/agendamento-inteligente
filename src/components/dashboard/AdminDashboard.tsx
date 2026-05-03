@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2, AlertTriangle, UserPlus, ClipboardCheck, Search, MessageCircle } from 'lucide-react';
+import { Bell, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2, AlertTriangle, UserPlus, Wallet, Search, MessageCircle } from 'lucide-react';
 import { format, isToday, isTomorrow, addHours, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
@@ -349,9 +349,9 @@ export function AdminDashboard() {
           </Link>
         </Button>
         <Button asChild size="lg" variant="outline" className="h-12 font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/20 dark:border-orange-900/40 dark:text-orange-400">
-          <Link to="/dashboard/questionarios">
-            <ClipboardCheck className="w-4 h-4 mr-2" />
-            Nova Avaliação
+          <Link to="/dashboard/admin/financeiro">
+            <Wallet className="w-4 h-4 mr-2" />
+            Financeiro
           </Link>
         </Button>
       </div>
