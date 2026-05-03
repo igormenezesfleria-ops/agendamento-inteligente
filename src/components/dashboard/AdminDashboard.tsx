@@ -4,8 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2 } from 'lucide-react';
-import { format, isToday, isTomorrow, addHours } from 'date-fns';
+import { Bell, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2, AlertTriangle, UserPlus, CalendarPlus } from 'lucide-react';
+import { format, isToday, isTomorrow, addHours, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
 
@@ -145,6 +145,28 @@ export function AdminDashboard() {
 
   const todayFormatted = format(new Date(), "EEEE, d 'de' MMMM", { locale: ptBR });
 
+  const { data: inactiveCount = 0 } = useQuery({
+    queryKey: ['admin-inactive-students', user?.id],
+    queryFn: async () => {
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('business_owner_id', user!.id)
+        .eq('role', 'student');
+      const ids = (students || []).map((s) => s.id);
+      if (ids.length === 0) return 0;
+      const cutoff = format(subDays(new Date(), 7), 'yyyy-MM-dd');
+      const { data: recent } = await supabase
+        .from('appointments')
+        .select('student_id')
+        .in('student_id', ids)
+        .gte('date', cutoff);
+      const activeIds = new Set((recent || []).map((a) => a.student_id));
+      return ids.filter((id) => !activeIds.has(id)).length;
+    },
+    enabled: !!user?.id,
+  });
+
   return (
     <div className="space-y-6 animate-fade-in max-w-full overflow-hidden pb-4">
       <div className="space-y-1">
@@ -243,6 +265,58 @@ export function AdminDashboard() {
       </button>
 
       {showImpact && <PersonalImpactReceipt open={showImpact} onOpenChange={setShowImpact} />}
+
+      {/* Radar de Retenção */}
+      <Card className={cn(
+        'border',
+        inactiveCount > 0
+          ? 'border-rose-200 dark:border-rose-900/40 bg-rose-50/70 dark:bg-rose-950/20'
+          : 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/70 dark:bg-emerald-950/20'
+      )}>
+        <CardContent className="p-4 flex items-center gap-4">
+          <div className={cn(
+            'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+            inactiveCount > 0
+              ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400'
+              : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
+          )}>
+            <AlertTriangle className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Radar de Retenção</p>
+            {inactiveCount > 0 ? (
+              <p className="text-sm font-bold text-rose-700 dark:text-rose-300">
+                {inactiveCount} {inactiveCount === 1 ? 'aluno inativo' : 'alunos inativos'} há mais de 7 dias
+              </p>
+            ) : (
+              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                Todos os alunos ativos esta semana 🎯
+              </p>
+            )}
+          </div>
+          {inactiveCount > 0 && (
+            <Button asChild size="sm" variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:text-rose-300 shrink-0">
+              <Link to="/dashboard/meus-alunos">Ver Alunos</Link>
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Ações Rápidas */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button asChild size="lg" className="h-12 font-semibold">
+          <Link to="/dashboard/meus-alunos">
+            <UserPlus className="w-4 h-4 mr-2" />
+            Novo Aluno
+          </Link>
+        </Button>
+        <Button asChild size="lg" variant="outline" className="h-12 font-semibold">
+          <Link to="/dashboard/agenda">
+            <CalendarPlus className="w-4 h-4 mr-2" />
+            Novo Agendamento
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
