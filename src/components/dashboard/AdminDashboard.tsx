@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bell, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2, AlertTriangle, UserPlus, CalendarPlus } from 'lucide-react';
+import { Bell, GraduationCap, ChevronRight, Zap, BarChart3, User, CheckCircle2, Share2, AlertTriangle, UserPlus, ClipboardCheck, Search, MessageCircle } from 'lucide-react';
 import { format, isToday, isTomorrow, addHours, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
@@ -13,10 +13,16 @@ import { Link } from 'react-router-dom';
 import { PersonalImpactReceipt } from '@/components/admin/PersonalImpactReceipt';
 import { CheckinQueue } from '@/components/dashboard/CheckinQueue';
 import { toLocalDateTime } from '@/lib/deadline';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export function AdminDashboard() {
   const { user, profile } = useAuth();
   const [showImpact, setShowImpact] = useState(false);
+  const [showRetention, setShowRetention] = useState(false);
+  const [retentionDays, setRetentionDays] = useState<'7' | '15' | '30'>('7');
+  const [retentionSearch, setRetentionSearch] = useState('');
   const today = format(new Date(), 'yyyy-MM-dd');
 
   const { data: pendingCount = 0 } = useQuery({
@@ -167,6 +173,33 @@ export function AdminDashboard() {
     enabled: !!user?.id,
   });
 
+  const { data: inactiveStudents = [] } = useQuery({
+    queryKey: ['admin-inactive-students-list', user?.id, retentionDays],
+    queryFn: async () => {
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('id, name, phone, photo_url')
+        .eq('business_owner_id', user!.id)
+        .eq('role', 'student');
+      const list = students || [];
+      if (list.length === 0) return [];
+      const cutoff = format(subDays(new Date(), Number(retentionDays)), 'yyyy-MM-dd');
+      const ids = list.map((s) => s.id);
+      const { data: recent } = await supabase
+        .from('appointments')
+        .select('student_id')
+        .in('student_id', ids)
+        .gte('date', cutoff);
+      const activeIds = new Set((recent || []).map((a) => a.student_id));
+      return list.filter((s) => !activeIds.has(s.id));
+    },
+    enabled: !!user?.id && showRetention,
+  });
+
+  const filteredInactive = inactiveStudents.filter((s) =>
+    (s.name || '').toLowerCase().includes(retentionSearch.toLowerCase())
+  );
+
   return (
     <div className="space-y-6 animate-fade-in max-w-full overflow-hidden pb-4">
       <div className="space-y-1">
@@ -295,8 +328,13 @@ export function AdminDashboard() {
             )}
           </div>
           {inactiveCount > 0 && (
-            <Button asChild size="sm" variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:text-rose-300 shrink-0">
-              <Link to="/dashboard/meus-alunos">Ver Alunos</Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowRetention(true)}
+              className="border-rose-300 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:text-rose-300 shrink-0"
+            >
+              Ver Alunos
             </Button>
           )}
         </CardContent>
@@ -304,19 +342,100 @@ export function AdminDashboard() {
 
       {/* Ações Rápidas */}
       <div className="grid grid-cols-2 gap-3">
-        <Button asChild size="lg" className="h-12 font-semibold">
+        <Button asChild size="lg" className="h-12 font-semibold bg-orange-500 hover:bg-orange-600 text-white">
           <Link to="/dashboard/meus-alunos">
             <UserPlus className="w-4 h-4 mr-2" />
             Novo Aluno
           </Link>
         </Button>
-        <Button asChild size="lg" variant="outline" className="h-12 font-semibold">
-          <Link to="/dashboard/agenda">
-            <CalendarPlus className="w-4 h-4 mr-2" />
-            Novo Agendamento
+        <Button asChild size="lg" variant="outline" className="h-12 font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/20 dark:border-orange-900/40 dark:text-orange-400">
+          <Link to="/dashboard/questionarios">
+            <ClipboardCheck className="w-4 h-4 mr-2" />
+            Nova Avaliação
           </Link>
         </Button>
       </div>
+
+      {/* Painel de Retenção */}
+      <Sheet open={showRetention} onOpenChange={setShowRetention}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-rose-500" />
+              Painel de Retenção
+            </SheetTitle>
+            <SheetDescription>
+              Identifique e recupere alunos inativos rapidamente.
+            </SheetDescription>
+          </SheetHeader>
+
+          <div className="mt-4 space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar aluno..."
+                value={retentionSearch}
+                onChange={(e) => setRetentionSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={retentionDays} onValueChange={(v) => setRetentionDays(v as '7' | '15' | '30')}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Inativos há 7 dias</SelectItem>
+                <SelectItem value="15">Inativos há 15 dias</SelectItem>
+                <SelectItem value="30">Inativos há 30 dias</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {filteredInactive.length === 0 ? (
+              <div className="py-12 text-center text-sm text-muted-foreground">
+                Nenhum aluno inativo neste período 🎯
+              </div>
+            ) : (
+              filteredInactive.map((s) => {
+                const cleanPhone = (s.phone || '').replace(/\D/g, '');
+                const waUrl = cleanPhone ? `https://wa.me/55${cleanPhone}` : null;
+                return (
+                  <div
+                    key={s.id}
+                    className="flex items-center gap-3 p-3 rounded-2xl border border-border bg-card"
+                  >
+                    {s.photo_url ? (
+                      <img src={s.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center">
+                        <User className="w-5 h-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate">{s.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {s.phone || 'Sem telefone'}
+                      </p>
+                    </div>
+                    {waUrl && (
+                      <a
+                        href={waUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-9 h-9 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center shrink-0"
+                        aria-label="WhatsApp"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
