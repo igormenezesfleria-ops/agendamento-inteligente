@@ -130,7 +130,7 @@ export function StudentDashboard() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-28">
+    <div className="space-y-6 animate-fade-in pb-8">
       {/* a) Welcome */}
       <div className="space-y-1">
         <h1 className="font-display text-3xl text-foreground">
