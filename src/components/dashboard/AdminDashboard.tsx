@@ -342,13 +342,13 @@ export function AdminDashboard() {
 
       {/* Ações Rápidas */}
       <div className="grid grid-cols-2 gap-3">
-        <Button asChild size="lg" className="h-12 font-semibold bg-orange-500 hover:bg-orange-600 text-white">
+        <Button asChild size="lg" className="h-12 font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-none">
           <Link to="/dashboard/meus-alunos">
             <UserPlus className="w-4 h-4 mr-2" />
             Novo Aluno
           </Link>
         </Button>
-        <Button asChild size="lg" variant="outline" className="h-12 font-semibold border border-orange-200 text-orange-600 bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/20 dark:border-orange-900/40 dark:text-orange-400">
+        <Button asChild size="lg" variant="outline" className="h-12 font-semibold rounded-xl border border-slate-200 text-orange-600 bg-white hover:bg-orange-50 shadow-none">
           <Link to="/dashboard/admin/financeiro">
             <Wallet className="w-4 h-4 mr-2" />
             Financeiro

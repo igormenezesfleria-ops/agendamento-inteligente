@@ -141,26 +141,27 @@ export function StudentDashboard() {
         </p>
       </div>
 
-      {/* b) Quick Action CTA — Agendar Novo Treino */}
-      <Button asChild variant="accent" size="lg" className="w-full">
-        <Link to="/dashboard/agendar">
-          <Dumbbell className="w-5 h-5 mr-2" />
-          Agendar Novo Treino
-          <ArrowRight className="w-4 h-4 ml-2" />
-        </Link>
-      </Button>
+      {/* b) Quick Action CTA — Agendar Novo Treino (flat, minimal) */}
+      <Link
+        to="/dashboard/agendar"
+        className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors active:scale-[0.99]"
+      >
+        <Dumbbell className="w-5 h-5" />
+        Agendar Novo Treino
+        <ArrowRight className="w-4 h-4" />
+      </Link>
 
       {/* c) Next Class + Check-in */}
       {!isLoading && (
         nextAppointment ? (
-          <Card className="border-accent/30 bg-accent/5">
+          <Card className="bg-white border border-slate-100 shadow-sm">
             <CardContent className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-orange-500 mb-3">
                 Próximo Treino
               </p>
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl accent-gradient flex items-center justify-center shrink-0">
-                  <Calendar className="w-6 h-6 text-accent-foreground" />
+                <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                  <Calendar className="w-6 h-6 text-orange-500" />
                 </div>
                 <div className="min-w-0">
                   <p className="font-display text-lg text-foreground truncate">
@@ -191,7 +192,7 @@ export function StudentDashboard() {
                   <button
                     onClick={handleCheckin}
                     disabled={checkingIn}
-                    className="w-full bg-accent hover:bg-accent/90 text-accent-foreground py-4 rounded-xl font-bold text-lg shadow-[0_0_15px_hsl(var(--accent)/0.4)] animate-pulse flex justify-center items-center gap-2 mt-4 transition-all"
+                    className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-xl font-bold text-lg flex justify-center items-center gap-2 mt-4 transition-colors"
                   >
                     <MapPin className="w-5 h-5" />
                     Fazer Check-in no Estúdio
@@ -201,7 +202,7 @@ export function StudentDashboard() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-dashed">
+          <Card className="bg-white border border-slate-100 shadow-sm border-dashed">
             <CardContent className="p-5 text-center">
               <Clock className="w-8 h-8 mx-auto text-muted-foreground/50 mb-2" />
               <p className="text-sm text-muted-foreground">
@@ -217,15 +218,17 @@ export function StudentDashboard() {
 
       {/* e) Tarefas Pendentes do Personal */}
       {pendingQuestionnaires && pendingQuestionnaires.length > 0 && (
-        <Card className="border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20">
+        <Card className="bg-white border border-slate-100 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-3">
-              <ClipboardList className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-              <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+              <span className="w-6 h-6 rounded-full bg-amber-100 flex items-center justify-center">
+                <ClipboardList className="w-3.5 h-3.5 text-amber-600" />
+              </span>
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Avisos do Personal
               </p>
             </div>
-            <div className="divide-y divide-amber-200/60 dark:divide-amber-900/30">
+            <div className="divide-y divide-slate-100">
               {pendingQuestionnaires.map((q) => (
                 <div key={q.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
                   <p className="text-sm text-foreground flex-1">
@@ -234,7 +237,7 @@ export function StudentDashboard() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 border-amber-400/60 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                    className="h-8 border-slate-200 text-orange-600 hover:bg-orange-50"
                     onClick={() => setSelectedQuestionnaire({ id: q.id, type: q.type })}
                   >
                     Responder

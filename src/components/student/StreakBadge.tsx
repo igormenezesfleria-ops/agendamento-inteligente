@@ -12,9 +12,9 @@ export function StreakBadge() {
 
   return (
     <>
-      <div className="bg-card rounded-2xl border border-border/60 shadow-sm px-4 py-3 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-          <Flame className="w-5 h-5 text-accent" />
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm px-4 py-3 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+          <Flame className="w-5 h-5 text-orange-500" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-foreground leading-tight">
@@ -29,7 +29,7 @@ export function StreakBadge() {
         <button
           onClick={() => setModalOpen(true)}
           aria-label="Compartilhar ofensiva"
-          className="shrink-0 w-9 h-9 rounded-full bg-accent/10 hover:bg-accent/20 text-accent flex items-center justify-center transition-colors"
+          className="shrink-0 w-9 h-9 rounded-full bg-slate-50 hover:bg-orange-50 text-orange-500 flex items-center justify-center transition-colors"
         >
           <Share2 className="w-4 h-4" />
         </button>

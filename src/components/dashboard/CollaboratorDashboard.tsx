@@ -1,10 +1,9 @@
-import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { ClipboardList, User, CalendarCheck, History, Calendar, Flame, Share2, MessageCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Calendar, Flame, Share2, MessageCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { CheckinQueue } from '@/components/dashboard/CheckinQueue';
 import { format, isToday, isTomorrow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -109,8 +108,8 @@ export function CollaboratorDashboard() {
 
       {/* Next Session Widget */}
       {nextSession ? (
-        <div className="bg-card rounded-2xl p-5 border border-accent/30 shadow-sm">
-          <p className="text-xs font-bold text-accent uppercase tracking-wider">
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+          <p className="text-xs font-bold text-orange-500 uppercase tracking-wider">
             Próxima Sessão
           </p>
           <div className="flex items-center justify-between mt-1">
@@ -119,7 +118,7 @@ export function CollaboratorDashboard() {
             </p>
             <Link
               to="/dashboard/chat"
-              className="bg-secondary text-accent p-2 rounded-full hover:bg-accent/10 transition-colors"
+              className="bg-slate-50 text-orange-500 p-2 rounded-full hover:bg-orange-50 transition-colors"
             >
               <MessageCircle className="w-4 h-4" />
             </Link>
@@ -130,8 +129,8 @@ export function CollaboratorDashboard() {
           </p>
         </div>
       ) : (
-        <div className="bg-card rounded-2xl p-5 border border-border shadow-sm text-center">
-          <p className="text-xs font-bold text-accent uppercase tracking-wider mb-1">
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm text-center">
+          <p className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
             Próxima Sessão
           </p>
           <p className="text-sm text-muted-foreground">
@@ -140,10 +139,10 @@ export function CollaboratorDashboard() {
         </div>
       )}
 
-      {/* Gamification Card */}
-      <div className="bg-accent/5 rounded-2xl p-5 border border-accent/10">
+      {/* Gamification Card — minimal white */}
+      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center text-accent shrink-0">
+          <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 shrink-0">
             <Flame className="w-5 h-5" />
           </div>
           <div>
@@ -154,30 +153,16 @@ export function CollaboratorDashboard() {
           </div>
         </div>
         <Button
-          variant="accent"
           size="sm"
-          className="mt-4 w-full font-bold text-sm"
+          className="mt-4 w-full font-semibold text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
         >
           <Share2 className="w-4 h-4 mr-1.5" />
           Compartilhar Impacto
         </Button>
       </div>
 
-      {/* Quick Access 2x2 Grid */}
-      <div>
-        <h2 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3">
-          Acesso Rápido
-        </h2>
-        <div className="grid grid-cols-2 gap-3">
-          <QuickTile icon={ClipboardList} label="Tarefas" href="/dashboard/minhas-tarefas" />
-          <QuickTile icon={CalendarCheck} label="Agenda" href="/dashboard/meus-treinos" />
-          <QuickTile icon={History} label="Histórico" href="/dashboard/collaborator/historico" />
-          <QuickTile icon={User} label="Perfil" href="/dashboard/perfil" />
-        </div>
-      </div>
-
       {/* Privacy notice */}
-      <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
+      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
         <h3 className="text-base font-bold text-foreground mb-1">🔒 Privacidade</h3>
         <p className="text-xs text-muted-foreground leading-relaxed">
           Por questões de privacidade, você só tem acesso aos treinos especificamente
@@ -185,17 +170,5 @@ export function CollaboratorDashboard() {
         </p>
       </div>
     </div>
-  );
-}
-
-function QuickTile({ icon: Icon, label, href }: { icon: React.ElementType; label: string; href: string }) {
-  return (
-    <Link
-      to={href}
-      className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col items-center justify-center gap-2 hover:border-accent/30 transition-all cursor-pointer"
-    >
-      <Icon className="w-6 h-6 text-accent" />
-      <span className="text-sm font-semibold text-foreground">{label}</span>
-    </Link>
   );
 }
