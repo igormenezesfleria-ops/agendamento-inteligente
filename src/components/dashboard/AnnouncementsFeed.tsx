@@ -30,15 +30,15 @@ export function AnnouncementsFeed() {
 
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Megaphone className="w-5 h-5 text-accent" />
+            <Megaphone className="w-5 h-5 text-orange-500" />
             Mural de Avisos
           </CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center py-6">
-          <Loader2 className="w-6 h-6 animate-spin text-accent" />
+          <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
         </CardContent>
       </Card>
     );
@@ -46,42 +46,42 @@ export function AnnouncementsFeed() {
 
   if (!announcements || announcements.length === 0) {
     return (
-      <Card>
+      <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
-            <Megaphone className="w-5 h-5 text-accent" />
+            <Megaphone className="w-5 h-5 text-orange-500" />
             Mural de Avisos
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Nenhum aviso no momento.</p>
+          <p className="text-sm text-slate-500">Nenhum aviso no momento.</p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card>
+    <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
-          <Megaphone className="w-5 h-5 text-accent" />
+          <Megaphone className="w-5 h-5 text-orange-500" />
           Mural de Avisos
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {announcements.map((a) => (
           <div key={a.id} className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 mt-0.5">
-              <MessageSquare className="w-4 h-4 text-accent" />
+            <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center shrink-0 mt-0.5">
+              <MessageSquare className="w-4 h-4 text-orange-500" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between gap-2">
-                <h4 className="font-semibold text-sm text-foreground">{a.title}</h4>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                <h4 className="font-semibold text-sm text-slate-900">{a.title}</h4>
+                <span className="text-xs text-slate-500 whitespace-nowrap">
                   {format(parseISO(a.created_at), "d MMM", { locale: ptBR })}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground mt-0.5">{a.message}</p>
+              <p className="text-sm text-slate-500 mt-0.5">{a.message}</p>
             </div>
           </div>
         ))}
