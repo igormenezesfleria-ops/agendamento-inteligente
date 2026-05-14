@@ -92,13 +92,13 @@ export function CollaboratorDashboard() {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in pb-32">
+    <div className="flex flex-col gap-4 animate-fade-in pb-24">
       {/* Greeting */}
-      <div className="text-center space-y-1 pt-2">
-        <h1 className="text-3xl font-extrabold text-foreground">
+      <div className="space-y-1 mb-2">
+        <h1 className="text-2xl font-bold text-slate-900">
           Olá, {displayName}! 👋
         </h1>
-        <p className="text-muted-foreground text-sm">
+        <p className="text-sm text-slate-500">
           Confira suas tarefas e treinos delegados.
         </p>
       </div>
@@ -108,12 +108,12 @@ export function CollaboratorDashboard() {
 
       {/* Next Session Widget */}
       {nextSession ? (
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-          <p className="text-xs font-bold text-orange-500 uppercase tracking-wider">
+        <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
             Próxima Sessão
           </p>
           <div className="flex items-center justify-between mt-1">
-            <p className="text-lg font-bold text-foreground">
+            <p className="text-lg font-bold text-slate-900">
               {nextSession.studentName}
             </p>
             <Link
@@ -129,8 +129,8 @@ export function CollaboratorDashboard() {
           </p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm text-center">
-          <p className="text-xs font-bold text-orange-500 uppercase tracking-wider mb-1">
+        <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5 text-center">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
             Próxima Sessão
           </p>
           <p className="text-sm text-muted-foreground">
@@ -140,31 +140,31 @@ export function CollaboratorDashboard() {
       )}
 
       {/* Gamification Card — minimal white */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
+      <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-orange-500 shrink-0">
             <Flame className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="font-bold text-foreground">Ofensiva de Aulas!</h3>
-            <p className="text-sm text-muted-foreground">
+            <h3 className="font-bold text-slate-900">Ofensiva de Aulas!</h3>
+            <p className="text-sm text-slate-500">
               {weekCount || 0} {(weekCount || 0) === 1 ? 'sessão concluída' : 'sessões concluídas'} esta semana
             </p>
           </div>
         </div>
-        <Button
-          size="sm"
-          className="mt-4 w-full font-semibold text-sm bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+        <button
+          type="button"
+          className="mt-4 w-full inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl py-3 px-4 transition-all active:scale-[0.99]"
         >
-          <Share2 className="w-4 h-4 mr-1.5" />
+          <Share2 className="w-4 h-4" />
           Compartilhar Impacto
-        </Button>
+        </button>
       </div>
 
       {/* Privacy notice */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
-        <h3 className="text-base font-bold text-foreground mb-1">🔒 Privacidade</h3>
-        <p className="text-xs text-muted-foreground leading-relaxed">
+      <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-5">
+        <h3 className="text-base font-bold text-slate-900 mb-1">🔒 Privacidade</h3>
+        <p className="text-xs text-slate-500 leading-relaxed">
           Por questões de privacidade, você só tem acesso aos treinos especificamente
           delegados a você pelo administrador.
         </p>
