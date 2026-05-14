@@ -130,13 +130,13 @@ export function StudentDashboard() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in pb-24">
+    <div className="flex flex-col gap-4 animate-fade-in pb-24">
       {/* a) Welcome */}
-      <div className="space-y-1">
-        <h1 className="font-display text-3xl text-foreground">
+      <div className="space-y-1 mb-2">
+        <h1 className="text-2xl font-bold text-slate-900">
           Olá, {profile?.name?.split(' ')[0] || 'Aluno'}! 👋
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm text-slate-500">
           Pronto para mais um treino?
         </p>
       </div>
@@ -144,7 +144,7 @@ export function StudentDashboard() {
       {/* b) Quick Action CTA — Agendar Novo Treino (flat, minimal) */}
       <Link
         to="/dashboard/agendar"
-        className="w-full inline-flex items-center justify-center gap-2 h-12 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-semibold transition-colors active:scale-[0.99]"
+        className="w-full inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl py-3 px-4 transition-all active:scale-[0.99]"
       >
         <Dumbbell className="w-5 h-5" />
         Agendar Novo Treino
