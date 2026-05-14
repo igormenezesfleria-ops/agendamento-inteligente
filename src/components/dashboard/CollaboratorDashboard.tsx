@@ -1,7 +1,6 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
 import { Calendar, Flame, Share2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CheckinQueue } from '@/components/dashboard/CheckinQueue';
