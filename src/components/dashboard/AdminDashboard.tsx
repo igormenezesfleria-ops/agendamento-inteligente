@@ -201,31 +201,31 @@ export function AdminDashboard() {
   );
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-full overflow-hidden pb-4">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold text-foreground">
+    <div className="flex flex-col gap-4 animate-fade-in max-w-full overflow-hidden pb-24">
+      <div className="space-y-1 mb-2">
+        <h1 className="text-2xl font-bold text-slate-900">
           Olá, {(() => {
             const raw = profile?.name?.split(' ')[0] || 'Igor';
             return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
           })()}! 👋
         </h1>
-        <p className="text-sm text-muted-foreground capitalize">{todayFormatted}</p>
+        <p className="text-sm text-slate-500 capitalize">{todayFormatted}</p>
       </div>
 
       {/* Check-in Validation Queue */}
       <CheckinQueue />
 
       {/* Próximo Agendamento (Priority #1) */}
-      <Card className="border-accent/30">
-        <CardContent className="p-4">
+      <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
+        <CardContent className="p-5">
           {nextAppointment ? (
             <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-accent" />
+              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-orange-500" />
               </div>
               <div className="flex-1 min-w-0 space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Próximo Agendamento</p>
-                <p className="text-base font-bold text-foreground">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Próximo Agendamento</p>
+                <p className="text-base font-bold text-slate-900">
                   {nextAppointment.dateLabel}, {nextAppointment.time}
                 </p>
                 <div className="flex flex-col gap-0.5">
@@ -242,11 +242,11 @@ export function AdminDashboard() {
             </div>
           ) : (
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-accent/15 flex items-center justify-center shrink-0">
-                <Zap className="w-5 h-5 text-accent" />
+              <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+                <Zap className="w-5 h-5 text-orange-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-foreground">Sem mais treinos agendados!</p>
+                <p className="text-sm font-bold text-slate-900">Sem mais treinos agendados!</p>
                 <p className="text-xs text-muted-foreground">Dia de descanso! 💪</p>
               </div>
             </div>
@@ -257,23 +257,23 @@ export function AdminDashboard() {
       {/* Solicitações Pendentes — smart empty state */}
       {pendingCount > 0 ? (
         <Link to="/dashboard/solicitacoes">
-          <Card className="bg-orange-50 dark:bg-orange-950/30 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98] border-orange-200 dark:border-orange-800/40">
-            <CardContent className="p-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-orange-100 dark:bg-orange-900/40">
-                <Bell className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+          <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl border-l-4 border-l-orange-500 hover:shadow-md transition-shadow cursor-pointer active:scale-[0.98]">
+            <CardContent className="p-5 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-orange-50">
+                <Bell className="w-5 h-5 text-orange-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                <p className="text-sm font-bold text-slate-900">
                   {pendingCount} Solicitações Pendentes
                 </p>
-                <p className="text-xs text-orange-500/70 dark:text-orange-400/60">Toque para revisar</p>
+                <p className="text-xs text-slate-500">Toque para revisar</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-orange-400 shrink-0" />
+              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
             </CardContent>
           </Card>
         </Link>
       ) : (
-        <div className="py-2 px-4 rounded-lg bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 flex items-center justify-center gap-2 text-sm font-medium w-full">
+        <div className="bg-white border border-slate-100 shadow-sm rounded-2xl p-4 flex items-center justify-center gap-2 text-sm font-medium text-emerald-600">
           <CheckCircle2 className="w-4 h-4" />
           Tudo em dia! Sem pendências.
         </div>
@@ -283,16 +283,18 @@ export function AdminDashboard() {
       <button
         type="button"
         onClick={() => setShowImpact(true)}
-        className="w-full flex items-center justify-between p-4 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/40 hover:bg-orange-100/70 dark:hover:bg-orange-950/40 transition-colors active:scale-[0.99]"
+        className="w-full flex items-center justify-between p-5 rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all active:scale-[0.99]"
       >
         <div className="flex items-center gap-3 min-w-0">
-          <BarChart3 className="w-5 h-5 text-orange-500 shrink-0" />
+          <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
+            <BarChart3 className="w-5 h-5 text-orange-500" />
+          </div>
           <div className="text-left min-w-0">
-            <p className="text-sm font-semibold text-foreground truncate">Resumo da Semana</p>
-            <p className="text-xs text-muted-foreground truncate">Compartilhe no Instagram</p>
+            <p className="text-sm font-semibold text-slate-900 truncate">Resumo da Semana</p>
+            <p className="text-xs text-slate-500 truncate">Compartilhe no Instagram</p>
           </div>
         </div>
-        <span className="w-8 h-8 rounded-full border border-orange-200 dark:border-orange-900/60 text-orange-500 flex items-center justify-center shrink-0">
+        <span className="w-8 h-8 rounded-full border border-orange-200 text-orange-500 flex items-center justify-center shrink-0">
           <Share2 className="w-4 h-4" />
         </span>
       </button>
@@ -301,28 +303,24 @@ export function AdminDashboard() {
 
       {/* Radar de Retenção */}
       <Card className={cn(
-        'border',
-        inactiveCount > 0
-          ? 'border-rose-200 dark:border-rose-900/40 bg-rose-50/70 dark:bg-rose-950/20'
-          : 'border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/70 dark:bg-emerald-950/20'
+        'bg-white border border-slate-100 shadow-sm rounded-2xl',
+        inactiveCount > 0 && 'border-l-4 border-l-rose-500'
       )}>
-        <CardContent className="p-4 flex items-center gap-4">
+        <CardContent className="p-5 flex items-center gap-4">
           <div className={cn(
             'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
-            inactiveCount > 0
-              ? 'bg-rose-100 dark:bg-rose-900/40 text-rose-600 dark:text-rose-400'
-              : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400'
+            inactiveCount > 0 ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'
           )}>
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Radar de Retenção</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Radar de Retenção</p>
             {inactiveCount > 0 ? (
-              <p className="text-sm font-bold text-rose-700 dark:text-rose-300">
+              <p className="text-sm font-bold text-rose-600">
                 {inactiveCount} {inactiveCount === 1 ? 'aluno inativo' : 'alunos inativos'} há mais de 7 dias
               </p>
             ) : (
-              <p className="text-sm font-bold text-emerald-700 dark:text-emerald-300">
+              <p className="text-sm font-bold text-emerald-600">
                 Todos os alunos ativos esta semana 🎯
               </p>
             )}
@@ -332,7 +330,7 @@ export function AdminDashboard() {
               size="sm"
               variant="outline"
               onClick={() => setShowRetention(true)}
-              className="border-rose-300 text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:text-rose-300 shrink-0"
+              className="border border-orange-200 text-orange-600 bg-transparent rounded-xl hover:bg-orange-50 shrink-0"
             >
               Ver Alunos
             </Button>
@@ -342,18 +340,20 @@ export function AdminDashboard() {
 
       {/* Ações Rápidas */}
       <div className="grid grid-cols-2 gap-3">
-        <Button asChild size="lg" className="h-12 font-semibold bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-none">
-          <Link to="/dashboard/meus-alunos">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Novo Aluno
-          </Link>
-        </Button>
-        <Button asChild size="lg" variant="outline" className="h-12 font-semibold rounded-xl border border-slate-200 text-orange-600 bg-white hover:bg-orange-50 shadow-none">
-          <Link to="/dashboard/admin/financeiro">
-            <Wallet className="w-4 h-4 mr-2" />
-            Financeiro
-          </Link>
-        </Button>
+        <Link
+          to="/dashboard/meus-alunos"
+          className="inline-flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-xl py-3 px-4 transition-all active:scale-[0.99]"
+        >
+          <UserPlus className="w-4 h-4" />
+          Novo Aluno
+        </Link>
+        <Link
+          to="/dashboard/admin/financeiro"
+          className="inline-flex items-center justify-center gap-2 border border-orange-200 text-orange-600 bg-transparent hover:bg-orange-50 font-semibold rounded-xl py-3 px-4 transition-all active:scale-[0.99]"
+        >
+          <Wallet className="w-4 h-4" />
+          Financeiro
+        </Link>
       </div>
 
       {/* Painel de Retenção */}
