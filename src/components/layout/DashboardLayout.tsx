@@ -35,7 +35,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const navItems = getNavItems(role);
 
   return (
-    <div className="min-h-screen bg-background w-full overflow-x-hidden">
+    <div className="flex flex-col h-[100dvh] bg-background w-full overflow-hidden">
       {/* Mobile header — light theme, expanded for premium logo presence */}
       <header className="lg:hidden sticky top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm print:hidden">
         <div className="flex items-center justify-between px-4 py-4 min-h-[80px] bg-transparent">
@@ -174,9 +174,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Bottom Tab Bar */}
       <BottomTabBar />
 
-      {/* Main content */}
-      <main className="lg:ml-64 lg:pt-0 min-h-screen w-full overflow-x-hidden print:ml-0 print:pt-0">
-        <div className="p-4 md:p-8 pb-24 lg:pb-8 print:p-4 print:pb-4 max-w-lg mx-auto lg:max-w-4xl">{children}</div>
+      {/* Main content — scrollable area, leaves room for bottom nav */}
+      <main className="flex-1 lg:ml-64 w-full overflow-y-auto overflow-x-hidden print:ml-0 print:pt-0">
+        <div className="p-4 md:p-8 pb-[calc(80px+env(safe-area-inset-bottom))] lg:pb-8 print:p-4 print:pb-4 max-w-lg mx-auto lg:max-w-4xl">
+          {children}
+        </div>
       </main>
     </div>
   );
