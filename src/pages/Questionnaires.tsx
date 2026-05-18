@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ClipboardList, Eye, TrendingUp } from 'lucide-react';
+import { ClipboardList, Eye, TrendingUp, Heart } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Json } from '@/integrations/supabase/types';
@@ -62,17 +62,29 @@ export default function Questionnaires() {
     enabled: !!user?.id,
   });
 
-  // Hooper chart data
+  // Hooper chart data — sorted chronologically, with explicit timestamp for axis
   const hooperData = (questionnaires || [])
     .filter((q) => q.type === 'HOOPER')
-    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     .map((q) => {
-      const score = q.result_score ? parseInt(q.result_score.split('/')[0]) : 0;
+      const ts = new Date(q.created_at).getTime();
+      const raw = q.result_score ? parseInt(String(q.result_score).split('/')[0], 10) : 0;
       return {
-        date: format(parseISO(q.created_at), 'dd/MM', { locale: ptBR }),
-        score,
+        ts,
+        dateLabel: format(parseISO(q.created_at), 'dd/MM', { locale: ptBR }),
+        score: Number.isFinite(raw) ? raw : 0,
       };
-    });
+    })
+    .filter((d) => d.score > 0)
+    .sort((a, b) => a.ts - b.ts);
+
+  // Recovery trend analysis based on the last 3 Hooper scores
+  const recentScores = hooperData.slice(-3).map((d) => d.score);
+  const recoveryStatus: 'Boa' | 'Alerta' | null =
+    recentScores.length >= 2
+      ? recentScores[recentScores.length - 1] <= recentScores[0]
+        ? 'Boa'
+        : 'Alerta'
+      : null;
 
   const getStudentName = (studentId: string) => {
     if (!isAdmin) return profile?.name || 'Você';
@@ -227,8 +239,8 @@ export default function Questionnaires() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={hooperData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="date" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                    <YAxis domain={[4, 28]} className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <XAxis dataKey="dateLabel" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis domain={[4, 28]} allowDecimals={false} className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
                     <Tooltip
                       contentStyle={{
                         backgroundColor: 'hsl(var(--card))',
@@ -245,9 +257,39 @@ export default function Questionnaires() {
                       strokeWidth={2}
                       dot={{ fill: 'hsl(var(--primary))', r: 4 }}
                       activeDot={{ r: 6 }}
+                      isAnimationActive={false}
+                      connectNulls
                     />
                   </LineChart>
                 </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Health Insight Card */}
+        {recoveryStatus && (
+          <Card className="bg-white border border-slate-100 shadow-sm rounded-2xl">
+            <CardContent className="p-5">
+              <div className="flex items-start gap-3">
+                <div className={cn(
+                  'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+                  recoveryStatus === 'Boa' ? 'bg-emerald-50' : 'bg-amber-50'
+                )}>
+                  <Heart className={cn('w-5 h-5', recoveryStatus === 'Boa' ? 'text-emerald-600' : 'text-amber-600')} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                    Análise Geral de Saúde
+                  </p>
+                  <p className="text-sm text-slate-700">
+                    Tendência de Recuperação:{' '}
+                    <strong className={recoveryStatus === 'Boa' ? 'text-emerald-600' : 'text-amber-600'}>
+                      {recoveryStatus}
+                    </strong>{' '}
+                    — Baseado nas últimas {recentScores.length} avaliações.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
