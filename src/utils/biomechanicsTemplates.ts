@@ -270,6 +270,72 @@ export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
         coachMessage: '🚨 Trave o cotovelo no corpo! Não balance.',
         affectedSegments: ['left_arm', 'right_arm'],
       },
+      {
+        id: 'elbow_drift_forward',
+        name: 'Cotovelo Avançando',
+        type: 'Z_X_OSCILLATION',
+        joints: ['ELBOW', 'HIP'],
+        maxOscillationPercent: 12,
+        coachMessage: '🚨 Cotovelo avançando (Roubo de Ombro)! Mantenha-o colado ao tronco.',
+        affectedSegments: ['left_arm', 'right_arm'],
+      },
+      {
+        id: 'body_swing',
+        name: 'Balanço do Tronco',
+        type: 'Z_X_OSCILLATION',
+        joints: ['SHOULDER', 'HIP'],
+        maxOscillationPercent: 10,
+        coachMessage: '🚨 Balanço do tronco! Estabilize o core e evite usar impulso.',
+        affectedSegments: ['spine'],
+      },
+    ],
+  },
+
+  TRICEPS_PUSHDOWN: {
+    name: 'Tríceps na Polia / Corda',
+    errors: [
+      {
+        id: 'elbow_unstable',
+        name: 'Cotovelo Instável',
+        type: 'Z_X_OSCILLATION',
+        joints: ['ELBOW', 'HIP'],
+        maxOscillationPercent: 10,
+        coachMessage: '🚨 Movimentando o cotovelo! Pino-o ao lado do corpo.',
+        affectedSegments: ['left_arm', 'right_arm'],
+      },
+      {
+        id: 'scapular_shrug',
+        name: 'Elevação Escapular',
+        type: 'Y_AXIS_COMPARE',
+        joints: ['SHOULDER', 'EAR'],
+        threshold: 'SHOULDER_APPROACHING_EAR',
+        coachMessage: '🚨 Elevando as escápulas (Tensão no Trapézio)! Ombros para baixo.',
+        affectedSegments: ['left_arm', 'right_arm', 'spine'],
+      },
+    ],
+  },
+
+  OVERHEAD_PRESS: {
+    name: 'Desenvolvimento (Overhead Press)',
+    errors: [
+      {
+        id: 'lumbar_hyperextension',
+        name: 'Hiperextensão Lombar',
+        type: 'ANGLE_3D',
+        joints: ['EAR', 'SHOULDER', 'HIP'],
+        minSafeAngle: 160,
+        coachMessage: '🚨 Hiperextensão Lombar! Contraia o abdômen e mantenha o tronco neutro.',
+        affectedSegments: ['spine'],
+      },
+      {
+        id: 'pushing_forward',
+        name: 'Empurrando para Frente',
+        type: 'Z_X_OSCILLATION',
+        joints: ['WRIST', 'SHOULDER'],
+        maxOscillationPercent: 15,
+        coachMessage: '🚨 Empurrando para frente! Suba a carga na vertical, alinhada ao ombro.',
+        affectedSegments: ['left_arm', 'right_arm'],
+      },
     ],
   },
 };
