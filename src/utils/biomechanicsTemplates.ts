@@ -77,6 +77,15 @@ export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
         coachMessage: 'Tronco inclinando demais! Peito para cima, olhe para frente.',
         affectedSegments: ['spine'],
       },
+      {
+        id: 'torso_collapse',
+        name: 'Tronco Caindo',
+        type: 'ANGLE_3D',
+        joints: ['SHOULDER', 'HIP', 'KNEE'],
+        minSafeAngle: 50,
+        coachMessage: '🚨 Tronco caindo! Mantenha o peito alto e a coluna neutra.',
+        affectedSegments: ['spine', 'hip'],
+      },
     ],
   },
 
