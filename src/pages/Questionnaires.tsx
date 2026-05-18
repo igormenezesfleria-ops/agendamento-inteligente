@@ -14,6 +14,7 @@ import { ClipboardList, Eye, TrendingUp, Heart } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import type { Json } from '@/integrations/supabase/types';
+import { cn } from '@/lib/utils';
 
 export default function Questionnaires() {
   const { user, profile } = useAuth();
