@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, PlayCircle, Camera, X, Dumbbell, CheckCircle2 } from 'lucide-react';
+import { Loader2, PlayCircle, Camera, X, Dumbbell, CheckCircle2, History } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Drawer,
@@ -13,6 +13,7 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer';
 import { VideoModal } from './VideoModal';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -67,11 +68,11 @@ export function ActiveWorkoutCard() {
     enabled: !!user?.id,
   });
 
-  // Fetch the latest known load per exercise (so input pre-fills with previous weight)
-  const { data: latestLoads } = useQuery({
-    queryKey: ['latest-loads', user?.id, workout?.id],
+  // Fetch full load history per exercise (so input pre-fills with last weight and we can show history)
+  const { data: loadHistory } = useQuery({
+    queryKey: ['load-history', user?.id, workout?.id],
     queryFn: async () => {
-      if (!workout?.exercises?.length) return {} as Record<string, number>;
+      if (!workout?.exercises?.length) return {} as Record<string, Array<{ load: number; date: string }>>;
       const ids = workout.exercises.map((e) => e.id);
       const { data, error } = await supabase
         .from('workout_session_loads')
@@ -80,14 +81,22 @@ export function ActiveWorkoutCard() {
         .in('exercise_id', ids)
         .order('session_date', { ascending: false });
       if (error) throw error;
-      const map: Record<string, number> = {};
+      const map: Record<string, Array<{ load: number; date: string }>> = {};
       for (const row of (data || []) as any[]) {
-        if (map[row.exercise_id] === undefined) map[row.exercise_id] = Number(row.load_kg);
+        if (!map[row.exercise_id]) map[row.exercise_id] = [];
+        map[row.exercise_id].push({ load: Number(row.load_kg), date: row.session_date });
       }
       return map;
     },
     enabled: !!user?.id && !!workout?.id,
   });
+
+  const latestLoads: Record<string, number> = {};
+  if (loadHistory) {
+    for (const [k, arr] of Object.entries(loadHistory)) {
+      if (arr.length > 0) latestLoads[k] = arr[0].load;
+    }
+  }
 
   // Pre-populate input state when latest loads or workout changes
   useEffect(() => {
@@ -96,13 +105,13 @@ export function ActiveWorkoutCard() {
       const next = { ...prev };
       for (const ex of workout.exercises) {
         if (next[ex.id] === undefined) {
-          const last = latestLoads?.[ex.id];
+          const last = loadHistory?.[ex.id]?.[0]?.load;
           next[ex.id] = last !== undefined ? String(last) : '';
         }
       }
       return next;
     });
-  }, [workout?.id, latestLoads]);
+  }, [workout?.id, loadHistory]);
 
   const completeMutation = useMutation({
     mutationFn: async () => {
@@ -122,7 +131,7 @@ export function ActiveWorkoutCard() {
     },
     onSuccess: () => {
       toast.success('Treino salvo! Cargas registradas.');
-      qc.invalidateQueries({ queryKey: ['latest-loads'] });
+      qc.invalidateQueries({ queryKey: ['load-history'] });
       setDrawerOpen(false);
     },
     onError: () => toast.error('Erro ao salvar cargas do treino.'),
@@ -255,8 +264,35 @@ export function ActiveWorkoutCard() {
                         placeholder="0"
                         className="w-20 h-9 px-2.5 rounded-lg bg-muted/50 border border-border/60 text-sm font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                       />
-                      {latestLoads?.[ex.id] !== undefined && (
-                        <span className="text-[10px] text-muted-foreground">últ.: {latestLoads[ex.id]}kg</span>
+                      {loadHistory?.[ex.id] && loadHistory[ex.id].length > 0 && (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              aria-label="Histórico de cargas"
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-full text-muted-foreground hover:text-accent hover:bg-accent/10 transition-colors"
+                            >
+                              <History className="w-4 h-4" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="end" className="w-52 p-3">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                              Últimas cargas
+                            </p>
+                            <ul className="space-y-1.5">
+                              {loadHistory[ex.id].slice(0, 3).map((entry, idx) => {
+                                const [y, m, d] = entry.date.split('-').map(Number);
+                                const label = format(new Date(y, m - 1, d), 'dd/MM', { locale: ptBR });
+                                return (
+                                  <li key={idx} className="flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground">{label}</span>
+                                    <span className="font-semibold text-foreground">{entry.load}kg</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </PopoverContent>
+                        </Popover>
                       )}
                     </div>
                   </div>
