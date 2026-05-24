@@ -444,14 +444,21 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           let hipAngle = Math.abs((angle1 - angle2) * (180 / Math.PI));
           if (hipAngle > 180) hipAngle = 360 - hipAngle;
 
-          plankHipAngle = hipAngle;
+          // Moving-average smoothing (Phase 29.1) — push raw angle into a
+          // rolling window and compute the mean. Only the smoothed value
+          // drives the violation state, killing per-frame jitter.
+          const history = plankAngleHistoryRef.current;
+          history.push(hipAngle);
+          if (history.length > PLANK_SMOOTHING_WINDOW) history.shift();
+          const smoothedAngle =
+            history.reduce((s, v) => s + v, 0) / history.length;
+
+          plankHipAngle = smoothedAngle;
           plankActiveSide = useLeft ? 'left' : 'right';
 
-          if (hipAngle < 155) {
+          // Misaligned iff smoothed deviation from 180° exceeds 15°.
+          if (Math.abs(180 - smoothedAngle) > 15) {
             plankSeverity = 'critical';
-            plankViolation = true;
-          } else if (hipAngle < 165) {
-            plankSeverity = 'warning';
             plankViolation = true;
           }
 
