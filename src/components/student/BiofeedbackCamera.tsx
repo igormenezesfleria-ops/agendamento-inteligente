@@ -101,6 +101,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   // frame by analyzeAndDraw and consumed by the HUD branch below so the banner
   // and the red skeleton segment are guaranteed to stay in sync.
   const curlIsMisalignedRef = useRef(false);
+  // Single source of truth for the Plank 2D alignment zone — set every frame
+  // by analyzeAndDraw and consumed by the HUD branch so the banner and the red
+  // skeleton segments stay in perfect sync. Tolerance: 160°–200° at the hip.
+  const plankIsMisalignedRef = useRef(false);
 
   // Generic rep tracker — kept for rep counting only. Cadence/eccentric-speed
   // warnings were intentionally removed (Phase 28.5) so the Biceps/Triceps HUD
