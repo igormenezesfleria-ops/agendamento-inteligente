@@ -101,11 +101,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   // frame by analyzeAndDraw and consumed by the HUD branch below so the banner
   // and the red skeleton segment are guaranteed to stay in sync.
   const curlIsMisalignedRef = useRef(false);
-  // Single source of truth for the Plank 2D alignment zone — set every frame
-  // by analyzeAndDraw and consumed by the HUD branch so the banner and the red
-  // skeleton segments stay in perfect sync. Strict tolerance: 10° deviation from
-  // the horizontal 180° line.
-  const plankIsMisalignedRef = useRef(false);
 
   // Generic rep tracker — kept for rep counting only. Cadence/eccentric-speed
   // warnings were intentionally removed (Phase 28.5) so the Biceps/Triceps HUD
@@ -412,13 +407,13 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         activeTemplate?.errors.some(e => e.id === 'hip_sag') ||
         activeTemplate?.errors.some(e => e.id === 'hip_pike');
       let plankViolation = false;
+      let plankSeverity: 'none' | 'warning' | 'critical' = 'none';
       let plankHipAngle: number | null = null;
       let plankActiveSide: 'left' | 'right' | null = null;
+      let plankCoachMessage: string | null = null;
       const plankBadLandmarks = new Set<number>();
 
       if (isPlankTemplate) {
-        // Reset every frame — strict 10° deviation from the horizontal 180° line.
-        plankIsMisalignedRef.current = false;
         // Determine active side by visibility score
         const leftVis =
           (landmarks[LANDMARKS.LEFT_SHOULDER]?.visibility ?? 0) +
@@ -448,22 +443,37 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           plankHipAngle = hipAngle;
           plankActiveSide = useLeft ? 'left' : 'right';
 
-          // Phase 29 — Rigor: deviation from horizontal must be <= 10°
-          if (Math.abs(180 - hipAngle) > 10) {
+          if (hipAngle < 155) {
+            plankSeverity = 'critical';
             plankViolation = true;
-            plankIsMisalignedRef.current = true;
+          } else if (hipAngle < 165) {
+            plankSeverity = 'warning';
+            plankViolation = true;
+          }
 
-            // Mark Shoulder→Hip and Hip→Ankle segments red on the active side
-            if (useLeft) {
-              [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_ANKLE].forEach(i => plankBadLandmarks.add(i));
+          // Determine directional message based on hip position
+          if (plankViolation) {
+            const midY = (shoulder.y + ankle.y) / 2;
+            if (hip.y < midY) {
+              // HIP PIKING (Too High) - lower y value means higher on screen
+              plankCoachMessage = '🚨 Quadril muito alto! Alinhe mais o quadril com o corpo.';
             } else {
-              [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_ANKLE].forEach(i => plankBadLandmarks.add(i));
+              // HIP SAGGING (Too Low)
+              plankCoachMessage = '🚨 Quadril caindo! Contraia o glúteo e o abdômen.';
+            }
+
+            // Only mark the active side's landmarks
+            if (useLeft) {
+              [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
+            } else {
+              [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
             }
           }
         }
       }
 
-      // Store curl message in ref for access in onResults callback
+      // Store plank message in ref for access in onResults callback
+      plankCoachMessageRef.current = plankCoachMessage;
       curlCoachMessageRef.current = curlCoachMessage;
 
       // Valgus & Varus detection (independent, both can fire simultaneously)
@@ -546,6 +556,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         }
         const isBad = badLandmarks.has(start) && badLandmarks.has(end);
         if (!isBad) return '#22c55e';
+        if (isPlankTemplate && plankSeverity === 'warning') return '#f59e0b';
         return '#ef4444';
       };
 
@@ -595,7 +606,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             ? (index === curlBadConnection[0] || index === curlBadConnection[1])
             : false;
         }
-        const color = isBad ? '#ef4444' : '#22c55e';
+        const color = isBad
+          ? (isPlankTemplate && plankSeverity === 'warning' ? '#f59e0b' : '#ef4444')
+          : '#22c55e';
         ctx.beginPath();
         ctx.arc(point.x * width, point.y * height, 6, 0, Math.PI * 2);
         ctx.fillStyle = color;
@@ -634,7 +647,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       // Plank hip angle label on the active side
       if (isPlankTemplate && plankHipAngle !== null && plankActiveSide) {
         const hipIdx = plankActiveSide === 'left' ? LANDMARKS.LEFT_HIP : LANDMARKS.RIGHT_HIP;
-        drawAngleLabel(hipIdx, plankHipAngle, plankViolation);
+        drawAngleLabel(hipIdx, plankHipAngle, plankViolation, plankSeverity === 'warning');
       }
 
       // Curl arm angle label on the active side
@@ -807,15 +820,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
                 e.id === 'elbow_unstable',
             );
 
-          // Plank HUD is also driven exclusively by the local 2D alignment
-          // boolean (`plankIsMisalignedRef`) so the banner stays in lock-step
-          // with the red skeleton segments. Skip evaluateFrame for plank too.
-          const isPlankActive = !!activeTemplate?.errors.some(
-            (e) => e.id === 'plank_alignment' || e.id === 'hip_sag' || e.id === 'hip_pike',
-          );
-
-          // Run the biomechanics engine if a template is active (skipped for curl/triceps and plank)
-          const warnings = (isCurlOrTriceps || isPlankActive) ? [] : evaluateFrame(landmarks, activeTemplate);
+          // Run the biomechanics engine if a template is active (skipped for curl/triceps)
+          const warnings = isCurlOrTriceps ? [] : evaluateFrame(landmarks, activeTemplate);
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
@@ -844,16 +850,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             } else {
               setStatus('good');
               setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
-            }
-          } else if (isPlankActive) {
-            // Plank: HUD is STRICTLY mirrored from `plankIsMisalignedRef`.
-            // Same boolean drives the red Shoulder→Hip and Hip→Ankle segments.
-            if (plankIsMisalignedRef.current) {
-              setStatus('warning');
-              setStatusText('⚠️ Quadril desalinhado! Ajuste a postura.');
-            } else {
-              setStatus('good');
-              setStatusText('✅ Prancha: Forma Excelente');
             }
           } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
