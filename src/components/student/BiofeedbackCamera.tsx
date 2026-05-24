@@ -97,6 +97,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const fallbackBlinkRef = useRef(false);
   const plankCoachMessageRef = useRef<string | null>(null);
   const curlCoachMessageRef = useRef<string | null>(null);
+  // Phase 29.1 — Plank smoothing: moving-average window over the last
+  // 10 frames (~300ms @30fps) eliminates jitter while static.
+  const plankAngleHistoryRef = useRef<number[]>([]);
+  const PLANK_SMOOTHING_WINDOW = 10;
   // Single source of truth for the Biceps/Triceps 2D Stability Zone — set every
   // frame by analyzeAndDraw and consumed by the HUD branch below so the banner
   // and the red skeleton segment are guaranteed to stay in sync.
