@@ -74,11 +74,13 @@ export function SyntonConsultantModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-[200] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+      style={{ pointerEvents: 'auto' }}
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl"
+        className="pointer-events-auto w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl"
+        style={{ pointerEvents: 'auto' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between">
