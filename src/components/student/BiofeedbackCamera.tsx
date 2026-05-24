@@ -822,8 +822,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
                 e.id === 'elbow_unstable',
             );
 
-          // Run the biomechanics engine if a template is active (skipped for curl/triceps)
-          const warnings = isCurlOrTriceps ? [] : evaluateFrame(landmarks, activeTemplate);
+          // Plank HUD is also driven exclusively by the local 2D alignment
+          // boolean (`plankIsMisalignedRef`) so the banner stays in lock-step
+          // with the red skeleton segments. Skip evaluateFrame for plank too.
+          const isPlankActive = !!activeTemplate?.errors.some(
+            (e) => e.id === 'plank_alignment' || e.id === 'hip_sag' || e.id === 'hip_pike',
+          );
+
+          // Run the biomechanics engine if a template is active (skipped for curl/triceps and plank)
+          const warnings = (isCurlOrTriceps || isPlankActive) ? [] : evaluateFrame(landmarks, activeTemplate);
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
@@ -849,6 +856,20 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             if (curlIsMisalignedRef.current) {
               setStatus('warning');
               setStatusText('⚠️ Alinhe o cotovelo ao tronco');
+            } else {
+              setStatus('good');
+              setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
+            }
+          } else if (isPlankActive) {
+            // Plank: HUD is STRICTLY mirrored from `plankIsMisalignedRef`.
+            // Same boolean drives the red Shoulder→Hip and Hip→Ankle segments.
+            if (plankIsMisalignedRef.current) {
+              setStatus('warning');
+              setStatusText(
+                plankCoachMessageRef.current
+                  ? `⚠️ ${plankCoachMessageRef.current}`
+                  : '⚠️ Alinhe ombro-quadril-tornozelo',
+              );
             } else {
               setStatus('good');
               setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
