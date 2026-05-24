@@ -97,6 +97,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const fallbackBlinkRef = useRef(false);
   const plankCoachMessageRef = useRef<string | null>(null);
   const curlCoachMessageRef = useRef<string | null>(null);
+  // Single source of truth for the Biceps/Triceps 2D Stability Zone — set every
+  // frame by analyzeAndDraw and consumed by the HUD branch below so the banner
+  // and the red skeleton segment are guaranteed to stay in sync.
+  const curlIsMisalignedRef = useRef(false);
 
   // Generic rep/cadence tracker — shared utility, any exercise module can drive it.
   const repTrackerRef = useRef<RepTrackerState>(
@@ -322,6 +326,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let curlArmAngle: number | null = null;
 
       if (isCurlTemplate) {
+        // Default: assume aligned this frame. Will flip to true only if the
+        // stability angle exceeds 15°.
+        curlIsMisalignedRef.current = false;
         // Step 1: Determine active side by visibility (shoulder + hip + elbow + wrist)
         const leftVis =
           (landmarks[LANDMARKS.LEFT_SHOULDER]?.visibility ?? 0) +
@@ -341,8 +348,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         const wristIdx = useLeft ? LANDMARKS.LEFT_WRIST : LANDMARKS.RIGHT_WRIST;
         curlActiveSide = useLeft ? 'left' : 'right';
 
-        // Step 2: Extract 2D coords (ignore Z) for Shoulder, Hip and Elbow on active side
-        if (isVisible(shoulderIdx) && isVisible(elbowIdx) && isVisible(hipIdx)) {
+        // Step 2: Extract 2D coords (ignore Z) for Shoulder, Hip and Elbow on active side.
+        // Use a permissive visibility gate (0.3) — front-facing torso often has
+        // lower hip visibility and we still want the stability zone to evaluate.
+        const visOk = (i: number) => (landmarks[i]?.visibility ?? 0) > 0.3;
+        if (visOk(shoulderIdx) && visOk(elbowIdx) && visOk(hipIdx)) {
           const s = landmarks[shoulderIdx];
           const h = landmarks[hipIdx];
           const e = landmarks[elbowIdx];
@@ -363,6 +373,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           // Step 4: Trigger if Torso↔UpperArm angle exceeds 15° tolerance
           if (stabilityAngle > 15) {
             curlViolation = true;
+            curlIsMisalignedRef.current = true;
             curlCoachMessage = '⚠️ Alinhe o cotovelo ao tronco';
 
             // Mark ONLY the Shoulder-Elbow CONNECTION of active side
@@ -375,7 +386,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
           // Step 5: Drive the generic Rep & Cadence tracker (forearm angle = S-E-W).
           // Only count this rep as valid if the stability zone was maintained.
-          if (isVisible(wristIdx)) {
+          if (visOk(wristIdx)) {
             const w = landmarks[wristIdx];
             const v1x = s.x - e.x, v1y = s.y - e.y;
             const v2x = w.x - e.x, v2y = w.y - e.y;
@@ -852,10 +863,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           if (cadenceActiveRef.current) {
             setStatus('warning');
             setStatusText('⚠️ Controle a descida (mínimo 1s)!');
-          } else if (isCurlOrTriceps && curlCoachMessageRef.current) {
-            // Curl/Triceps: HUD reflects current-frame stability zone only.
-            setStatus('warning');
-            setStatusText(curlCoachMessageRef.current);
+          } else if (isCurlOrTriceps) {
+            // Curl/Triceps: HUD is STRICTLY mirrored from the per-frame
+            // `isMisaligned` boolean computed by analyzeAndDraw. Same condition
+            // also drives the red Shoulder→Elbow skeleton segment.
+            if (curlIsMisalignedRef.current) {
+              setStatus('warning');
+              setStatusText('⚠️ Alinhe o cotovelo ao tronco');
+            } else {
+              setStatus('good');
+              setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
+            }
           } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
