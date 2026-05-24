@@ -230,7 +230,11 @@ export function ActiveWorkoutCard() {
                           )}
                           {ex.ai_enabled && ex.movement_pattern && (
                             <button
-                              onClick={() => {
+                              type="button"
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
                                 setConsultantTarget({
                                   movementPattern: ex.movement_pattern as string,
                                   selectedErrors: ex.selected_errors || [],
