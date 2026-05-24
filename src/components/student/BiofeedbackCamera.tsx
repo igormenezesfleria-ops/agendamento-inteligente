@@ -679,6 +679,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     cancelAnimationFrame(rafRef.current);
     if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
     if (fallbackIntervalRef.current) window.clearInterval(fallbackIntervalRef.current);
+    if (cadenceTimeoutRef.current) window.clearTimeout(cadenceTimeoutRef.current);
+    cadenceActiveRef.current = false;
+    setCadenceWarning(false);
 
     aiReadyRef.current = false;
     simulationModeRef.current = false;
