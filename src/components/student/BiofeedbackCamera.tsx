@@ -103,7 +103,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const curlIsMisalignedRef = useRef(false);
   // Single source of truth for the Plank 2D alignment zone — set every frame
   // by analyzeAndDraw and consumed by the HUD branch so the banner and the red
-  // skeleton segments stay in perfect sync. Strict tolerance: 165°–195° at the hip.
+  // skeleton segments stay in perfect sync. Strict tolerance: 10° deviation from
+  // the horizontal 180° line.
   const plankIsMisalignedRef = useRef(false);
 
   // Generic rep tracker — kept for rep counting only. Cadence/eccentric-speed
