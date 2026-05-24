@@ -103,7 +103,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const curlIsMisalignedRef = useRef(false);
   // Single source of truth for the Plank 2D alignment zone — set every frame
   // by analyzeAndDraw and consumed by the HUD branch so the banner and the red
-  // skeleton segments stay in perfect sync. Tolerance: 160°–200° at the hip.
+  // skeleton segments stay in perfect sync. Strict tolerance: 165°–195° at the hip.
   const plankIsMisalignedRef = useRef(false);
 
   // Generic rep tracker — kept for rep counting only. Cadence/eccentric-speed
@@ -450,8 +450,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           plankActiveSide = useLeft ? 'left' : 'right';
 
           // Phase 28.6 — Single boolean tolerance zone (~20° on each side of
-          // anatomical 180°). Only trigger outside 160°–200°.
-          if (hipAngle < 160 || hipAngle > 200) {
+          // anatomical 180°). Strict zone: trigger outside 165°–195°.
+          if (hipAngle < 165 || hipAngle > 195) {
             plankViolation = true;
             plankIsMisalignedRef.current = true;
           }
@@ -865,14 +865,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             // Same boolean drives the red Shoulder→Hip and Hip→Ankle segments.
             if (plankIsMisalignedRef.current) {
               setStatus('warning');
-              setStatusText(
-                plankCoachMessageRef.current
-                  ? `⚠️ ${plankCoachMessageRef.current}`
-                  : '⚠️ Alinhe ombro-quadril-tornozelo',
-              );
+              setStatusText('⚠️ Quadril desalinhado! Ajuste a postura.');
             } else {
               setStatus('good');
-              setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
+              setStatusText('✅ Prancha: Forma Excelente');
             }
           } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
