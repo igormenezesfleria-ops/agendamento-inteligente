@@ -3,6 +3,7 @@ import { ArrowLeft, RotateCcw, Video, VideoOff, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { BIOMECHANICS_TEMPLATES } from '@/utils/biomechanicsTemplates';
 import { evaluateFrame, isFrontalView, type FrameWarning } from '@/utils/biomechanicsMath';
+import { createRepTracker, type RepTrackerState } from '@/utils/repTracker';
 
 const LANDMARKS = {
   NOSE: 0,
@@ -96,6 +97,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const fallbackBlinkRef = useRef(false);
   const plankCoachMessageRef = useRef<string | null>(null);
   const curlCoachMessageRef = useRef<string | null>(null);
+
+  // Generic rep/cadence tracker — shared utility, any exercise module can drive it.
+  const repTrackerRef = useRef<RepTrackerState>(
+    createRepTracker({ topAngle: 60, bottomAngle: 150, minEccentricMs: 1000 }),
+  );
+  const [cadenceWarning, setCadenceWarning] = useState(false);
 
   // Resolve the active biomechanics template, filtering to only trainer-selected errors
   const activeTemplate = useMemo(() => {
@@ -298,7 +305,14 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let rightVaroViolation = false;
 
       // ── Bicep Curl 2D angular pendulum analysis ──
-      const isCurlTemplate = activeTemplate?.errors.some(e => e.id === 'elbow_alignment');
+      // ── SCOPED REFACTOR (Phase 28): Biceps/Triceps 2D Stability Zone ──
+      // Angle between Torso (Shoulder→Hip) and Upper Arm (Shoulder→Elbow).
+      // Tolerance: 15°. Above that → violation. Only the Shoulder-Elbow segment
+      // turns red; the rest of the skeleton remains green.
+      const isCurlTemplate =
+        activeTemplate?.errors.some(e => e.id === 'elbow_alignment') ||
+        activeTemplate?.errors.some(e => e.id === 'elbow_drift_forward') ||
+        activeTemplate?.errors.some(e => e.id === 'elbow_unstable');
       let curlViolation = false;
       let curlActiveSide: 'left' | 'right' | null = null;
       let curlBadConnection: [number, number] | null = null;
@@ -321,32 +335,57 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         const useLeft = leftVis >= rightVis;
         const shoulderIdx = useLeft ? LANDMARKS.LEFT_SHOULDER : LANDMARKS.RIGHT_SHOULDER;
         const elbowIdx = useLeft ? LANDMARKS.LEFT_ELBOW : LANDMARKS.RIGHT_ELBOW;
+        const hipIdx = useLeft ? LANDMARKS.LEFT_HIP : LANDMARKS.RIGHT_HIP;
+        const wristIdx = useLeft ? LANDMARKS.LEFT_WRIST : LANDMARKS.RIGHT_WRIST;
         curlActiveSide = useLeft ? 'left' : 'right';
 
-        // Step 2: Extract ONLY 2D (x,y) for active side — ignore z entirely
-        if (isVisible(shoulderIdx) && isVisible(elbowIdx)) {
-          const sx = landmarks[shoulderIdx].x;
-          const sy = landmarks[shoulderIdx].y;
-          const ex = landmarks[elbowIdx].x;
-          const ey = landmarks[elbowIdx].y;
+        // Step 2: Extract 2D coords (ignore Z) for Shoulder, Hip and Elbow on active side
+        if (isVisible(shoulderIdx) && isVisible(elbowIdx) && isVisible(hipIdx)) {
+          const s = landmarks[shoulderIdx];
+          const h = landmarks[hipIdx];
+          const e = landmarks[elbowIdx];
 
-          // Step 3: Angular pendulum — angle of upper arm relative to vertical drop
-          const dx = ex - sx;
-          const dy = ey - sy;
-          const armAngle = Math.abs(Math.atan2(dx, dy) * (180 / Math.PI));
-          curlArmAngle = armAngle;
+          // Step 3: 2D STABILITY ZONE — angle between Torso (S→H) and Upper Arm (S→E)
+          const tx = h.x - s.x;
+          const ty = h.y - s.y;
+          const ax = e.x - s.x;
+          const ay = e.y - s.y;
+          const dot = tx * ax + ty * ay;
+          const magT = Math.hypot(tx, ty);
+          const magA = Math.hypot(ax, ay);
+          const stabilityAngle = magT && magA
+            ? (Math.acos(Math.max(-1, Math.min(1, dot / (magT * magA)))) * 180) / Math.PI
+            : 0;
+          curlArmAngle = stabilityAngle;
 
-          // Step 4: Trigger if elbow swings > 15° from plumb line
-          if (armAngle > 15) {
+          // Step 4: Trigger if Torso↔UpperArm angle exceeds 15° tolerance
+          if (stabilityAngle > 15) {
             curlViolation = true;
-            curlCoachMessage = '🚨 Trave o cotovelo no corpo! Não balance.';
+            curlCoachMessage = '⚠️ Alinhe o cotovelo ao tronco';
 
-            // Mark ONLY the upper arm CONNECTION of active side
+            // Mark ONLY the Shoulder-Elbow CONNECTION of active side
             if (useLeft) {
               curlBadConnection = [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_ELBOW];
             } else {
               curlBadConnection = [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_ELBOW];
             }
+          }
+
+          // Step 5: Drive the generic Rep & Cadence tracker (forearm angle = S-E-W).
+          // Only count this rep as valid if the stability zone was maintained.
+          if (isVisible(wristIdx)) {
+            const w = landmarks[wristIdx];
+            const v1x = s.x - e.x, v1y = s.y - e.y;
+            const v2x = w.x - e.x, v2y = w.y - e.y;
+            const d2 = v1x * v2x + v1y * v2y;
+            const m1 = Math.hypot(v1x, v1y);
+            const m2 = Math.hypot(v2x, v2y);
+            const forearmAngle = m1 && m2
+              ? (Math.acos(Math.max(-1, Math.min(1, d2 / (m1 * m2)))) * 180) / Math.PI
+              : 180;
+            repTrackerRef.current.update(forearmAngle, performance.now(), {
+              stable: !curlViolation,
+            });
           }
         }
       }
@@ -778,7 +817,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
           const hasTemplateWarning = warnings.length > 0;
 
-          if (hasTemplateWarning) {
+          // Sync cadence flag from the generic rep tracker
+          const ecc = repTrackerRef.current.lastEccentricMs;
+          const cadenceTooFast = ecc !== null && ecc > 0 && ecc < 1000;
+          setCadenceWarning(cadenceTooFast);
+
+          if (cadenceTooFast) {
+            setStatus('warning');
+            setStatusText('⚠️ Controle a descida (mínimo 1s)!');
+          } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
             setStatusText(`⚠️ ${firstWarning.coachMessage}`);

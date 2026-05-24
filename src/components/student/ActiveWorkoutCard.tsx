@@ -16,6 +16,7 @@ import { VideoModal } from './VideoModal';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { SyntonConsultantModal, resolveExerciseType, type ExerciseType } from './SyntonConsultantModal';
 
 interface Exercise {
   id: string;
@@ -36,6 +37,12 @@ export function ActiveWorkoutCard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
   const [loads, setLoads] = useState<Record<string, string>>({});
+  const [consultantTarget, setConsultantTarget] = useState<{
+    movementPattern: string;
+    selectedErrors: string[];
+    exerciseName: string;
+    exerciseType: ExerciseType;
+  } | null>(null);
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
@@ -224,13 +231,11 @@ export function ActiveWorkoutCard() {
                           {ex.ai_enabled && ex.movement_pattern && (
                             <button
                               onClick={() => {
-                                setDrawerOpen(false);
-                                navigate('/dashboard/biofeedback', {
-                                  state: {
-                                    movementPattern: ex.movement_pattern,
-                                    selectedErrors: ex.selected_errors || [],
-                                    exerciseName: ex.name,
-                                  },
+                                setConsultantTarget({
+                                  movementPattern: ex.movement_pattern as string,
+                                  selectedErrors: ex.selected_errors || [],
+                                  exerciseName: ex.name,
+                                  exerciseType: resolveExerciseType(ex.movement_pattern as string, ex.name),
                                 });
                               }}
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded-full text-xs font-semibold border border-orange-200/70 transition-all dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-900/50 dark:hover:bg-orange-950/50"
@@ -327,6 +332,27 @@ export function ActiveWorkoutCard() {
       {activeVideoUrl && (
         <VideoModal videoUrl={activeVideoUrl} onClose={() => setActiveVideoUrl(null)} />
       )}
+
+      {/* Consultor Synton — pre-evaluation setup modal */}
+      <SyntonConsultantModal
+        open={!!consultantTarget}
+        exerciseType={consultantTarget?.exerciseType ?? 'generic'}
+        exerciseName={consultantTarget?.exerciseName}
+        onClose={() => setConsultantTarget(null)}
+        onConfirm={() => {
+          if (!consultantTarget) return;
+          const target = consultantTarget;
+          setConsultantTarget(null);
+          setDrawerOpen(false);
+          navigate('/dashboard/biofeedback', {
+            state: {
+              movementPattern: target.movementPattern,
+              selectedErrors: target.selectedErrors,
+              exerciseName: target.exerciseName,
+            },
+          });
+        }}
+      />
     </>
   );
 }
