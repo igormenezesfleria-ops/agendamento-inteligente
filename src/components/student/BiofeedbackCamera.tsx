@@ -567,7 +567,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         }
         const isBad = badLandmarks.has(start) && badLandmarks.has(end);
         if (!isBad) return '#22c55e';
-        if (isPlankTemplate && plankSeverity === 'warning') return '#f59e0b';
         return '#ef4444';
       };
 
@@ -618,7 +617,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             : false;
         }
         const color = isBad
-          ? (isPlankTemplate && plankSeverity === 'warning' ? '#f59e0b' : '#ef4444')
+          ? '#ef4444'
           : '#22c55e';
         ctx.beginPath();
         ctx.arc(point.x * width, point.y * height, 6, 0, Math.PI * 2);
@@ -658,7 +657,27 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       // Plank hip angle label on the active side
       if (isPlankTemplate && plankHipAngle !== null && plankActiveSide) {
         const hipIdx = plankActiveSide === 'left' ? LANDMARKS.LEFT_HIP : LANDMARKS.RIGHT_HIP;
-        drawAngleLabel(hipIdx, plankHipAngle, plankViolation, plankSeverity === 'warning');
+        drawAngleLabel(hipIdx, plankHipAngle, plankViolation, false);
+
+        // Phase 29.1 — Explicit hip-point highlight. Larger ring on the
+        // active hip mirrors the smoothed alignment state (red on error,
+        // green when perfect) so the user gets unambiguous visual feedback.
+        const hipPoint = landmarks[hipIdx];
+        if (hipPoint && (hipPoint.visibility ?? 0) > 0.3) {
+          const hipColor = plankViolation ? '#ef4444' : '#22c55e';
+          ctx.beginPath();
+          ctx.arc(hipPoint.x * width, hipPoint.y * height, 12, 0, Math.PI * 2);
+          ctx.strokeStyle = hipColor;
+          ctx.lineWidth = 3;
+          ctx.shadowColor = hipColor;
+          ctx.shadowBlur = 16;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.beginPath();
+          ctx.arc(hipPoint.x * width, hipPoint.y * height, 6, 0, Math.PI * 2);
+          ctx.fillStyle = hipColor;
+          ctx.fill();
+        }
       }
 
       // Curl arm angle label on the active side
