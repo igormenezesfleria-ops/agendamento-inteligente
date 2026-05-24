@@ -103,7 +103,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const curlIsMisalignedRef = useRef(false);
   // Single source of truth for the Plank 2D alignment zone — set every frame
   // by analyzeAndDraw and consumed by the HUD branch so the banner and the red
-  // skeleton segments stay in perfect sync. Strict tolerance: 165°–195° at the hip.
+  // skeleton segments stay in perfect sync. Strict tolerance: 10° deviation from
+  // the horizontal 180° line.
   const plankIsMisalignedRef = useRef(false);
 
   // Generic rep tracker — kept for rep counting only. Cadence/eccentric-speed
@@ -413,12 +414,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let plankViolation = false;
       let plankHipAngle: number | null = null;
       let plankActiveSide: 'left' | 'right' | null = null;
-      let plankCoachMessage: string | null = null;
       const plankBadLandmarks = new Set<number>();
 
       if (isPlankTemplate) {
-        // Reset every frame — default to aligned unless angle falls outside the
-        // generous 160°–200° tolerance window.
+        // Reset every frame — strict 10° deviation from the horizontal 180° line.
         plankIsMisalignedRef.current = false;
         // Determine active side by visibility score
         const leftVis =
@@ -449,36 +448,22 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           plankHipAngle = hipAngle;
           plankActiveSide = useLeft ? 'left' : 'right';
 
-          // Phase 28.6 — Single boolean tolerance zone (~20° on each side of
-          // anatomical 180°). Strict zone: trigger outside 165°–195°.
-          if (hipAngle < 165 || hipAngle > 195) {
+          // Phase 29 — Rigor: deviation from horizontal must be <= 10°
+          if (Math.abs(180 - hipAngle) > 10) {
             plankViolation = true;
             plankIsMisalignedRef.current = true;
-          }
 
-          // Determine directional message based on hip position
-          if (plankViolation) {
-            const midY = (shoulder.y + ankle.y) / 2;
-            if (hip.y < midY) {
-              // HIP PIKING (Too High) - lower y value means higher on screen
-              plankCoachMessage = '🚨 Quadril muito alto! Alinhe mais o quadril com o corpo.';
-            } else {
-              // HIP SAGGING (Too Low)
-              plankCoachMessage = '🚨 Quadril caindo! Contraia o glúteo e o abdômen.';
-            }
-
-            // Mark Shoulder→Hip and Hip→Ankle/Knee segments red on the active side
+            // Mark Shoulder→Hip and Hip→Ankle segments red on the active side
             if (useLeft) {
-              [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
+              [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_ANKLE].forEach(i => plankBadLandmarks.add(i));
             } else {
-              [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_KNEE, LANDMARKS.RIGHT_ANKLE, LANDMARKS.RIGHT_HEEL, LANDMARKS.RIGHT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
+              [LANDMARKS.RIGHT_SHOULDER, LANDMARKS.RIGHT_HIP, LANDMARKS.RIGHT_ANKLE].forEach(i => plankBadLandmarks.add(i));
             }
           }
         }
       }
 
-      // Store plank message in ref for access in onResults callback
-      plankCoachMessageRef.current = plankCoachMessage;
+      // Store curl message in ref for access in onResults callback
       curlCoachMessageRef.current = curlCoachMessage;
 
       // Valgus & Varus detection (independent, both can fire simultaneously)
