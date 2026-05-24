@@ -102,13 +102,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   // and the red skeleton segment are guaranteed to stay in sync.
   const curlIsMisalignedRef = useRef(false);
 
-  // Generic rep/cadence tracker — shared utility, any exercise module can drive it.
+  // Generic rep tracker — kept for rep counting only. Cadence/eccentric-speed
+  // warnings were intentionally removed (Phase 28.5) so the Biceps/Triceps HUD
+  // is driven strictly by the 15° stability zone.
   const repTrackerRef = useRef<RepTrackerState>(
-    createRepTracker({ topAngle: 60, bottomAngle: 150, minEccentricMs: 1000 }),
+    createRepTracker({ topAngle: 60, bottomAngle: 150 }),
   );
-  const [cadenceWarning, setCadenceWarning] = useState(false);
-  const cadenceTimeoutRef = useRef<number | null>(null);
-  const cadenceActiveRef = useRef(false);
 
   // Resolve the active biomechanics template, filtering to only trainer-selected errors
   const activeTemplate = useMemo(() => {
@@ -690,10 +689,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     cancelAnimationFrame(rafRef.current);
     if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
     if (fallbackIntervalRef.current) window.clearInterval(fallbackIntervalRef.current);
-    if (cadenceTimeoutRef.current) window.clearTimeout(cadenceTimeoutRef.current);
-    cadenceActiveRef.current = false;
-    setCadenceWarning(false);
-
     aiReadyRef.current = false;
     simulationModeRef.current = false;
     fallbackBlinkRef.current = false;
@@ -845,25 +840,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
           const hasTemplateWarning = warnings.length > 0;
 
-          // Sync cadence flag from the generic rep tracker — only re-trigger on
-          // a fresh fast-eccentric event, then auto-clear after 2000ms so the HUD
-          // doesn't freeze on the warning.
-          const ecc = repTrackerRef.current.lastEccentricMs;
-          const cadenceTooFast = ecc !== null && ecc > 0 && ecc < 1000;
-          if (cadenceTooFast && !cadenceActiveRef.current) {
-            cadenceActiveRef.current = true;
-            setCadenceWarning(true);
-            if (cadenceTimeoutRef.current) window.clearTimeout(cadenceTimeoutRef.current);
-            cadenceTimeoutRef.current = window.setTimeout(() => {
-              cadenceActiveRef.current = false;
-              setCadenceWarning(false);
-            }, 2000);
-          }
-
-          if (cadenceActiveRef.current) {
-            setStatus('warning');
-            setStatusText('⚠️ Controle a descida (mínimo 1s)!');
-          } else if (isCurlOrTriceps) {
+          if (isCurlOrTriceps) {
             // Curl/Triceps: HUD is STRICTLY mirrored from the per-frame
             // `isMisaligned` boolean computed by analyzeAndDraw. Same condition
             // also drives the red Shoulder→Elbow skeleton segment.
