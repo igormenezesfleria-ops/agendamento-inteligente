@@ -817,7 +817,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
           const hasTemplateWarning = warnings.length > 0;
 
-          if (hasTemplateWarning) {
+          // Sync cadence flag from the generic rep tracker
+          const ecc = repTrackerRef.current.lastEccentricMs;
+          const cadenceTooFast = ecc !== null && ecc > 0 && ecc < 1000;
+          setCadenceWarning(cadenceTooFast);
+
+          if (cadenceTooFast) {
+            setStatus('warning');
+            setStatusText('⚠️ Controle a descida (mínimo 1s)!');
+          } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
             setStatusText(`⚠️ ${firstWarning.coachMessage}`);
