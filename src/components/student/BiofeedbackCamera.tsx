@@ -863,10 +863,17 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           if (cadenceActiveRef.current) {
             setStatus('warning');
             setStatusText('⚠️ Controle a descida (mínimo 1s)!');
-          } else if (isCurlOrTriceps && curlCoachMessageRef.current) {
-            // Curl/Triceps: HUD reflects current-frame stability zone only.
-            setStatus('warning');
-            setStatusText(curlCoachMessageRef.current);
+          } else if (isCurlOrTriceps) {
+            // Curl/Triceps: HUD is STRICTLY mirrored from the per-frame
+            // `isMisaligned` boolean computed by analyzeAndDraw. Same condition
+            // also drives the red Shoulder→Elbow skeleton segment.
+            if (curlIsMisalignedRef.current) {
+              setStatus('warning');
+              setStatusText('⚠️ Alinhe o cotovelo ao tronco');
+            } else {
+              setStatus('good');
+              setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
+            }
           } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
