@@ -411,13 +411,15 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         activeTemplate?.errors.some(e => e.id === 'hip_sag') ||
         activeTemplate?.errors.some(e => e.id === 'hip_pike');
       let plankViolation = false;
-      let plankSeverity: 'none' | 'warning' | 'critical' = 'none';
       let plankHipAngle: number | null = null;
       let plankActiveSide: 'left' | 'right' | null = null;
       let plankCoachMessage: string | null = null;
       const plankBadLandmarks = new Set<number>();
 
       if (isPlankTemplate) {
+        // Reset every frame — default to aligned unless angle falls outside the
+        // generous 160°–200° tolerance window.
+        plankIsMisalignedRef.current = false;
         // Determine active side by visibility score
         const leftVis =
           (landmarks[LANDMARKS.LEFT_SHOULDER]?.visibility ?? 0) +
@@ -447,12 +449,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           plankHipAngle = hipAngle;
           plankActiveSide = useLeft ? 'left' : 'right';
 
-          if (hipAngle < 155) {
-            plankSeverity = 'critical';
+          // Phase 28.6 — Single boolean tolerance zone (~20° on each side of
+          // anatomical 180°). Only trigger outside 160°–200°.
+          if (hipAngle < 160 || hipAngle > 200) {
             plankViolation = true;
-          } else if (hipAngle < 165) {
-            plankSeverity = 'warning';
-            plankViolation = true;
+            plankIsMisalignedRef.current = true;
           }
 
           // Determine directional message based on hip position
@@ -466,7 +467,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
               plankCoachMessage = '🚨 Quadril caindo! Contraia o glúteo e o abdômen.';
             }
 
-            // Only mark the active side's landmarks
+            // Mark Shoulder→Hip and Hip→Ankle/Knee segments red on the active side
             if (useLeft) {
               [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
             } else {
@@ -560,7 +561,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
         }
         const isBad = badLandmarks.has(start) && badLandmarks.has(end);
         if (!isBad) return '#22c55e';
-        if (isPlankTemplate && plankSeverity === 'warning') return '#f59e0b';
         return '#ef4444';
       };
 
@@ -610,9 +610,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             ? (index === curlBadConnection[0] || index === curlBadConnection[1])
             : false;
         }
-        const color = isBad
-          ? (isPlankTemplate && plankSeverity === 'warning' ? '#f59e0b' : '#ef4444')
-          : '#22c55e';
+        const color = isBad ? '#ef4444' : '#22c55e';
         ctx.beginPath();
         ctx.arc(point.x * width, point.y * height, 6, 0, Math.PI * 2);
         ctx.fillStyle = color;
@@ -651,7 +649,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       // Plank hip angle label on the active side
       if (isPlankTemplate && plankHipAngle !== null && plankActiveSide) {
         const hipIdx = plankActiveSide === 'left' ? LANDMARKS.LEFT_HIP : LANDMARKS.RIGHT_HIP;
-        drawAngleLabel(hipIdx, plankHipAngle, plankViolation, plankSeverity === 'warning');
+        drawAngleLabel(hipIdx, plankHipAngle, plankViolation);
       }
 
       // Curl arm angle label on the active side
