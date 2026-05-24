@@ -103,6 +103,8 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     createRepTracker({ topAngle: 60, bottomAngle: 150, minEccentricMs: 1000 }),
   );
   const [cadenceWarning, setCadenceWarning] = useState(false);
+  const cadenceTimeoutRef = useRef<number | null>(null);
+  const cadenceActiveRef = useRef(false);
 
   // Resolve the active biomechanics template, filtering to only trainer-selected errors
   const activeTemplate = useMemo(() => {
@@ -677,6 +679,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
     cancelAnimationFrame(rafRef.current);
     if (aiTimeoutRef.current) window.clearTimeout(aiTimeoutRef.current);
     if (fallbackIntervalRef.current) window.clearInterval(fallbackIntervalRef.current);
+    if (cadenceTimeoutRef.current) window.clearTimeout(cadenceTimeoutRef.current);
+    cadenceActiveRef.current = false;
+    setCadenceWarning(false);
 
     aiReadyRef.current = false;
     simulationModeRef.current = false;
@@ -797,8 +802,20 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
           setConfidence(Math.round(averageVisibility * 100));
 
-          // Run the biomechanics engine if a template is active
-          const warnings = evaluateFrame(landmarks, activeTemplate);
+          // Detect curl/triceps templates — their HUD is driven exclusively by the
+          // 2D Stability Zone (in analyzeAndDraw), NOT by evaluateFrame, because the
+          // generic Z_X_OSCILLATION rules in the template produce false positives
+          // (elbow vs hip absolute distance is always large).
+          const isCurlOrTriceps =
+            !!activeTemplate?.errors.some(
+              (e) =>
+                e.id === 'elbow_alignment' ||
+                e.id === 'elbow_drift_forward' ||
+                e.id === 'elbow_unstable',
+            );
+
+          // Run the biomechanics engine if a template is active (skipped for curl/triceps)
+          const warnings = isCurlOrTriceps ? [] : evaluateFrame(landmarks, activeTemplate);
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
@@ -817,14 +834,28 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           const hasViolation = analyzeAndDraw(ctx, landmarks, canvas.width, canvas.height, warnings);
           const hasTemplateWarning = warnings.length > 0;
 
-          // Sync cadence flag from the generic rep tracker
+          // Sync cadence flag from the generic rep tracker — only re-trigger on
+          // a fresh fast-eccentric event, then auto-clear after 2000ms so the HUD
+          // doesn't freeze on the warning.
           const ecc = repTrackerRef.current.lastEccentricMs;
           const cadenceTooFast = ecc !== null && ecc > 0 && ecc < 1000;
-          setCadenceWarning(cadenceTooFast);
+          if (cadenceTooFast && !cadenceActiveRef.current) {
+            cadenceActiveRef.current = true;
+            setCadenceWarning(true);
+            if (cadenceTimeoutRef.current) window.clearTimeout(cadenceTimeoutRef.current);
+            cadenceTimeoutRef.current = window.setTimeout(() => {
+              cadenceActiveRef.current = false;
+              setCadenceWarning(false);
+            }, 2000);
+          }
 
-          if (cadenceTooFast) {
+          if (cadenceActiveRef.current) {
             setStatus('warning');
             setStatusText('⚠️ Controle a descida (mínimo 1s)!');
+          } else if (isCurlOrTriceps && curlCoachMessageRef.current) {
+            // Curl/Triceps: HUD reflects current-frame stability zone only.
+            setStatus('warning');
+            setStatusText(curlCoachMessageRef.current);
           } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
@@ -841,7 +872,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
             }
           } else {
             setStatus('good');
-            setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente (AI Validated)');
+            setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
             plankCoachMessageRef.current = null;
             curlCoachMessageRef.current = null;
           }
