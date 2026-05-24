@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Smartphone, CheckCircle2 } from 'lucide-react';
 
 export type ExerciseType =
@@ -69,9 +70,17 @@ export function SyntonConsultantModal({
   if (!open) return null;
   const copy = INSTRUCTIONS[exerciseType];
 
-  return (
-    <div className="fixed inset-0 z-[120] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center">
-      <div className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl">
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[120] flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-t-3xl bg-white p-6 shadow-2xl sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-orange-600">
@@ -102,12 +111,14 @@ export function SyntonConsultantModal({
         <p className="mt-3 text-sm leading-relaxed text-slate-700">{copy.body}</p>
 
         <button
+          type="button"
           onClick={onConfirm}
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-orange-500 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-orange-600"
         >
           <CheckCircle2 className="h-4 w-4" /> Estou Posicionado
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
