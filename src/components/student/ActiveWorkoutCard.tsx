@@ -332,6 +332,27 @@ export function ActiveWorkoutCard() {
       {activeVideoUrl && (
         <VideoModal videoUrl={activeVideoUrl} onClose={() => setActiveVideoUrl(null)} />
       )}
+
+      {/* Consultor Synton — pre-evaluation setup modal */}
+      <SyntonConsultantModal
+        open={!!consultantTarget}
+        exerciseType={consultantTarget?.exerciseType ?? 'generic'}
+        exerciseName={consultantTarget?.exerciseName}
+        onClose={() => setConsultantTarget(null)}
+        onConfirm={() => {
+          if (!consultantTarget) return;
+          const target = consultantTarget;
+          setConsultantTarget(null);
+          setDrawerOpen(false);
+          navigate('/dashboard/biofeedback', {
+            state: {
+              movementPattern: target.movementPattern,
+              selectedErrors: target.selectedErrors,
+              exerciseName: target.exerciseName,
+            },
+          });
+        }}
+      />
     </>
   );
 }
