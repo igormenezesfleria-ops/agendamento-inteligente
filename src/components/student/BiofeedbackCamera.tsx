@@ -95,8 +95,13 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   const aiReadyRef = useRef(false);
   const simulationModeRef = useRef(false);
   const fallbackBlinkRef = useRef(false);
-  const plankCoachMessageRef = useRef<string | null>(null);
   const curlCoachMessageRef = useRef<string | null>(null);
+  // Phase 29.2 — Single source of truth for the Plank 2D Stability Zone.
+  // Set every frame by analyzeAndDraw and consumed by the HUD branch below
+  // so the banner and the red skeleton segments stay strictly in sync with
+  // the per-frame `isMisaligned = |180 - smoothedAngle| > 15` boolean.
+  const plankIsMisalignedRef = useRef(false);
+  const isPlankTemplateRef = useRef(false);
   // Phase 29.1 — Plank smoothing: moving-average window over the last
   // 10 frames (~300ms @30fps) eliminates jitter while static.
   const plankAngleHistoryRef = useRef<number[]>([]);
@@ -414,8 +419,9 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       let plankSeverity: 'none' | 'warning' | 'critical' = 'none';
       let plankHipAngle: number | null = null;
       let plankActiveSide: 'left' | 'right' | null = null;
-      let plankCoachMessage: string | null = null;
       const plankBadLandmarks = new Set<number>();
+      isPlankTemplateRef.current = !!isPlankTemplate;
+      plankIsMisalignedRef.current = false;
 
       if (isPlankTemplate) {
         // Determine active side by visibility score
@@ -456,24 +462,16 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           plankHipAngle = smoothedAngle;
           plankActiveSide = useLeft ? 'left' : 'right';
 
-          // Misaligned iff smoothed deviation from 180° exceeds 15°.
-          if (Math.abs(180 - smoothedAngle) > 15) {
+          // Phase 29.2 — SINGLE SOURCE OF TRUTH.
+          // `isMisaligned` is the ONLY boolean driving plank HUD + skeleton.
+          const isMisaligned = Math.abs(180 - smoothedAngle) > 15;
+          plankIsMisalignedRef.current = isMisaligned;
+
+          if (isMisaligned) {
             plankSeverity = 'critical';
             plankViolation = true;
-          }
-
-          // Determine directional message based on hip position
-          if (plankViolation) {
-            const midY = (shoulder.y + ankle.y) / 2;
-            if (hip.y < midY) {
-              // HIP PIKING (Too High) - lower y value means higher on screen
-              plankCoachMessage = '🚨 Quadril muito alto! Alinhe mais o quadril com o corpo.';
-            } else {
-              // HIP SAGGING (Too Low)
-              plankCoachMessage = '🚨 Quadril caindo! Contraia o glúteo e o abdômen.';
-            }
-
-            // Only mark the active side's landmarks
+            // Only mark the active side's landmarks so that the
+            // [Shoulder-Hip] and [Hip-Ankle] segments turn RED.
             if (useLeft) {
               [LANDMARKS.LEFT_SHOULDER, LANDMARKS.LEFT_HIP, LANDMARKS.LEFT_KNEE, LANDMARKS.LEFT_ANKLE, LANDMARKS.LEFT_HEEL, LANDMARKS.LEFT_FOOT_INDEX].forEach(i => plankBadLandmarks.add(i));
             } else {
@@ -482,9 +480,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           }
         }
       }
-
-      // Store plank message in ref for access in onResults callback
-      plankCoachMessageRef.current = plankCoachMessage;
       curlCoachMessageRef.current = curlCoachMessage;
 
       // Valgus & Varus detection (independent, both can fire simultaneously)
@@ -881,16 +876,23 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
               setStatus('good');
               setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
             }
+          } else if (isPlankTemplateRef.current) {
+            // Phase 29.2 — Plank HUD is HARD-WIRED to `plankIsMisalignedRef`.
+            // No overrides, no timers, no directional messages. Pure boolean.
+            if (plankIsMisalignedRef.current) {
+              setStatus('warning');
+              setStatusText('⚠️ Quadril desalinhado!');
+            } else {
+              setStatus('good');
+              setStatusText('✅ Prancha: Forma Excelente');
+            }
           } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
             setStatusText(`⚠️ ${firstWarning.coachMessage}`);
           } else if (hasViolation) {
             setStatus('warning');
-            // Use directional plank message if available, otherwise generic
-            if (plankCoachMessageRef.current) {
-              setStatusText(`⚠️ ${plankCoachMessageRef.current}`);
-            } else if (curlCoachMessageRef.current) {
+            if (curlCoachMessageRef.current) {
               setStatusText(`⚠️ ${curlCoachMessageRef.current}`);
             } else {
               setStatusText('⚠️ Atenção: Correção necessária!');
@@ -898,7 +900,6 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           } else {
             setStatus('good');
             setStatusText(exerciseName ? `✅ ${exerciseName}: Forma Excelente` : '✅ Forma: Excelente');
-            plankCoachMessageRef.current = null;
             curlCoachMessageRef.current = null;
           }
         } else {
