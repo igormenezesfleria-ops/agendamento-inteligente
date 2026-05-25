@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, ShieldCheck, Send, Loader2, FileCheck, Clock } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { PhysicalAssessmentShelf } from './PhysicalAssessmentShelf';
 
 interface StudentAssessmentsTabProps {
   studentId: string;
@@ -163,6 +164,9 @@ export function StudentAssessmentsTab({ studentId, studentName, age, hasInjury, 
           ))}
         </div>
       </div>
+
+      {/* Dynamic Physical Assessment Engine */}
+      <PhysicalAssessmentShelf />
     </div>
   );
 }
