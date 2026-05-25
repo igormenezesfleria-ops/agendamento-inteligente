@@ -1,10 +1,11 @@
 export type AssessmentInput = {
   name: string;
   label: string;
-  type: 'number' | 'text';
+  type: 'number' | 'text' | 'select';
   unit?: string;
   step?: number;
   placeholder?: string;
+  options?: { value: string; label: string }[];
 };
 
 export type AssessmentTest = {
@@ -14,6 +15,9 @@ export type AssessmentTest = {
   instructions: string;
   reference: string;
   inputs: AssessmentInput[];
+  cameraAssist?: boolean;
+  /** Name of an input whose value scopes the history (e.g. exerciseName for load cell). */
+  historyScopeField?: string;
 };
 
 export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
@@ -44,9 +48,24 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
       '**Cálculo:** LSI% = (Lado mais fraco / Lado mais forte) × 100.\n' +
       '**Risco:** Assimetria > 10–15% indica desequilíbrio e maior risco de lesão.',
     inputs: [
+      {
+        name: 'exerciseName',
+        label: 'Exercício Avaliado',
+        type: 'select',
+        options: [
+          { value: 'Extensora', label: 'Extensora' },
+          { value: 'Flexora', label: 'Flexora' },
+          { value: 'Remada', label: 'Remada' },
+          { value: 'Supino', label: 'Supino' },
+          { value: 'Agachamento Isométrico', label: 'Agachamento Isométrico' },
+          { value: 'Abdução de Quadril', label: 'Abdução de Quadril' },
+          { value: 'Outro', label: 'Outro' },
+        ],
+      },
       { name: 'rightForce', label: 'Força Direita', type: 'number', step: 0.1, unit: 'kg' },
       { name: 'leftForce', label: 'Força Esquerda', type: 'number', step: 0.1, unit: 'kg' },
     ],
+    historyScopeField: 'exerciseName',
   },
   {
     id: 'calf_circumference',
@@ -91,6 +110,7 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
       { name: 'standReach', label: 'Alcance Parado (cm)', type: 'number', step: 0.1, unit: 'cm' },
       { name: 'jumpReach', label: 'Alcance Saltando (cm)', type: 'number', step: 0.1, unit: 'cm' },
     ],
+    cameraAssist: true,
   },
   {
     id: 'walk_6min',
@@ -105,6 +125,37 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
       '**Referência adultos saudáveis:** ~ 400–700 m. Valores < 300 m indicam comprometimento funcional.',
     inputs: [
       { name: 'distanceMeters', label: 'Distância (metros)', type: 'number', step: 1, unit: 'm' },
+    ],
+  },
+  {
+    id: 'run_3200',
+    category: 'Cardiorrespiratório',
+    title: 'Teste de 3200 m (Corrida)',
+    reference: 'Cooper / ACSM',
+    instructions:
+      '**Protocolo:** Pista plana e demarcada (ex.: 8 voltas em pista de 400 m).\n\n' +
+      '1. O aluno deve **correr 3200 m no menor tempo possível**, mantendo ritmo constante.\n' +
+      '2. Cronometre do início à chegada.\n' +
+      '3. Registre o tempo em **minutos e segundos**.\n\n' +
+      '**Uso:** estimativa de capacidade aeróbica (VO₂máx) e acompanhamento longitudinal.',
+    inputs: [
+      { name: 'minutes', label: 'Minutos', type: 'number', step: 1, unit: 'min' },
+      { name: 'seconds', label: 'Segundos', type: 'number', step: 1, unit: 's' },
+    ],
+  },
+  {
+    id: 'broad_jump',
+    category: 'Potência',
+    title: 'Salto Horizontal (Broad Jump)',
+    reference: 'NFL Combine / ACSM',
+    instructions:
+      '**Protocolo:** Demarque uma linha de partida em superfície plana e antiderrapante.\n\n' +
+      '1. Aluno posiciona **os dois pés paralelos** atrás da linha.\n' +
+      '2. Realiza **salto à frente** com contramovimento livre dos braços.\n' +
+      '3. Meça do ponto de partida até o **calcanhar mais próximo** da linha.\n' +
+      '4. Registre a **melhor de 3 tentativas** em centímetros.',
+    inputs: [
+      { name: 'distanceCm', label: 'Distância (cm)', type: 'number', step: 1, unit: 'cm' },
     ],
   },
 ];
@@ -193,6 +244,35 @@ export function calculateTestResult(
         classification: d >= 400 ? 'good' : d >= 300 ? 'attention' : 'risk',
         message: `${d.toFixed(0)} m`,
         details: [d < 300 ? 'Comprometimento funcional' : d < 400 ? 'Abaixo do esperado' : 'Dentro do esperado'],
+      };
+    }
+    case 'run_3200': {
+      const m = values.minutes ?? 0;
+      const s = values.seconds ?? 0;
+      const totalSec = m * 60 + s;
+      const totalMin = totalSec / 60;
+      // Reference adult thresholds (rough): <16min good, 16-20 attention, >20 risk
+      const cls: AssessmentResult['classification'] =
+        totalMin > 0 && totalMin < 16 ? 'good' : totalMin <= 20 ? 'attention' : 'risk';
+      return {
+        value: totalSec,
+        label: 'Tempo 3200 m',
+        classification: totalMin > 0 ? cls : 'info',
+        message: `${m}min ${s.toString().padStart(2, '0')}s`,
+        details: [`Ritmo médio: ${(totalMin / 3.2).toFixed(2)} min/km`],
+      };
+    }
+    case 'broad_jump': {
+      const d = values.distanceCm ?? 0;
+      return {
+        value: d,
+        label: 'Distância',
+        classification: d >= 200 ? 'good' : d >= 150 ? 'attention' : 'risk',
+        message: `${d.toFixed(0)} cm`,
+        details: [
+          d >= 200 ? 'Potência de membros inferiores excelente' :
+          d >= 150 ? 'Potência moderada' : 'Potência abaixo do esperado',
+        ],
       };
     }
     default:
