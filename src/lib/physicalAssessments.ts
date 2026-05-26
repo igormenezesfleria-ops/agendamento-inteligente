@@ -155,6 +155,15 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
       '3. Meça do ponto de partida até o **calcanhar mais próximo** da linha.\n' +
       '4. Registre a **melhor de 3 tentativas** em centímetros.',
     inputs: [
+      {
+        name: 'sex',
+        label: 'Sexo Biológico',
+        type: 'select',
+        options: [
+          { value: 'M', label: 'Masculino' },
+          { value: 'F', label: 'Feminino' },
+        ],
+      },
       { name: 'distanceCm', label: 'Distância (cm)', type: 'number', step: 1, unit: 'cm' },
     ],
   },
