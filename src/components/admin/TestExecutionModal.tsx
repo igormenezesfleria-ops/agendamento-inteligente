@@ -91,7 +91,24 @@ export function TestExecutionModal({ test, open, onOpenChange, onSave, scopeKey 
   }, [values]);
 
   const scopeField = test?.historyScopeField;
-  const currentScope = scopeField ? (values[scopeField] ?? '') : undefined;
+  const rawScope = scopeField ? (values[scopeField] ?? '') : undefined;
+  const customScope = scopeField ? (values[`${scopeField}__custom`] ?? '').trim() : '';
+  const currentScope = scopeField
+    ? (rawScope === 'Outro' ? customScope : rawScope)
+    : undefined;
+
+  const extras = useMemo(() => {
+    const out: Record<string, string> = {};
+    if (!test) return out;
+    for (const input of test.inputs) {
+      if (input.type !== 'number' && values[input.name]) {
+        out[input.name] = input.name === scopeField && values[input.name] === 'Outro' && customScope
+          ? customScope
+          : values[input.name];
+      }
+    }
+    return out;
+  }, [test, values, scopeField, customScope]);
 
   const scopedHistory = useMemoScoped(history, scopeField, currentScope);
 
@@ -121,25 +138,19 @@ export function TestExecutionModal({ test, open, onOpenChange, onSave, scopeKey 
       toast.error(`Selecione o campo "${test.inputs.find(i => i.name === scopeField)?.label}" antes de calcular.`);
       return;
     }
-    const r = calculateTestResult(test.id, numericValues);
+    const r = calculateTestResult(test.id, numericValues, extras);
     setResult(r);
     onSave?.(test.id, numericValues, r);
   };
 
   const handleSaveEntry = () => {
     if (!result) return;
-    const extra: Record<string, string> = {};
-    for (const input of test.inputs) {
-      if (input.type !== 'number' && values[input.name]) {
-        extra[input.name] = values[input.name];
-      }
-    }
     const entry: HistoryEntry = {
       date: new Date().toISOString(),
       values: numericValues,
       result,
-      scope: scopeField ? (values[scopeField] ?? undefined) : undefined,
-      extra,
+      scope: currentScope || undefined,
+      extra: extras,
     };
     const next = [entry, ...history];
     setHistory(next);
@@ -196,19 +207,32 @@ export function TestExecutionModal({ test, open, onOpenChange, onSave, scopeKey 
               <div key={input.name} className="space-y-1.5">
                 <Label htmlFor={input.name}>{input.label}</Label>
                 {input.type === 'select' ? (
-                  <Select
-                    value={values[input.name] ?? ''}
-                    onValueChange={(v) => setValues((s) => ({ ...s, [input.name]: v }))}
-                  >
-                    <SelectTrigger id={input.name}>
-                      <SelectValue placeholder={input.placeholder ?? 'Selecione...'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {input.options?.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <>
+                    <Select
+                      value={values[input.name] ?? ''}
+                      onValueChange={(v) => setValues((s) => ({ ...s, [input.name]: v }))}
+                    >
+                      <SelectTrigger id={input.name}>
+                        <SelectValue placeholder={input.placeholder ?? 'Selecione...'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {input.options?.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {values[input.name] === 'Outro' && (
+                      <Input
+                        type="text"
+                        placeholder="Digite o nome do exercício (ex: Adução de Quadril 45º)"
+                        value={values[`${input.name}__custom`] ?? ''}
+                        onChange={(e) =>
+                          setValues((s) => ({ ...s, [`${input.name}__custom`]: e.target.value }))
+                        }
+                        className="mt-2"
+                      />
+                    )}
+                  </>
                 ) : (
                   <div className="relative">
                   <Input
