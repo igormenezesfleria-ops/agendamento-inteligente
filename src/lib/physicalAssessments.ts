@@ -116,14 +116,28 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
     id: 'walk_6min',
     category: 'Cardiorrespiratório',
     title: 'Teste de Caminhada de 6 Minutos (TC6)',
-    reference: 'ATS Guidelines (2002)',
+    reference: 'ATS Guidelines (2002) / Enright & Sherrill (1998)',
     instructions:
       '**Protocolo:** Percurso plano de 30 m, demarcado a cada 3 m.\n\n' +
       '1. Aluno caminha o **mais rápido possível** (sem correr) por **6 minutos**.\n' +
       '2. É permitido pausar, mas o cronômetro **não para**.\n' +
       '3. Registre a **distância total** percorrida em metros.\n\n' +
-      '**Referência adultos saudáveis:** ~ 400–700 m. Valores < 300 m indicam comprometimento funcional.',
+      '**Distância prevista (Enright & Sherrill, 1998):**\n' +
+      '· Homens: (7,57 × altura cm) − (5,02 × idade) − (1,76 × peso kg) − 309\n' +
+      '· Mulheres: (2,11 × altura cm) − (2,29 × peso kg) − (5,78 × idade) + 667',
     inputs: [
+      {
+        name: 'sex',
+        label: 'Sexo Biológico',
+        type: 'select',
+        options: [
+          { value: 'M', label: 'Masculino' },
+          { value: 'F', label: 'Feminino' },
+        ],
+      },
+      { name: 'ageYears', label: 'Idade (anos)', type: 'number', step: 1, unit: 'anos' },
+      { name: 'heightCm', label: 'Altura (cm)', type: 'number', step: 0.1, unit: 'cm' },
+      { name: 'weightKg', label: 'Peso (kg)', type: 'number', step: 0.1, unit: 'kg' },
       { name: 'distanceMeters', label: 'Distância (metros)', type: 'number', step: 1, unit: 'm' },
     ],
   },
@@ -147,7 +161,7 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
     id: 'broad_jump',
     category: 'Potência',
     title: 'Salto Horizontal (Broad Jump)',
-    reference: 'NFL Combine / ACSM',
+    reference: 'NSCA — Percentis por Idade e Sexo',
     instructions:
       '**Protocolo:** Demarque uma linha de partida em superfície plana e antiderrapante.\n\n' +
       '1. Aluno posiciona **os dois pés paralelos** atrás da linha.\n' +
@@ -162,6 +176,18 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
         options: [
           { value: 'M', label: 'Masculino' },
           { value: 'F', label: 'Feminino' },
+        ],
+      },
+      {
+        name: 'ageBracket',
+        label: 'Faixa Etária',
+        type: 'select',
+        options: [
+          { value: '20-29', label: '20–29 anos' },
+          { value: '30-39', label: '30–39 anos' },
+          { value: '40-49', label: '40–49 anos' },
+          { value: '50-59', label: '50–59 anos' },
+          { value: '60+', label: '60+ anos' },
         ],
       },
       { name: 'distanceCm', label: 'Distância (cm)', type: 'number', step: 1, unit: 'cm' },
