@@ -180,6 +180,7 @@ export type AssessmentResult = {
 export function calculateTestResult(
   testId: string,
   values: Record<string, number>,
+  extras: Record<string, string> = {},
 ): AssessmentResult {
   switch (testId) {
     case 'handgrip': {
@@ -260,27 +261,64 @@ export function calculateTestResult(
       const s = values.seconds ?? 0;
       const totalSec = m * 60 + s;
       const totalMin = totalSec / 60;
-      // Reference adult thresholds (rough): <16min good, 16-20 attention, >20 risk
+      if (totalMin <= 0) {
+        return { value: null, label: 'Tempo 3200 m', classification: 'info', message: 'Informe minutos e segundos.' };
+      }
+      // ACSM running equation: VO2 = (speed_m/min * 0.2) + 3.5
+      const speedMpm = 3200 / totalMin;
+      const vo2Max = speedMpm * 0.2 + 3.5;
+      // Convert a target VO2 back to pace (min/km)
+      const paceFromVo2 = (vo2: number) => {
+        const targetSpeed = (vo2 - 3.5) / 0.2; // m/min
+        if (targetSpeed <= 0) return Infinity;
+        return 1000 / targetSpeed; // min/km
+      };
+      const fmtPace = (minPerKm: number) => {
+        if (!isFinite(minPerKm)) return '—';
+        const mm = Math.floor(minPerKm);
+        const ss = Math.round((minPerKm - mm) * 60);
+        return `${mm}:${ss.toString().padStart(2, '0')} min/km`;
+      };
+      const vt1Pace = paceFromVo2(vo2Max * 0.7);
+      const vt2Pace = paceFromVo2(vo2Max * 0.85);
       const cls: AssessmentResult['classification'] =
-        totalMin > 0 && totalMin < 16 ? 'good' : totalMin <= 20 ? 'attention' : 'risk';
+        vo2Max >= 50 ? 'good' : vo2Max >= 40 ? 'attention' : 'risk';
       return {
-        value: totalSec,
-        label: 'Tempo 3200 m',
-        classification: totalMin > 0 ? cls : 'info',
-        message: `${m}min ${s.toString().padStart(2, '0')}s`,
-        details: [`Ritmo médio: ${(totalMin / 3.2).toFixed(2)} min/km`],
+        value: vo2Max,
+        label: 'VO₂ Máx Estimado',
+        classification: cls,
+        message: `${vo2Max.toFixed(1)} ml/kg/min (ACSM)`,
+        details: [
+          `Tempo: ${m}min ${s.toString().padStart(2, '0')}s · Pace médio: ${fmtPace(totalMin / 3.2)}`,
+          `Limiar 1 (Aeróbico, ~70% VO₂máx): ${fmtPace(vt1Pace)}`,
+          `Limiar 2 (Anaeróbico, ~85% VO₂máx): ${fmtPace(vt2Pace)}`,
+        ],
       };
     }
     case 'broad_jump': {
       const d = values.distanceCm ?? 0;
+      const sex = (extras.sex ?? 'M').toUpperCase() === 'F' ? 'F' : 'M';
+      // NSCA normative data — average ranges for adults (cm)
+      // Men: average 200-220, good 230-250, excellent >250, below <200
+      // Women: average 150-170, good 180-200, excellent >200, below <150
+      const ranges = sex === 'M'
+        ? { belowMax: 200, avgMin: 200, avgMax: 220, goodMin: 230, goodMax: 250, excellentMin: 250 }
+        : { belowMax: 150, avgMin: 150, avgMax: 170, goodMin: 180, goodMax: 200, excellentMin: 200 };
+      let classLabel = '';
+      let classification: AssessmentResult['classification'] = 'info';
+      if (d >= ranges.excellentMin) { classLabel = 'Excelente'; classification = 'good'; }
+      else if (d >= ranges.goodMin) { classLabel = 'Acima da Média'; classification = 'good'; }
+      else if (d >= ranges.avgMin) { classLabel = 'Na Média'; classification = 'attention'; }
+      else { classLabel = 'Abaixo da Média'; classification = 'risk'; }
+      const sexLabel = sex === 'M' ? 'Homens' : 'Mulheres';
       return {
         value: d,
         label: 'Distância',
-        classification: d >= 200 ? 'good' : d >= 150 ? 'attention' : 'risk',
-        message: `${d.toFixed(0)} cm`,
+        classification,
+        message: `${d.toFixed(0)} cm — ${classLabel}`,
         details: [
-          d >= 200 ? 'Potência de membros inferiores excelente' :
-          d >= 150 ? 'Potência moderada' : 'Potência abaixo do esperado',
+          `Esperado (${sexLabel}): ${ranges.goodMin}–${ranges.goodMax} cm (NSCA)`,
+          `Faixas: Abaixo <${ranges.belowMax} · Média ${ranges.avgMin}-${ranges.avgMax} · Bom ${ranges.goodMin}-${ranges.goodMax} · Excelente >${ranges.excellentMin}`,
         ],
       };
     }
