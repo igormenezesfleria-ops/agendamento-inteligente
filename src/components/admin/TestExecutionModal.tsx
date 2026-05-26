@@ -90,14 +90,23 @@ export function TestExecutionModal({ test, open, onOpenChange, onSave, scopeKey 
     return out;
   }, [values]);
 
-  if (!test) return null;
-
-  const scopeField = test.historyScopeField;
+  const scopeField = test?.historyScopeField;
   const currentScope = scopeField ? (values[scopeField] ?? '') : undefined;
 
   const scopedHistory = useMemoScoped(history, scopeField, currentScope);
 
   const previousEntry = scopedHistory[0]; // most recent past
+
+  const delta = useMemo(() => {
+    if (!result || result.value == null || !previousEntry || previousEntry.result.value == null) return null;
+    const prev = previousEntry.result.value;
+    const curr = result.value;
+    const diff = curr - prev;
+    const pct = prev !== 0 ? (diff / prev) * 100 : 0;
+    return { diff, pct, prev, prevDate: previousEntry.date };
+  }, [result, previousEntry]);
+
+  if (!test) return null;
 
   const handleClose = (v: boolean) => {
     if (!v) {
@@ -155,15 +164,6 @@ export function TestExecutionModal({ test, open, onOpenChange, onSave, scopeKey 
       : result?.classification === 'risk' || result?.classification === 'attention'
         ? AlertTriangle
         : Info;
-
-  const delta = useMemo(() => {
-    if (!result || result.value == null || !previousEntry || previousEntry.result.value == null) return null;
-    const prev = previousEntry.result.value;
-    const curr = result.value;
-    const diff = curr - prev;
-    const pct = prev !== 0 ? (diff / prev) * 100 : 0;
-    return { diff, pct, prev, prevDate: previousEntry.date };
-  }, [result, previousEntry]);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
