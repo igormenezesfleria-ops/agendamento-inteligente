@@ -207,19 +207,32 @@ export function TestExecutionModal({ test, open, onOpenChange, onSave, scopeKey 
               <div key={input.name} className="space-y-1.5">
                 <Label htmlFor={input.name}>{input.label}</Label>
                 {input.type === 'select' ? (
-                  <Select
-                    value={values[input.name] ?? ''}
-                    onValueChange={(v) => setValues((s) => ({ ...s, [input.name]: v }))}
-                  >
-                    <SelectTrigger id={input.name}>
-                      <SelectValue placeholder={input.placeholder ?? 'Selecione...'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {input.options?.map((o) => (
-                        <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <>
+                    <Select
+                      value={values[input.name] ?? ''}
+                      onValueChange={(v) => setValues((s) => ({ ...s, [input.name]: v }))}
+                    >
+                      <SelectTrigger id={input.name}>
+                        <SelectValue placeholder={input.placeholder ?? 'Selecione...'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {input.options?.map((o) => (
+                          <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {values[input.name] === 'Outro' && (
+                      <Input
+                        type="text"
+                        placeholder="Digite o nome do exercício (ex: Adução de Quadril 45º)"
+                        value={values[`${input.name}__custom`] ?? ''}
+                        onChange={(e) =>
+                          setValues((s) => ({ ...s, [`${input.name}__custom`]: e.target.value }))
+                        }
+                        className="mt-2"
+                      />
+                    )}
+                  </>
                 ) : (
                   <div className="relative">
                   <Input
