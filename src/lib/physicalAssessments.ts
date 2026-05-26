@@ -116,14 +116,28 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
     id: 'walk_6min',
     category: 'Cardiorrespiratório',
     title: 'Teste de Caminhada de 6 Minutos (TC6)',
-    reference: 'ATS Guidelines (2002)',
+    reference: 'ATS Guidelines (2002) / Enright & Sherrill (1998)',
     instructions:
       '**Protocolo:** Percurso plano de 30 m, demarcado a cada 3 m.\n\n' +
       '1. Aluno caminha o **mais rápido possível** (sem correr) por **6 minutos**.\n' +
       '2. É permitido pausar, mas o cronômetro **não para**.\n' +
       '3. Registre a **distância total** percorrida em metros.\n\n' +
-      '**Referência adultos saudáveis:** ~ 400–700 m. Valores < 300 m indicam comprometimento funcional.',
+      '**Distância prevista (Enright & Sherrill, 1998):**\n' +
+      '· Homens: (7,57 × altura cm) − (5,02 × idade) − (1,76 × peso kg) − 309\n' +
+      '· Mulheres: (2,11 × altura cm) − (2,29 × peso kg) − (5,78 × idade) + 667',
     inputs: [
+      {
+        name: 'sex',
+        label: 'Sexo Biológico',
+        type: 'select',
+        options: [
+          { value: 'M', label: 'Masculino' },
+          { value: 'F', label: 'Feminino' },
+        ],
+      },
+      { name: 'ageYears', label: 'Idade (anos)', type: 'number', step: 1, unit: 'anos' },
+      { name: 'heightCm', label: 'Altura (cm)', type: 'number', step: 0.1, unit: 'cm' },
+      { name: 'weightKg', label: 'Peso (kg)', type: 'number', step: 0.1, unit: 'kg' },
       { name: 'distanceMeters', label: 'Distância (metros)', type: 'number', step: 1, unit: 'm' },
     ],
   },
@@ -147,7 +161,7 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
     id: 'broad_jump',
     category: 'Potência',
     title: 'Salto Horizontal (Broad Jump)',
-    reference: 'NFL Combine / ACSM',
+    reference: 'NSCA — Percentis por Idade e Sexo',
     instructions:
       '**Protocolo:** Demarque uma linha de partida em superfície plana e antiderrapante.\n\n' +
       '1. Aluno posiciona **os dois pés paralelos** atrás da linha.\n' +
@@ -162,6 +176,18 @@ export const PHYSICAL_ASSESSMENTS: AssessmentTest[] = [
         options: [
           { value: 'M', label: 'Masculino' },
           { value: 'F', label: 'Feminino' },
+        ],
+      },
+      {
+        name: 'ageBracket',
+        label: 'Faixa Etária',
+        type: 'select',
+        options: [
+          { value: '20-29', label: '20–29 anos' },
+          { value: '30-39', label: '30–39 anos' },
+          { value: '40-49', label: '40–49 anos' },
+          { value: '50-59', label: '50–59 anos' },
+          { value: '60+', label: '60+ anos' },
         ],
       },
       { name: 'distanceCm', label: 'Distância (cm)', type: 'number', step: 1, unit: 'cm' },
@@ -248,12 +274,40 @@ export function calculateTestResult(
     }
     case 'walk_6min': {
       const d = values.distanceMeters ?? 0;
+      const age = values.ageYears ?? 0;
+      const height = values.heightCm ?? 0;
+      const weight = values.weightKg ?? 0;
+      const sex = (extras.sex ?? 'M').toUpperCase() === 'F' ? 'F' : 'M';
+      if (!d) {
+        return { value: null, label: 'Distância', classification: 'info', message: 'Informe a distância percorrida.' };
+      }
+      if (!age || !height || !weight) {
+        return {
+          value: d,
+          label: 'Distância',
+          classification: d >= 400 ? 'good' : d >= 300 ? 'attention' : 'risk',
+          message: `${d.toFixed(0)} m (sem cálculo de previsto)`,
+          details: ['Informe idade, altura e peso para calcular a distância prevista (Enright & Sherrill, 1998).'],
+        };
+      }
+      // Enright & Sherrill (1998)
+      const predicted = sex === 'M'
+        ? (7.57 * height) - (5.02 * age) - (1.76 * weight) - 309
+        : (2.11 * height) - (2.29 * weight) - (5.78 * age) + 667;
+      const pct = predicted > 0 ? (d / predicted) * 100 : 0;
+      const cls: AssessmentResult['classification'] =
+        pct >= 82 ? 'good' : pct >= 70 ? 'attention' : 'risk';
+      const sexLabel = sex === 'M' ? 'Homens' : 'Mulheres';
       return {
         value: d,
         label: 'Distância',
-        classification: d >= 400 ? 'good' : d >= 300 ? 'attention' : 'risk',
-        message: `${d.toFixed(0)} m`,
-        details: [d < 300 ? 'Comprometimento funcional' : d < 400 ? 'Abaixo do esperado' : 'Dentro do esperado'],
+        classification: cls,
+        message: `${d.toFixed(0)} m — ${pct.toFixed(0)}% do previsto`,
+        details: [
+          `Previsto (Enright & Sherrill 1998 — ${sexLabel}): ${predicted.toFixed(0)} m`,
+          `Atingido: ${d.toFixed(0)} m (${pct.toFixed(1)}% do esperado)`,
+          pct < 70 ? '⚠️ Abaixo de 70% do previsto — comprometimento funcional' : pct < 82 ? 'Levemente abaixo do esperado' : 'Dentro/Acima do esperado',
+        ],
       };
     }
     case 'run_3200': {
@@ -285,40 +339,56 @@ export function calculateTestResult(
         vo2Max >= 50 ? 'good' : vo2Max >= 40 ? 'attention' : 'risk';
       return {
         value: vo2Max,
-        label: 'VO₂ Máx Estimado',
+        label: 'VO₂ Máx Estimado (ACSM)',
         classification: cls,
         message: `${vo2Max.toFixed(1)} ml/kg/min (ACSM)`,
         details: [
           `Tempo: ${m}min ${s.toString().padStart(2, '0')}s · Pace médio: ${fmtPace(totalMin / 3.2)}`,
-          `Limiar 1 (Aeróbico, ~70% VO₂máx): ${fmtPace(vt1Pace)}`,
-          `Limiar 2 (Anaeróbico, ~85% VO₂máx): ${fmtPace(vt2Pace)}`,
+          `VT1 — Limiar Aeróbico Estimado (~70% VO₂máx): ${fmtPace(vt1Pace)}`,
+          `VT2 — Limiar Anaeróbico Estimado (~85% VO₂máx): ${fmtPace(vt2Pace)}`,
+          '*Valores indiretos baseados nas equações metabólicas do ACSM. O padrão ouro requer ergoespirometria.',
         ],
       };
     }
     case 'broad_jump': {
       const d = values.distanceCm ?? 0;
       const sex = (extras.sex ?? 'M').toUpperCase() === 'F' ? 'F' : 'M';
-      // NSCA normative data — average ranges for adults (cm)
-      // Men: average 200-220, good 230-250, excellent >250, below <200
-      // Women: average 150-170, good 180-200, excellent >200, below <150
-      const ranges = sex === 'M'
-        ? { belowMax: 200, avgMin: 200, avgMax: 220, goodMin: 230, goodMax: 250, excellentMin: 250 }
-        : { belowMax: 150, avgMin: 150, avgMax: 170, goodMin: 180, goodMax: 200, excellentMin: 200 };
+      const ageBracket = extras.ageBracket ?? '20-29';
+      // NSCA percentile-based normative table (cm) by age × sex
+      // Keys: poorMax (< = Poor), avg (≈ Average / 50º percentil), excellentMin (≥ Excellent)
+      type Norm = { poorMax: number; avg: number; excellentMin: number };
+      const NORMS: Record<string, Record<string, Norm>> = {
+        M: {
+          '20-29': { poorMax: 210, avg: 230, excellentMin: 250 },
+          '30-39': { poorMax: 200, avg: 220, excellentMin: 240 },
+          '40-49': { poorMax: 185, avg: 205, excellentMin: 225 },
+          '50-59': { poorMax: 170, avg: 190, excellentMin: 210 },
+          '60+':   { poorMax: 150, avg: 170, excellentMin: 190 },
+        },
+        F: {
+          '20-29': { poorMax: 160, avg: 180, excellentMin: 200 },
+          '30-39': { poorMax: 150, avg: 170, excellentMin: 190 },
+          '40-49': { poorMax: 140, avg: 160, excellentMin: 180 },
+          '50-59': { poorMax: 125, avg: 145, excellentMin: 165 },
+          '60+':   { poorMax: 110, avg: 130, excellentMin: 150 },
+        },
+      };
+      const norm = NORMS[sex][ageBracket] ?? NORMS[sex]['20-29'];
       let classLabel = '';
       let classification: AssessmentResult['classification'] = 'info';
-      if (d >= ranges.excellentMin) { classLabel = 'Excelente'; classification = 'good'; }
-      else if (d >= ranges.goodMin) { classLabel = 'Acima da Média'; classification = 'good'; }
-      else if (d >= ranges.avgMin) { classLabel = 'Na Média'; classification = 'attention'; }
-      else { classLabel = 'Abaixo da Média'; classification = 'risk'; }
-      const sexLabel = sex === 'M' ? 'Homens' : 'Mulheres';
+      if (d >= norm.excellentMin) { classLabel = 'Excelente'; classification = 'good'; }
+      else if (d >= norm.avg) { classLabel = 'Acima da Média'; classification = 'good'; }
+      else if (d >= norm.poorMax) { classLabel = 'Na Média'; classification = 'attention'; }
+      else { classLabel = 'Abaixo da Média (Poor)'; classification = 'risk'; }
+      const sexLabel = sex === 'M' ? 'homens' : 'mulheres';
       return {
         value: d,
         label: 'Distância',
         classification,
         message: `${d.toFixed(0)} cm — ${classLabel}`,
         details: [
-          `Esperado (${sexLabel}): ${ranges.goodMin}–${ranges.goodMax} cm (NSCA)`,
-          `Faixas: Abaixo <${ranges.belowMax} · Média ${ranges.avgMin}-${ranges.avgMax} · Bom ${ranges.goodMin}-${ranges.goodMax} · Excelente >${ranges.excellentMin}`,
+          `Comparado à média de ${sexLabel} de ${ageBracket} anos (NSCA).`,
+          `Faixas: Poor <${norm.poorMax} · Média ≈ ${norm.avg} · Excelente ≥ ${norm.excellentMin} cm`,
         ],
       };
     }
