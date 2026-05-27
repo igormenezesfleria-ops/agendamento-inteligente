@@ -111,6 +111,21 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
   // and the red skeleton segment are guaranteed to stay in sync.
   const curlIsMisalignedRef = useRef(false);
 
+  // Phase 35 — Lunge (Afundo) lateral-view state.
+  // 3 smoothed angles (10-frame moving average), 3 independent boolean
+  // errors, and a set of "a-b" connection keys to paint red. All driven
+  // 1:1 per frame inside analyzeAndDraw — no timers, no overrides.
+  const isLungeTemplateRef = useRef(false);
+  const lungeFrontKneeHistoryRef = useRef<number[]>([]);
+  const lungeFrontAnkleHistoryRef = useRef<number[]>([]);
+  const lungeTorsoHistoryRef = useRef<number[]>([]);
+  const LUNGE_SMOOTHING_WINDOW = 10;
+  const lungeBadConnectionsRef = useRef<Set<string>>(new Set());
+  const lungeStatusRef = useRef<{ misaligned: boolean; message: string }>({
+    misaligned: false,
+    message: '✅ Afundo: Forma Excelente',
+  });
+
   // Generic rep tracker — kept for rep counting only. Cadence/eccentric-speed
   // warnings were intentionally removed (Phase 28.5) so the Biceps/Triceps HUD
   // is driven strictly by the 15° stability zone.
@@ -482,6 +497,91 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       }
       curlCoachMessageRef.current = curlCoachMessage;
 
+      // ── Phase 35 — Lunge (Afundo) lateral-view analysis ──
+      const isLungeTemplate = activeTemplate?.errors.some(e => e.id === 'lunge_form');
+      isLungeTemplateRef.current = !!isLungeTemplate;
+      lungeBadConnectionsRef.current = new Set();
+      if (isLungeTemplate) {
+        const visOk = (i: number) => (landmarks[i]?.visibility ?? 0) > 0.3;
+        const required = [
+          LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER,
+          LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP,
+          LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE,
+          LANDMARKS.LEFT_ANKLE, LANDMARKS.RIGHT_ANKLE,
+          LANDMARKS.LEFT_FOOT_INDEX, LANDMARKS.RIGHT_FOOT_INDEX,
+        ];
+        if (required.every(visOk)) {
+          // DYNAMIC FRONT/BACK LEG: back knee has the larger Y (closer to
+          // ground in canvas coords). Apply same side to hips/ankles/feet.
+          const lk = landmarks[LANDMARKS.LEFT_KNEE];
+          const rk = landmarks[LANDMARKS.RIGHT_KNEE];
+          const leftIsBack = lk.y > rk.y;
+          const backKneeIdx  = leftIsBack ? LANDMARKS.LEFT_KNEE     : LANDMARKS.RIGHT_KNEE;
+          const backHipIdx   = leftIsBack ? LANDMARKS.LEFT_HIP      : LANDMARKS.RIGHT_HIP;
+          const backShoulderIdx = leftIsBack ? LANDMARKS.LEFT_SHOULDER : LANDMARKS.RIGHT_SHOULDER;
+          const frontKneeIdx = leftIsBack ? LANDMARKS.RIGHT_KNEE    : LANDMARKS.LEFT_KNEE;
+          const frontHipIdx  = leftIsBack ? LANDMARKS.RIGHT_HIP     : LANDMARKS.LEFT_HIP;
+          const frontAnkleIdx = leftIsBack ? LANDMARKS.RIGHT_ANKLE  : LANDMARKS.LEFT_ANKLE;
+          const frontFootIdx = leftIsBack ? LANDMARKS.RIGHT_FOOT_INDEX : LANDMARKS.LEFT_FOOT_INDEX;
+
+          const frontHip   = landmarks[frontHipIdx];
+          const frontKnee  = landmarks[frontKneeIdx];
+          const frontAnkle = landmarks[frontAnkleIdx];
+          const frontFoot  = landmarks[frontFootIdx];
+          const backHip    = landmarks[backHipIdx];
+          const backKnee   = landmarks[backKneeIdx];
+          const backShoulder = landmarks[backShoulderIdx];
+
+          // Raw angles (2D, atan2-based helper handles 0..180)
+          const rawFrontKnee  = calculateAngle(frontHip,  frontKnee,  frontAnkle);
+          const rawFrontAnkle = calculateAngle(frontKnee, frontAnkle, frontFoot);
+          const rawTorso      = calculateAngle(backShoulder, backHip, backKnee);
+
+          const pushAvg = (buf: number[], v: number) => {
+            buf.push(v);
+            if (buf.length > LUNGE_SMOOTHING_WINDOW) buf.shift();
+            return buf.reduce((s, x) => s + x, 0) / buf.length;
+          };
+          const frontKneeAngle  = pushAvg(lungeFrontKneeHistoryRef.current,  rawFrontKnee);
+          const frontAnkleAngle = pushAvg(lungeFrontAnkleHistoryRef.current, rawFrontAnkle);
+          const torsoAngle      = pushAvg(lungeTorsoHistoryRef.current,      rawTorso);
+
+          // calculateAngle returns 0..180 — fold the torso "180° ±30°" target
+          // into the same domain: treat torsoAngle < 150 as misaligned.
+          const isFrontKneeError  = frontKneeAngle  < 60 || frontKneeAngle  > 120;
+          const isFrontAnkleError = frontAnkleAngle < 60 || frontAnkleAngle > 120;
+          const isTorsoAlignmentError = torsoAngle  < 150;
+
+          const key = (a: number, b: number) => `${Math.min(a, b)}-${Math.max(a, b)}`;
+          const bad = lungeBadConnectionsRef.current;
+
+          // HUD priority: torso > front knee > front ankle
+          let message = '✅ Afundo: Forma Excelente';
+          let misaligned = false;
+          if (isTorsoAlignmentError) {
+            misaligned = true;
+            message = '⚠️ Alinhe o tronco com o joelho de trás!';
+            bad.add(key(backShoulderIdx, backHipIdx));
+            bad.add(key(backHipIdx, backKneeIdx));
+          } else if (isFrontKneeError) {
+            misaligned = true;
+            message = '⚠️ Ajuste o ângulo do joelho da frente (90°)';
+            bad.add(key(frontHipIdx, frontKneeIdx));
+            bad.add(key(frontKneeIdx, frontAnkleIdx));
+          } else if (isFrontAnkleError) {
+            misaligned = true;
+            message = '⚠️ Calcanhar da frente apoiado, tornozelo a 90°';
+            bad.add(key(frontKneeIdx, frontAnkleIdx));
+            bad.add(key(frontAnkleIdx, frontFootIdx));
+          }
+          lungeStatusRef.current = { misaligned, message };
+
+          // Expose front knee angle in the bottom telemetry pill
+          leftAngle = frontKneeAngle;
+          rightAngle = torsoAngle;
+        }
+      }
+
       // Valgus & Varus detection (independent, both can fire simultaneously)
       // Skip valgus/varus for plank templates
       if (MOCK_VALGO_ALERT && !isPlankTemplate && !isCurlTemplate) {
@@ -550,6 +650,11 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
 
       // Determine line color
       const getLineColor = (start: number, end: number) => {
+        // Lunge: paint only the specific failing segments in red.
+        if (isLungeTemplate) {
+          const k = `${Math.min(start, end)}-${Math.max(start, end)}`;
+          return lungeBadConnectionsRef.current.has(k) ? '#ef4444' : '#22c55e';
+        }
         // For curl: ONLY the exact upper arm connection of the active side turns red
         if (isCurlTemplate) {
           if (curlBadConnection) {
@@ -610,6 +715,14 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
           isBad = curlBadConnection
             ? (index === curlBadConnection[0] || index === curlBadConnection[1])
             : false;
+        }
+        // For lunge: a joint is "bad" if any of its connections is bad
+        if (isLungeTemplate) {
+          isBad = false;
+          for (const k of lungeBadConnectionsRef.current) {
+            const [a, b] = k.split('-').map(Number);
+            if (index === a || index === b) { isBad = true; break; }
+          }
         }
         const color = isBad
           ? '#ef4444'
@@ -705,7 +818,7 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
       setLeftKneeAngle(isPlankTemplate ? plankHipAngle : (isCurlTemplate ? null : leftAngle));
       setRightKneeAngle(isPlankTemplate || isCurlTemplate ? null : rightAngle);
 
-      return curlViolation || plankViolation || leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation || leftVaroViolation || rightVaroViolation;
+      return curlViolation || plankViolation || lungeStatusRef.current.misaligned || leftFlexionViolation || rightFlexionViolation || leftValgoViolation || rightValgoViolation || leftVaroViolation || rightVaroViolation;
     },
     [activeTemplate],
   );
@@ -844,9 +957,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
                 e.id === 'elbow_drift_forward' ||
                 e.id === 'elbow_unstable',
             );
+          const isLunge = !!activeTemplate?.errors.some((e) => e.id === 'lunge_form');
 
           // Run the biomechanics engine if a template is active (skipped for curl/triceps)
-          const warnings = isCurlOrTriceps ? [] : evaluateFrame(landmarks, activeTemplate);
+          const warnings = (isCurlOrTriceps || isLunge) ? [] : evaluateFrame(landmarks, activeTemplate);
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
@@ -886,6 +1000,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
               setStatus('good');
               setStatusText('✅ Prancha: Forma Excelente');
             }
+          } else if (isLungeTemplateRef.current) {
+            // Phase 35 — Lunge HUD is HARD-WIRED to `lungeStatusRef`. No
+            // timers, no overrides. Pure per-frame boolean + priority message.
+            const { misaligned, message } = lungeStatusRef.current;
+            setStatus(misaligned ? 'warning' : 'good');
+            setStatusText(misaligned ? message : '✅ Afundo: Forma Excelente');
           } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');

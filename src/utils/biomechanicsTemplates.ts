@@ -455,4 +455,20 @@ export const BIOMECHANICS_TEMPLATES: Record<string, MovementPattern> = {
       },
     ],
   },
+
+  LUNGE: {
+    name: 'Afundo (Lunge)',
+    errors: [
+      {
+        id: 'lunge_form',
+        name: 'Forma do Afundo',
+        type: 'ANGLE_3D',
+        joints: ['HIP', 'KNEE', 'ANKLE'],
+        minSafeAngle: 60,
+        maxSafeAngle: 120,
+        coachMessage: '🚨 Ajuste a forma do afundo: tronco, joelho e tornozelo a 90°.',
+        affectedSegments: ['left_leg', 'right_leg', 'spine'],
+      },
+    ],
+  },
 };
