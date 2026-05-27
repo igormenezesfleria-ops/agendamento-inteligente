@@ -999,6 +999,12 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
               setStatus('good');
               setStatusText('✅ Prancha: Forma Excelente');
             }
+          } else if (isLungeTemplateRef.current) {
+            // Phase 35 — Lunge HUD is HARD-WIRED to `lungeStatusRef`. No
+            // timers, no overrides. Pure per-frame boolean + priority message.
+            const { misaligned, message } = lungeStatusRef.current;
+            setStatus(misaligned ? 'warning' : 'good');
+            setStatusText(misaligned ? message : '✅ Afundo: Forma Excelente');
           } else if (hasTemplateWarning) {
             const firstWarning = warnings[0];
             setStatus('warning');
