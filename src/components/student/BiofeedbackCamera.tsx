@@ -957,9 +957,10 @@ export function BiofeedbackCamera({ movementPattern, selectedErrors, exerciseNam
                 e.id === 'elbow_drift_forward' ||
                 e.id === 'elbow_unstable',
             );
+          const isLunge = !!activeTemplate?.errors.some((e) => e.id === 'lunge_form');
 
           // Run the biomechanics engine if a template is active (skipped for curl/triceps)
-          const warnings = isCurlOrTriceps ? [] : evaluateFrame(landmarks, activeTemplate);
+          const warnings = (isCurlOrTriceps || isLunge) ? [] : evaluateFrame(landmarks, activeTemplate);
           activeWarningsRef.current = warnings;
           setActiveWarnings(warnings);
 
