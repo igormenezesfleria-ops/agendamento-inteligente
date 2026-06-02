@@ -751,3 +751,150 @@ function ExerciseCard({
     </div>
   );
 }
+
+interface SummaryData {
+  elapsedMs: number;
+  workoutTitle: string;
+  highlights: Array<{ name: string; diff: number; load: number }>;
+  totalExercises: number;
+}
+
+function WorkoutSummaryStory({
+  summary,
+  onClose,
+}: {
+  summary: SummaryData;
+  onClose: () => void;
+}) {
+  const totalSec = Math.floor(summary.elapsedMs / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  const timeLabel = summary.elapsedMs > 0 ? `${m}m ${String(s).padStart(2, '0')}s` : '—';
+
+  const handleShare = async () => {
+    const evolutionText =
+      summary.highlights.length > 0
+        ? summary.highlights.map((h) => `🔥 +${h.diff}kg em ${h.name}`).join('\n')
+        : 'Mais um treino na conta. Consistência > tudo.';
+    const text = `TREINO CONCLUÍDO! 🚀\n${summary.workoutTitle}\nTempo: ${timeLabel}\n\n${evolutionText}\n\nTreinador: Igor Menezes`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Treino concluído', text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success('Resumo copiado para a área de transferência!');
+      }
+    } catch {
+      /* user cancelled */
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in">
+      <div className="relative w-full max-w-sm aspect-[9/16] max-h-[92vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+        {/* Premium gradient background */}
+        <div
+          aria-hidden
+          className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-orange-950/40 to-zinc-900"
+        />
+        <div
+          aria-hidden
+          className="absolute -top-20 -left-20 w-72 h-72 rounded-full bg-orange-500/30 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="absolute -bottom-24 -right-16 w-72 h-72 rounded-full bg-amber-400/20 blur-3xl"
+        />
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar"
+          className="absolute top-3 right-3 z-10 rounded-full bg-white/10 hover:bg-white/20 p-2 transition-colors"
+        >
+          <X className="w-5 h-5 text-white" />
+        </button>
+
+        <div className="relative flex-1 flex flex-col p-6 text-white overflow-y-auto">
+          <div className="text-center">
+            <p className="text-xs font-extrabold tracking-[0.4em] text-orange-300/90">SYNTON</p>
+          </div>
+
+          <div className="mt-8 text-center">
+            <p className="text-3xl font-black leading-tight">
+              TREINO
+              <br />
+              CONCLUÍDO! 🚀
+            </p>
+            <p className="mt-2 text-sm text-white/70 font-medium truncate">
+              {summary.workoutTitle}
+            </p>
+          </div>
+
+          <div className="mt-6 mx-auto bg-white/10 border border-white/15 rounded-2xl px-5 py-3 backdrop-blur-md text-center">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/60">
+              Tempo Total
+            </p>
+            <p className="text-3xl font-extrabold tabular-nums mt-0.5">{timeLabel}</p>
+          </div>
+
+          <div className="mt-6 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-orange-300/90 mb-2">
+              Destaques
+            </p>
+            {summary.highlights.length > 0 ? (
+              <div className="space-y-2">
+                {summary.highlights.slice(0, 4).map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 bg-gradient-to-r from-orange-500/30 to-amber-400/10 border border-orange-400/30 rounded-2xl p-3"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-orange-500/30 flex items-center justify-center shrink-0">
+                      <Flame className="w-5 h-5 text-orange-200" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-white/80 truncate">{h.name}</p>
+                      <p className="text-sm font-extrabold">
+                        +{h.diff}kg <span className="text-white/60 font-medium">(agora {h.load}kg)</span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 text-center">
+                <p className="text-sm text-white/80 font-semibold">
+                  Consistência é o caminho. 💪
+                </p>
+                <p className="text-xs text-white/60 mt-1">
+                  Continue registrando suas cargas para destravar evoluções.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <p className="text-center text-[10px] text-white/50 mt-4">
+            Treinador: <span className="text-white/80 font-bold">Igor Menezes</span>
+          </p>
+        </div>
+
+        <div className="relative p-4 pt-2 flex gap-2 bg-gradient-to-t from-black/60 to-transparent">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 h-12 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm inline-flex items-center justify-center gap-2 transition-all"
+          >
+            <Home className="w-4 h-4" /> Voltar
+          </button>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex-1 h-12 rounded-2xl bg-orange-500 hover:bg-orange-400 text-white font-bold text-sm inline-flex items-center justify-center gap-2 transition-all shadow-lg shadow-orange-500/30"
+          >
+            <Share2 className="w-4 h-4" /> Compartilhar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
