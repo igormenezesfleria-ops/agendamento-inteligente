@@ -201,7 +201,7 @@ export function AdminDashboard() {
   );
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in max-w-full overflow-hidden pb-24">
+    <div className="flex flex-col gap-4 animate-fade-in max-w-full overflow-hidden">
       <div className="space-y-1 mb-2">
         <h1 className="text-2xl font-bold text-slate-900">
           Olá, {(() => {
