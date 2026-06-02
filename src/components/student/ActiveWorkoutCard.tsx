@@ -15,6 +15,10 @@ import {
   Timer,
   Check,
   ChevronRight,
+  Share2,
+  Home,
+  Flame,
+  Save,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -67,6 +71,15 @@ export function ActiveWorkoutCard() {
   const [now, setNow] = useState<number>(Date.now());
   const [detailExercise, setDetailExercise] = useState<Exercise | null>(null);
   const [detailTab, setDetailTab] = useState<'execucao' | 'carga'>('execucao');
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
+  const [savedFlash, setSavedFlash] = useState<Record<string, boolean>>({});
+  const [savingLoad, setSavingLoad] = useState<Record<string, boolean>>({});
+  const [summary, setSummary] = useState<null | {
+    elapsedMs: number;
+    workoutTitle: string;
+    highlights: Array<{ name: string; diff: number; load: number }>;
+    totalExercises: number;
+  }>(null);
   const [consultantTarget, setConsultantTarget] = useState<{
     movementPattern: string;
     selectedErrors: string[];
@@ -76,34 +89,51 @@ export function ActiveWorkoutCard() {
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  const { data: workout, isLoading } = useQuery({
-    queryKey: ['active-workout', user?.id],
+  const { data: workouts, isLoading } = useQuery({
+    queryKey: ['active-workouts', user?.id],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('workouts')
-        .select('id, title, start_date, end_date')
+        .select('id, title, start_date, end_date, split_label')
         .eq('student_id', user!.id)
         .eq('is_active', true)
         .lte('start_date', today)
         .gte('end_date', today)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('split_label', { ascending: true });
       if (error) throw error;
-      if (!data) return null;
-
-      const { data: exercises, error: exErr } = await supabase
+      if (!data || data.length === 0) return [] as Array<any>;
+      const ids = data.map((w) => w.id);
+      const { data: allEx, error: exErr } = await supabase
         .from('workout_exercises')
-        .select('id, name, sets, reps, rest, video_url, ai_enabled, movement_pattern, selected_errors')
-        .eq('workout_id', data.id)
+        .select('id, name, sets, reps, rest, video_url, ai_enabled, movement_pattern, selected_errors, workout_id, sort_order')
+        .in('workout_id', ids)
         .order('sort_order');
       if (exErr) throw exErr;
-
-      return { ...data, exercises: (exercises || []) as Exercise[] };
+      return data.map((w: any) => ({
+        ...w,
+        exercises: ((allEx || []) as any[])
+          .filter((e) => e.workout_id === w.id)
+          .map(({ workout_id, sort_order, ...rest }) => rest) as Exercise[],
+      }));
     },
     enabled: !!user?.id,
   });
+
+  useEffect(() => {
+    if (!workouts || workouts.length === 0) {
+      setSelectedWorkoutId(null);
+      return;
+    }
+    if (!selectedWorkoutId || !workouts.find((w: any) => w.id === selectedWorkoutId)) {
+      setSelectedWorkoutId(workouts[0].id);
+    }
+  }, [workouts]);
+
+  const workout = useMemo(
+    () => (workouts || []).find((w: any) => w.id === selectedWorkoutId) || null,
+    [workouts, selectedWorkoutId],
+  );
 
   // Load history per exercise — ordered by exact created_at timestamp (most recent first).
   const { data: loadHistory } = useQuery({
@@ -178,23 +208,31 @@ export function ActiveWorkoutCard() {
           load_kg: parseFloat((loads[ex.id] || '').replace(',', '.')) || 0,
         }))
         .filter((r) => r.load_kg > 0);
-      if (rows.length === 0) return;
-      const { error } = await supabase.from('workout_session_loads').insert(rows);
-      if (error) throw error;
+      if (rows.length > 0) {
+        const { error } = await supabase.from('workout_session_loads').insert(rows);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      if (startedAt) {
-        const elapsedMs = Date.now() - startedAt;
-        const totalSec = Math.floor(elapsedMs / 1000);
-        const m = Math.floor(totalSec / 60);
-        const s = totalSec % 60;
-        toast.success(`Treino concluído em ${m} min e ${s} seg!`, {
-          description: 'Cargas registradas com sucesso.',
-          duration: 6000,
-        });
-      } else {
-        toast.success('Treino salvo! Cargas registradas.');
+      const elapsedMs = startedAt ? Date.now() - startedAt : 0;
+      const highlights: Array<{ name: string; diff: number; load: number }> = [];
+      if (workout) {
+        for (const ex of workout.exercises) {
+          const todays = parseFloat((loads[ex.id] || '').replace(',', '.')) || 0;
+          if (todays <= 0) continue;
+          const history = loadHistory?.[ex.id] || [];
+          const previousBest = history.reduce((max, h) => (h.load > max ? h.load : max), 0);
+          if (previousBest > 0 && todays > previousBest) {
+            highlights.push({ name: ex.name, diff: +(todays - previousBest).toFixed(2), load: todays });
+          }
+        }
       }
+      setSummary({
+        elapsedMs,
+        workoutTitle: workout?.title || 'Treino',
+        highlights,
+        totalExercises: workout?.exercises.length || 0,
+      });
       setStartedAt(null);
       setCompleted({});
       qc.invalidateQueries({ queryKey: ['load-history'] });
@@ -202,6 +240,32 @@ export function ActiveWorkoutCard() {
     },
     onError: () => toast.error('Erro ao salvar cargas do treino.'),
   });
+
+  const saveSingleLoad = async (exerciseId: string) => {
+    if (!workout || !user?.id) return;
+    const raw = (loads[exerciseId] || '').replace(',', '.');
+    const value = parseFloat(raw);
+    if (!value || value <= 0) {
+      toast.error('Informe uma carga válida.');
+      return;
+    }
+    setSavingLoad((p) => ({ ...p, [exerciseId]: true }));
+    const { error } = await supabase.from('workout_session_loads').insert({
+      student_id: user.id,
+      workout_id: workout.id,
+      exercise_id: exerciseId,
+      session_date: todayStr,
+      load_kg: value,
+    });
+    setSavingLoad((p) => ({ ...p, [exerciseId]: false }));
+    if (error) {
+      toast.error('Erro ao salvar carga.');
+      return;
+    }
+    setSavedFlash((p) => ({ ...p, [exerciseId]: true }));
+    setTimeout(() => setSavedFlash((p) => ({ ...p, [exerciseId]: false })), 2000);
+    qc.invalidateQueries({ queryKey: ['load-history'] });
+  };
 
   useEffect(() => {
     const handler = () => {
@@ -219,7 +283,7 @@ export function ActiveWorkoutCard() {
     );
   }
 
-  if (!workout) return null;
+  if (!workouts || workouts.length === 0 || !workout) return null;
 
   const elapsedLabel = startedAt ? formatElapsed(now - startedAt) : null;
   const totalCount = workout.exercises.length;
