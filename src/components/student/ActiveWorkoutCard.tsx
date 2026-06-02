@@ -309,9 +309,9 @@ export function ActiveWorkoutCard() {
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
         <DrawerContent className="h-[90vh]">
           <div className="p-6 overflow-y-auto flex-1 pb-32">
-            <div className="flex items-start justify-between mb-4">
-              <DrawerHeader className="p-0">
-                <DrawerTitle className="text-2xl font-extrabold text-foreground">
+            <div className="flex items-start justify-between mb-3">
+              <DrawerHeader className="p-0 flex-1 min-w-0">
+                <DrawerTitle className="text-2xl font-extrabold text-foreground truncate">
                   {workout.title}
                 </DrawerTitle>
                 {totalCount > 0 && (
@@ -324,6 +324,42 @@ export function ActiveWorkoutCard() {
                 <X className="w-5 h-5 text-muted-foreground" />
               </DrawerClose>
             </div>
+
+            {/* Workout switcher (pill list) */}
+            {workouts && workouts.length > 1 && (
+              <div className="-mx-6 px-6 mb-4 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2 w-max">
+                  {workouts.map((w: any) => {
+                    const active = w.id === selectedWorkoutId;
+                    return (
+                      <button
+                        key={w.id}
+                        type="button"
+                        onClick={() => setSelectedWorkoutId(w.id)}
+                        className={`shrink-0 px-3.5 py-2 rounded-full text-xs font-bold border transition-all ${
+                          active
+                            ? 'bg-accent text-accent-foreground border-accent shadow-sm'
+                            : 'bg-background text-muted-foreground border-border hover:border-accent/40'
+                        }`}
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          {w.split_label && (
+                            <span
+                              className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full text-[10px] font-extrabold ${
+                                active ? 'bg-accent-foreground/20 text-accent-foreground' : 'bg-muted text-foreground'
+                              }`}
+                            >
+                              {w.split_label}
+                            </span>
+                          )}
+                          <span className="truncate max-w-[160px]">{w.title}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Timer / Start CTA */}
             {startedAt ? (
