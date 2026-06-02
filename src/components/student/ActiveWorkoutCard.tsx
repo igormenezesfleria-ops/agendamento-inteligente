@@ -641,6 +641,14 @@ export function ActiveWorkoutCard() {
         </DrawerContent>
       </Drawer>
 
+      {/* Story-style summary */}
+      {summary && (
+        <WorkoutSummaryStory
+          summary={summary}
+          onClose={() => setSummary(null)}
+        />
+      )}
+
       {/* Consultor Synton */}
       <SyntonConsultantModal
         open={!!consultantTarget}
