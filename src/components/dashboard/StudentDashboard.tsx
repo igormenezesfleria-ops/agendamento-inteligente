@@ -130,7 +130,7 @@ export function StudentDashboard() {
   };
 
   return (
-    <div className="flex flex-col gap-4 animate-fade-in pb-24">
+    <div className="flex flex-col gap-4 animate-fade-in">
       {/* a) Welcome */}
       <div className="space-y-1 mb-2">
         <h1 className="text-2xl font-bold text-slate-900">
