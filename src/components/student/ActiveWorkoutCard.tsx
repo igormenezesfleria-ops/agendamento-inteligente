@@ -581,6 +581,29 @@ export function ActiveWorkoutCard() {
                           className="flex-1 h-12 px-3 rounded-xl bg-background border border-border text-xl font-extrabold text-foreground focus:outline-none focus:ring-2 focus:ring-accent/40 focus:border-accent"
                         />
                         <span className="text-base font-semibold text-muted-foreground">kg</span>
+                        <button
+                          type="button"
+                          onClick={() => saveSingleLoad(detailExercise.id)}
+                          disabled={savingLoad[detailExercise.id]}
+                          aria-label="Salvar carga"
+                          className={`shrink-0 h-12 px-4 rounded-xl font-bold text-sm inline-flex items-center gap-1.5 transition-all ${
+                            savedFlash[detailExercise.id]
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-accent hover:bg-accent/90 text-accent-foreground'
+                          }`}
+                        >
+                          {savingLoad[detailExercise.id] ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : savedFlash[detailExercise.id] ? (
+                            <>
+                              <Check className="w-4 h-4" strokeWidth={3} /> Salvo
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-4 h-4" /> Salvar
+                            </>
+                          )}
+                        </button>
                       </div>
                     </div>
 
